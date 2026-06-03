@@ -1,0 +1,66 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "app/**"
+      - "scripts/**"
+      - "configs/**"
+      - "tsconfig.json"
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t memory-xx:test .
+
+      - name: Start container and verify health
+        run: |
+          cleanup() {
+            docker logs memory-xx-postgres || true
+            docker logs memory-xx-redis || true
+            docker logs memory-xx-test || true
+            docker rm -f memory-xx-test memory-xx-postgres memory-xx-redis || true
+            docker network rm memory-xx-ci || true
+          }
+          trap cleanup EXIT
+          docker network create memory-xx-ci
+          docker run -d --name memory-xx-postgres --network memory-xx-ci \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=memory_xx \
+            pgvector/pgvector:pg16
+          docker run -d --name memory-xx-redis --network memory-xx-ci redis:7-alpine
+          for i in $(seq 1 30); do
+            docker exec memory-xx-postgres pg_isready -U postgres && break
+            sleep 1
+          done
+          docker exec memory-xx-redis redis-cli ping
+          docker run -d --name memory-xx-test \
+            --network memory-xx-ci \
+            -p 5100:5100 \
+            -e MEMORY_V2_DATABASE_URL=postgres://postgres@memory-xx-postgres:5432/memory_xx \
+            -e MEMORY_V2_DATABASE_SCHEMA=memory_xx \
+            -e MEMORY_V2_REDIS_URL=redis://memory-xx-redis:6379/0 \
+            -e MEMORY_V2_BIND_HOST=0.0.0.0 \
+            -e MEMORY_V2_API_TOKEN=<set-in-env> \
+            -e OPENAI_API_KEY=<set-in-env> \
+            memory-xx:test
+          docker exec memory-xx-test npm run migrate
+          for i in $(seq 1 30); do
+            docker exec memory-xx-test node -e "fetch('http://127.0.0.1:5100/live').then(r=>process.exit(r.status < 300 ? 0 : 1)).catch(()=>process.exit(1))" && STATUS=0 && break
+            STATUS=$?
+            sleep 1
+          done
+          if [ "${STATUS:-1}" != "0" ]; then
+            echo "Health check failed"
+            exit 1
+          fi
+          echo "Health check passed"

@@ -1,0 +1,27 @@
+[Unit]
+Description=Memory-v2 embedding proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx-embedding-proxy
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=EMBEDDING_PROXY_HOST=127.0.0.1
+Environment=EMBEDDING_PROXY_PORT=5221
+Environment=EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:8082/v3
+Environment=EMBEDDING_PROXY_UPSTREAM_MODEL=qwen3-embedding
+Environment=EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=/mnt/d/ovms/api_key.txt
+Environment=EMBEDDING_PROXY_TIMEOUT_MS=5000
+Environment=EMBEDDING_PROXY_MAX_RETRIES=0
+Environment=EMBEDDING_PROXY_MAX_CONCURRENCY=1
+Environment=EMBEDDING_PROXY_MIN_INTERVAL_MS=0
+Environment=EMBEDDING_PROXY_RATE_LIMIT_COOLDOWN_MS=30000
+ExecStart=/usr/bin/node %h/services/memory-xx-embedding-proxy/embedding-proxy.mjs
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx-embedding-proxy/embedding-proxy.log
+StandardError=append:%h/services/memory-xx-embedding-proxy/embedding-proxy.error.log
+
+[Install]
+WantedBy=memory-xx.target

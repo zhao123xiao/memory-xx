@@ -1,0 +1,11 @@
+[Unit]
+Description=Run memory-xx runtime issue detection every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+Unit=memory-xx-detect.service
+
+[Install]
+WantedBy=timers.target

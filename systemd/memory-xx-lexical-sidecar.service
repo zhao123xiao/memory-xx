@@ -1,0 +1,20 @@
+[Unit]
+Description=Memory-v2 lexical sidecar
+After=network-online.target memory-xx-wrapper.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx-lexical-sidecar
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_V2_LEXICAL_ADDR=127.0.0.1:5210
+Environment=MEMORY_V2_LEXICAL_DEFAULT_LIMIT=50
+Environment=MEMORY_V2_LEXICAL_MAX_LIMIT=100
+ExecStart=%h/services/memory-xx-lexical-sidecar/memory-xx-lexical-sidecar
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx-lexical-sidecar/lexical.log
+StandardError=append:%h/services/memory-xx-lexical-sidecar/lexical.error.log
+
+[Install]
+WantedBy=memory-xx.target

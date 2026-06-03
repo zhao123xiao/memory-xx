@@ -1,0 +1,10 @@
+[Unit]
+Description=Run memory-xx unified maintenance daily
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+Unit=memory-xx-maintenance.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=Memory-v2 reranker adapter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx-reranker-adapter
+EnvironmentFile=-%h/services/memory-xx/.env
+Environment=RERANKER_ADAPTER_HOST=127.0.0.1
+Environment=RERANKER_ADAPTER_PORT=8085
+Environment=RERANKER_DOWNSTREAM_URL=http://127.0.0.1:8084/v3/rerank
+Environment=RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
+Environment=RERANKER_ADAPTER_TIMEOUT_MS=10000
+ExecStart=/usr/bin/node %h/services/memory-xx-reranker-adapter/reranker-adapter.mjs
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx-reranker-adapter/reranker-adapter.log
+StandardError=append:%h/services/memory-xx-reranker-adapter/reranker-adapter.error.log
+
+[Install]
+WantedBy=memory-xx.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=memory-xx cache invalidation worker
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=<project-root>
+EnvironmentFile=-<project-root>/.env
+ExecStart=/usr/bin/env npm run run:cache-invalidation-worker
+Nice=5

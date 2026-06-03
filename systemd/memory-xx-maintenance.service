@@ -1,0 +1,14 @@
+[Unit]
+Description=Memory-v2 unified maintenance orchestrator
+After=network-online.target memory-xx-wrapper.service memory-xx-qdrant-projector-worker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_V2_ENV_PATH=%h/services/memory-xx/.env
+Environment=TMPDIR=/tmp
+ExecStart=/usr/bin/npm run memory:maintenance -- run --mode auto --json
+StandardOutput=append:%h/services/memory-xx/maintenance.log
+StandardError=append:%h/services/memory-xx/maintenance.error.log

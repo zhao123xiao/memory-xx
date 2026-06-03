@@ -1,0 +1,18 @@
+[Unit]
+Description=Memory-v2 reranker upstream model manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx
+ExecStart=%h/services/memory-xx/scripts/manage-ovms-upstream.sh reranker run
+ExecStop=%h/services/memory-xx/scripts/manage-ovms-upstream.sh reranker stop
+Restart=always
+RestartSec=5
+TimeoutStartSec=360
+StandardOutput=append:%h/services/memory-xx/.runtime/ovms-reranker-upstream.log
+StandardError=append:%h/services/memory-xx/.runtime/ovms-reranker-upstream.error.log
+
+[Install]
+WantedBy=memory-xx.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=Build memory-xx 7-day production canary report
+After=memory-xx-landing-scan.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=<project-root>
+Environment=TMPDIR=/tmp
+ExecStart=/usr/bin/env npm run memory:canary-7d-report -- --json --write-report

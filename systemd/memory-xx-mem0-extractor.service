@@ -1,0 +1,18 @@
+[Unit]
+Description=Memory-v2 mem0 extraction sidecar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx-mem0-extractor
+EnvironmentFile=-%h/services/memory-xx/.env
+Environment=MEMORY_INTELLIGENCE_MEM0_URL=http://127.0.0.1:5220
+ExecStart=%h/services/mem0/.venv/bin/python %h/services/memory-xx-mem0-extractor/extractor.py
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx-mem0-extractor/mem0-extractor.log
+StandardError=append:%h/services/memory-xx-mem0-extractor/mem0-extractor.error.log
+
+[Install]
+WantedBy=memory-xx.target

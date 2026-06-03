@@ -1,0 +1,11 @@
+[Unit]
+Description=Run memory-xx cache invalidation worker every 30 seconds
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Unit=memory-xx-cache-invalidation-worker.service
+
+[Install]
+WantedBy=timers.target

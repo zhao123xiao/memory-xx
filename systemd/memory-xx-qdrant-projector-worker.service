@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenClaw memory-xx Qdrant projector worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_V2_ENV_PATH=%h/services/memory-xx/.env
+Environment=NODE_ENV=production
+Environment=EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
+ExecStart=/usr/local/bin/node --import tsx %h/services/memory-xx/scripts/run-qdrant-projector-worker.ts
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/services/memory-xx/qdrant-projector-worker.log
+StandardError=append:%h/services/memory-xx/qdrant-projector-worker.error.log
+
+[Install]
+WantedBy=default.target

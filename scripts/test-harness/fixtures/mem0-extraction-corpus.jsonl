@@ -1,0 +1,6 @@
+{"id":"preference-write","text":"记一下：我以后评估 memory-xx 召回时优先看真实 top1 命中，不只看关键词命中。","expected":{"should_write":true,"operation":"add","memory_type":"preference","scope_type":"project","scope_id":"memory-xx"}}
+{"id":"decision-write","text":"记住：memory-xx 的 reranker 策略先用 force_top1 做压测，默认仍保持 adaptive。","expected":{"should_write":true,"operation":"add","memory_type":"decision","scope_type":"project","scope_id":"memory-xx"}}
+{"id":"negative-temporary","text":"这只是临时测试，不要记住：abc123。","expected":{"should_write":false,"operation":"no_change","scope_type":"project","scope_id":"memory-xx"}}
+{"id":"question-only","text":"memory-xx 现在 reranker 是不是每次都会用？","expected":{"should_write":false,"operation":"no_change","scope_type":"project","scope_id":"memory-xx"}}
+{"id":"question-soft-should","text":"刚刚这个审计 run 是否应该写入？","expected":{"should_write":false,"operation":"no_change","scope_type":"project","scope_id":"memory-xx"}}
+{"id":"constraint-write","text":"记一下：控制面板里的服务控制必须用绿色开启、红色关闭的胶囊开关。","expected":{"should_write":true,"operation":"add","memory_type":"constraint","scope_type":"project","scope_id":"memory-xx"}}

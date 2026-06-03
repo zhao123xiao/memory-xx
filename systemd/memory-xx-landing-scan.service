@@ -1,0 +1,9 @@
+[Unit]
+Description=Run memory-xx production landing scan snapshot
+After=memory-xx-wrapper.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=<project-root>
+Environment=TMPDIR=/tmp
+ExecStart=/usr/bin/env npm run memory:landing-scan -- --json --write-report --max-files=200

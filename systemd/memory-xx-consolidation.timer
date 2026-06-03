@@ -1,0 +1,11 @@
+[Unit]
+Description=Run memory-xx temporal consolidation periodically
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+Persistent=true
+Unit=memory-xx-consolidation.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Build memory-xx 7-day production canary report daily
+
+[Timer]
+OnCalendar=*-*-* 04:20:00
+Persistent=true
+Unit=memory-xx-canary-7d-report.service
+
+[Install]
+WantedBy=timers.target

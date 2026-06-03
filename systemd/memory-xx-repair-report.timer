@@ -1,0 +1,10 @@
+[Unit]
+Description=Run memory-xx daily repair report
+
+[Timer]
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+Unit=memory-xx-repair-report.service
+
+[Install]
+WantedBy=timers.target

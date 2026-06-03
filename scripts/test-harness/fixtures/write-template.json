@@ -1,0 +1,12 @@
+{
+  "actorId": "test-harness",
+  "scopeType": "project",
+  "scopeId": "prod-test-RUN_ID",
+  "content": "Memory-v2 production test record RUN_ID",
+  "title": "Test Record RUN_ID",
+  "memoryType": "fact",
+  "metadata": {
+    "source": "memory-xx-prod-test",
+    "run_id": "RUN_ID"
+  }
+}

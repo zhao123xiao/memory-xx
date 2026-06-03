@@ -1,0 +1,13 @@
+[Unit]
+Description=Memory-v2 temporal consolidation job
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_V2_ENV_PATH=%h/services/memory-xx/.env
+ExecStart=/usr/bin/npm run memory:consolidate
+StandardOutput=append:%h/services/memory-xx/consolidation.log
+StandardError=append:%h/services/memory-xx/consolidation.error.log

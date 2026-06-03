@@ -1,0 +1,84 @@
+{
+  "title": "memory-xx operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Quality gate distribution",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (bucket) (rate(memory_write_quality_gate_distribution_total[5m]))", "legendFormat": "{{bucket}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Recall null return rate",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (query_type) (rate(memory_recall_null_return_total[5m]))", "legendFormat": "{{query_type}}" }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "Recall degrade level",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "max by (level) (memory_recall_degrade_level)", "legendFormat": "L{{level}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Projector lag p99",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(memory_projector_lag_seconds_bucket[5m])))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dead letter events",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "sum by (reason) (rate(memory_projector_dead_letter_total[5m]))", "legendFormat": "{{reason}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Silent approve FP rate",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "memory_governance_silent_approve_fp_rate", "legendFormat": "{{agent}} {{scope}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cache hit ratio",
+      "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
+      "targets": [
+        { "expr": "memory_cache_recall_cache_hit_ratio", "legendFormat": "hit ratio" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Capacity warning actions",
+      "gridPos": { "x": 8, "y": 16, "w": 8, "h": 8 },
+      "targets": [
+        { "expr": "sum by (status) (rate(memory_governance_action_total{type=\"capacity_warning\"}[5m]))", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP request rate",
+      "gridPos": { "x": 16, "y": 16, "w": 8, "h": 8 },
+      "targets": [
+        { "expr": "sum by (route, status) (rate(http_requests_total[5m]))", "legendFormat": "{{status}} {{route}}" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run memory-xx production landing scan snapshot daily
+
+[Timer]
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+Unit=memory-xx-landing-scan.service
+
+[Install]
+WantedBy=timers.target

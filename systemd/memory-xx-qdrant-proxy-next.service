@@ -1,0 +1,23 @@
+[Unit]
+Description=Memory-v2 Qdrant collection proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx-qdrant-proxy
+EnvironmentFile=-%h/services/memory-xx/.env
+Environment=QDRANT_PROXY_HOST=127.0.0.1
+Environment=QDRANT_PROXY_PORT=6335
+Environment=QDRANT_PROXY_UPSTREAM=http://127.0.0.1:6333
+Environment=QDRANT_PROXY_FROM_COLLECTION=memory-xx
+Environment=QDRANT_PROXY_TO_COLLECTION=memory-xx-active
+Environment=QDRANT_PROXY_TIMEOUT_MS=30000
+ExecStart=/usr/bin/node %h/services/memory-xx-qdrant-proxy/qdrant-collection-proxy.mjs
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx-qdrant-proxy/qdrant-proxy.log
+StandardError=append:%h/services/memory-xx-qdrant-proxy/qdrant-proxy.error.log
+
+[Install]
+WantedBy=memory-xx.target

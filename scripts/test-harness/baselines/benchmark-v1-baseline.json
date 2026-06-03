@@ -1,0 +1,16 @@
+{
+  "eval_set_version": "benchmark-v1",
+  "baseline_version": "2026-05-20-local-l4",
+  "source_report": "reports/memory-xx-tests/2026-05-20T08-41-53-839Z/L4-report.json",
+  "policy": {
+    "same_change_cannot_lower_thresholds": true,
+    "holdout_or_spot_check_required": true
+  },
+  "metrics": {
+    "top1_recall": 82.5,
+    "top3_recall": 85,
+    "top5_recall": 87.5,
+    "latency_p95_ms": 1909,
+    "latency_p99_ms": 1957
+  }
+}

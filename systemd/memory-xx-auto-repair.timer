@@ -1,0 +1,11 @@
+[Unit]
+Description=Run memory-xx safe automatic repair every 30 minutes
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=30min
+Persistent=true
+Unit=memory-xx-auto-repair.service
+
+[Install]
+WantedBy=timers.target
