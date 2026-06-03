@@ -287,7 +287,7 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
 }
 
 function runJsonCommand(args: readonly string[]): { ok: boolean; exit_code: number | null; json: Record<string, unknown> | null; error?: string } {
-  const result = spawnSync(args[0], args.slice(1), {
+  const result = spawnSync(process.execPath, ["--import", "tsx", ...args], {
     cwd: process.cwd(),
     env: { ...process.env, TMPDIR: process.env.TMPDIR || "/tmp" },
     encoding: "utf8",
@@ -477,9 +477,9 @@ async function productionFeedbackReport(client: import("pg").PoolClient, schema:
   readonly candidateOnly: { enabled: boolean; reasons: string[] };
   readonly writeReport: boolean;
 }): Promise<Record<string, unknown>> {
-  const statusCommand = runJsonCommand(["tsx", "scripts/memory-status.ts", "--json"]);
-  const guardCommand = runJsonCommand(["tsx", "scripts/memory-auto-approval.ts", "production-guard", "--json"]);
-  const updateDryRunCommand = runJsonCommand(["tsx", "scripts/memory-auto-update.ts", "dry-run", "--scope=project:memory-xx", "--limit=100"]);
+  const statusCommand = runJsonCommand(["scripts/memory-status.ts", "--json"]);
+  const guardCommand = runJsonCommand(["scripts/memory-auto-approval.ts", "production-guard", "--json"]);
+  const updateDryRunCommand = runJsonCommand(["scripts/memory-auto-update.ts", "dry-run", "--scope=project:memory-xx", "--limit=100"]);
   const status = statusCommand.json;
   const pending = readObject(status?.pending);
   const report = buildProductionCanaryFeedbackReport({
@@ -540,8 +540,8 @@ async function productionGuardReport(input: {
   readonly realScopesFile: Awaited<ReturnType<typeof loadRealScopeEnablementsFile>>;
   readonly writeReport: boolean;
 }): Promise<Record<string, unknown>> {
-  const statusCommand = runJsonCommand(["tsx", "scripts/memory-status.ts", "--json"]);
-  const policyReportCommand = runJsonCommand(["tsx", "scripts/memory-policy-report.ts", "--json"]);
+  const statusCommand = runJsonCommand(["scripts/memory-status.ts", "--json"]);
+  const policyReportCommand = runJsonCommand(["scripts/memory-policy-report.ts", "--json"]);
   const status = statusCommand.json;
   const runtimeControls = readAutoApprovalRuntimeControlsSync();
   const pending = readObject(status?.pending);

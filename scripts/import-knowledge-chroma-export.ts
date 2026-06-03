@@ -15,7 +15,7 @@ interface ExportLine {
 
 const inputPath = process.argv[2];
 if (!inputPath) {
-  throw new Error("Usage: tsx scripts/import-knowledge-chroma-export.ts <chroma-export.jsonl>");
+  throw new Error("Usage: node --import tsx scripts/import-knowledge-chroma-export.ts <chroma-export.jsonl>");
 }
 
 const qdrantBase = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "");

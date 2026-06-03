@@ -94,7 +94,7 @@ async function loadJsonl<T>(filePath: string): Promise<T[]> {
 async function main(): Promise<void> {
   const batchDir = process.argv[2];
   if (!batchDir) {
-    throw new Error("Usage: tsx scripts/import-staging-batch.ts <batch-dir>");
+    throw new Error("Usage: node --import tsx scripts/import-staging-batch.ts <batch-dir>");
   }
 
   const resolvedBatchDir = path.resolve(process.cwd(), batchDir);

@@ -34,7 +34,7 @@ function parseJsonFromOutput(stdout: string): Record<string, unknown> | null {
 
 function runJsonCommand(args: readonly string[]): CommandResult {
   try {
-    const stdout = execFileSync(args[0] ?? "npm", args.slice(1), {
+    const stdout = execFileSync(process.execPath, ["--import", "tsx", ...args], {
       cwd: process.cwd(),
       env: { ...process.env, TMPDIR: "/tmp" },
       encoding: "utf8",
@@ -60,15 +60,15 @@ async function main(): Promise<void> {
   const maxFiles = argValue("--max-files") ?? "100";
   const reportDir = argValue("--report-dir") ?? path.join(process.cwd(), "reports", "memory-landing-scan");
 
-  const memoryStatus = runJsonCommand(["tsx", "scripts/memory-status.ts", "--json"]);
-  const pending = runJsonCommand(["tsx", "scripts/memory-pending.ts", "--json"]);
-  const qdrantReconcile = runJsonCommand(["tsx", "scripts/qdrant-reconcile.ts", "--json"]);
-  const p1Gate = runJsonCommand(["tsx", "scripts/p1-production-gate.ts"]);
-  const policyReport = runJsonCommand(["tsx", "scripts/memory-policy-report.ts", "--json"]);
-  const autoApprovalStatus = runJsonCommand(["tsx", "scripts/memory-auto-approval.ts", "status", "--json"]);
-  const productionGuard = runJsonCommand(["tsx", "scripts/memory-auto-approval.ts", "production-guard", "--json"]);
-  const conversationSources = runJsonCommand(["tsx", "scripts/memory-conversation-sources.ts", "scan", "--dry-run", "--json", `--max-files=${maxFiles}`]);
-  const conversationMonitorReport = runJsonCommand(["tsx", "scripts/memory-conversation-monitor-report.ts", "--json"]);
+  const memoryStatus = runJsonCommand(["scripts/memory-status.ts", "--json"]);
+  const pending = runJsonCommand(["scripts/memory-pending.ts", "--json"]);
+  const qdrantReconcile = runJsonCommand(["scripts/qdrant-reconcile.ts", "--json"]);
+  const p1Gate = runJsonCommand(["scripts/p1-production-gate.ts"]);
+  const policyReport = runJsonCommand(["scripts/memory-policy-report.ts", "--json"]);
+  const autoApprovalStatus = runJsonCommand(["scripts/memory-auto-approval.ts", "status", "--json"]);
+  const productionGuard = runJsonCommand(["scripts/memory-auto-approval.ts", "production-guard", "--json"]);
+  const conversationSources = runJsonCommand(["scripts/memory-conversation-sources.ts", "scan", "--dry-run", "--json", `--max-files=${maxFiles}`]);
+  const conversationMonitorReport = runJsonCommand(["scripts/memory-conversation-monitor-report.ts", "--json"]);
 
   const commandStatus = {
     memory_status: { ok: memoryStatus.ok, exit_code: memoryStatus.exit_code, error: memoryStatus.error ?? null },

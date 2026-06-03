@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   const batchDirArg = process.argv[2];
   const outputDirArg = process.argv[3];
   if (!batchDirArg || !outputDirArg) {
-    throw new Error("Usage: tsx scripts/run-recall-shadow-r3.ts <batch-dir> <output-dir>");
+    throw new Error("Usage: node --import tsx scripts/run-recall-shadow-r3.ts <batch-dir> <output-dir>");
   }
 
   const batchDir = path.resolve(process.cwd(), batchDirArg);

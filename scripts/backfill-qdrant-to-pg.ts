@@ -6,7 +6,7 @@
  *
  * Usage:
  *   set -a && source .env && set +a
- *   npx tsx scripts/backfill-qdrant-to-pg.ts
+ *   node --import tsx scripts/backfill-qdrant-to-pg.ts
  */
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";

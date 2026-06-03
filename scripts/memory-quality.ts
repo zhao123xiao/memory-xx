@@ -139,7 +139,7 @@ async function runFixedSmoke(): Promise<Record<string, unknown>> {
 
 async function runRandom(outDir: string): Promise<Record<string, unknown>> {
   const reportPath = path.join(outDir, "random-recall-sample-report.json");
-  const result = runCommand("npx", ["tsx", "scripts/random-recall-sample.ts"], {
+  const result = runCommand(process.execPath, ["--import", "tsx", "scripts/random-recall-sample.ts"], {
     RANDOM_RECALL_REPORT_PATH: reportPath,
     RANDOM_RECALL_QUERY_DELAY_MS: process.env.RANDOM_RECALL_QUERY_DELAY_MS ?? "0",
     RANDOM_RECALL_WARM_QUERY_DELAY_MS: process.env.RANDOM_RECALL_WARM_QUERY_DELAY_MS ?? "0",
@@ -158,7 +158,7 @@ async function runRandom(outDir: string): Promise<Record<string, unknown>> {
 }
 
 async function runLive(outDir: string): Promise<Record<string, unknown>> {
-  const result = runCommand("npx", ["tsx", "scripts/live-recall-smoke.ts"], {
+  const result = runCommand(process.execPath, ["--import", "tsx", "scripts/live-recall-smoke.ts"], {
     LIVE_RECALL_QUERY_DELAY_MS: process.env.LIVE_RECALL_QUERY_DELAY_MS ?? "0",
   });
   const sourcePath = "migration_artifacts/live-recall-smoke-report.json";

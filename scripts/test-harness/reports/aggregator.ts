@@ -47,12 +47,11 @@ function processSnapshot(): string {
   }
 }
 
-function runLayerProcess(commandLine: string, timeoutMs: number): Promise<{ stdout: string; exitCode: number }> {
+function runLayerProcess(args: readonly string[], timeoutMs: number): Promise<{ stdout: string; exitCode: number }> {
   return new Promise((resolve) => {
-    const child = spawn(commandLine, {
+    const child = spawn(process.execPath, [...args], {
       cwd: config.projectRoot,
       env: { ...process.env },
-      shell: true,
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -163,10 +162,9 @@ async function main() {
     console.log(`${"─".repeat(50)}`);
 
     const tierArg = layer.id === "L6" ? ` --tier=${parseArgs().tier}` : "";
-    const { stdout, exitCode } = await runLayerProcess(
-      `npx tsx scripts/test-harness/${layer.script}${tierArg}`,
-      600000,
-    );
+    const args = ["--import", "tsx", `scripts/test-harness/${layer.script}`];
+    if (tierArg) args.push(tierArg.trim());
+    const { stdout, exitCode } = await runLayerProcess(args, 600000);
 
     // Try to parse layer JSON report from output
     let layerReport: LayerReport | null = null;

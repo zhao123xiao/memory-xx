@@ -1,6 +1,6 @@
 /**
  * Simple load test for memory-xx HTTP server.
- * Usage: MEMORY_V2_API_TOKEN=xxx tsx scripts/load-test.ts
+ * Usage: MEMORY_V2_API_TOKEN=xxx node --import tsx scripts/load-test.ts
  * Options:
  *   --url=http://localhost:5100   Server base URL
  *   --concurrency=10              Parallel connections

@@ -153,7 +153,9 @@ curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/rec
 ```bash
 TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
+TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run check:secrets
+TMPDIR=/tmp npm run audit:prod
 TMPDIR=/tmp npm run memory:status -- --json
 TMPDIR=/tmp npm run memory:pending -- --json
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
@@ -203,9 +205,15 @@ TMPDIR=/tmp npm run memory:control-panel
 发布前建议运行：
 
 ```bash
+TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run check:secrets
+TMPDIR=/tmp npm run audit:prod
 rg -n "<linux-user-home>|<windows-user-home>|<api-key>|Bearer " .
 ```
+
+`test:gates` / `test:all-gates` 是 runtime gate，需要真实
+`MEMORY_V2_DATABASE_URL`、`MEMORY_V2_API_TOKEN` 等运行环境变量；普通开源检查请使用
+`verify:open-source`。
 
 ## 许可证
 

@@ -25,7 +25,7 @@ function check(name: string, passed: boolean, detail: string): void {
 }
 
 function runWorkerOnce(runtimeDir: string): void {
-  execFileSync("npx", ["tsx", "scripts/run-conversation-monitor-worker.ts", "--once"], {
+  execFileSync(process.execPath, ["--import", "tsx", "scripts/run-conversation-monitor-worker.ts", "--once"], {
     cwd: config.projectRoot,
     env: {
       ...process.env,

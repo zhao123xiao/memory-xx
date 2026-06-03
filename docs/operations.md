@@ -398,12 +398,13 @@ systemctl --user restart memory-xx-wrapper.service
 ```bash
 # Local (WSL)
 pkill -f memory-xx
-nohup npx tsx scripts/memory-xx-wrapper.ts > /tmp/memory-xx-wrapper.log 2>&1 &
+nohup npm run start > /tmp/memory-xx-wrapper.log 2>&1 &
 
 # Remote
 pkill -f memory-xx
 cd /home/ubuntu/services/memory-xx
-nohup env $(cat .env) npx tsx scripts/memory-xx-wrapper.ts > /tmp/memory-xx-wrapper.log 2>&1 &
+set -a; . ./.env; set +a
+nohup npm run start > /tmp/memory-xx-wrapper.log 2>&1 &
 ```
 
 ## Repository Boundary

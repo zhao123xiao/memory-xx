@@ -345,6 +345,7 @@ async function activateManifest(pool: Pool, generationId: string): Promise<Recor
 async function generateManifest(pool: Pool): Promise<Record<string, unknown>> {
   const manifest = await upsertPreparedManifest(pool);
   const args = [
+    "--import",
     "tsx",
     "scripts/generate-local-memory-embeddings.ts",
     `--generation-id=${manifest.generation_id}`,
@@ -363,7 +364,7 @@ async function generateManifest(pool: Pool): Promise<Record<string, unknown>> {
   if (process.argv.includes("--estimate-only")) args.push("--estimate-only");
   if (process.argv.includes("--force-recreate")) args.push("--force-recreate");
 
-  const output = execFileSync("npx", args, {
+  const output = execFileSync(process.execPath, args, {
     cwd: process.cwd(),
     env: { ...process.env, TMPDIR: "/tmp" },
     encoding: "utf8",

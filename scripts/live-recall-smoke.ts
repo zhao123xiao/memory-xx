@@ -7,7 +7,7 @@
  * Usage:
  *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
  *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
- *   npx tsx scripts/live-recall-smoke.ts
+ *   node --import tsx scripts/live-recall-smoke.ts
  */
 
 import {

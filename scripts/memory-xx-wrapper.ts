@@ -1,8 +1,8 @@
 /**
  * memory-xx HTTP wrapper - thin entry point
  *
- * HTTP server mode (default): tsx scripts/memory-xx-wrapper.ts
- * CLI mode: tsx scripts/memory-xx-wrapper.ts recall --query "..."
+ * HTTP server mode (default): node --import tsx scripts/memory-xx-wrapper.ts
+ * CLI mode: node --import tsx scripts/memory-xx-wrapper.ts recall --query "..."
  */
 
 import { runServer, runCli } from "../app/server";
