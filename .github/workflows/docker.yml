@@ -11,6 +11,7 @@ on:
       - "scripts/**"
       - "configs/**"
       - "tsconfig.json"
+      - ".github/workflows/docker.yml"
 
 jobs:
   docker-build:
@@ -45,13 +46,12 @@ jobs:
           docker exec memory-xx-redis redis-cli ping
           docker run -d --name memory-xx-test \
             --network memory-xx-ci \
-            -p 5100:5100 \
-            -e MEMORY_V2_DATABASE_URL=postgres://postgres@memory-xx-postgres:5432/memory_xx \
+            -e MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@memory-xx-postgres:5432/memory_xx \
             -e MEMORY_V2_DATABASE_SCHEMA=memory_xx \
             -e MEMORY_V2_REDIS_URL=redis://memory-xx-redis:6379/0 \
             -e MEMORY_V2_BIND_HOST=0.0.0.0 \
-            -e MEMORY_V2_API_TOKEN=<set-in-env> \
-            -e OPENAI_API_KEY=<set-in-env> \
+            -e MEMORY_V2_API_TOKEN=test-token \
+            -e OPENAI_API_KEY=test-key \
             memory-xx:test
           docker exec memory-xx-test npm run migrate
           for i in $(seq 1 30); do
