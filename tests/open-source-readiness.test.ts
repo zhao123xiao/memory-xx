@@ -38,6 +38,13 @@ test("public env examples use the same default wrapper port", async () => {
   assert.match(wrapperEnv, /^MEMORY_V2_WRAPPER_PORT=5100$/mu);
 });
 
+test("MCP test fixtures use the public wrapper port 5100", async () => {
+  const content = await readFile("tests/mcp-server.test.ts", "utf8");
+
+  assert.match(content, /localhost:5100/u);
+  assert.doesNotMatch(content, /localhost:4001|127\.0\.0\.1:4001/u);
+});
+
 test("release audit npm scripts avoid the tsx CLI tmp socket path", async () => {
   const packageJson = JSON.parse(await import("node:fs/promises").then((fs) => fs.readFile("package.json", "utf8"))) as {
     scripts: Record<string, string>;

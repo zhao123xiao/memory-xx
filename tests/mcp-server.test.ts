@@ -241,7 +241,7 @@ describe("MCP stdio transport", () => {
 describe("registerMemoryTools", () => {
   it("registers all expected memory tools", () => {
     const server = new McpServer();
-    registerMemoryTools(server, { baseUrl: "http://localhost:4001" });
+    registerMemoryTools(server, { baseUrl: "http://localhost:5100" });
     const tools = server.tools.list();
     const names = tools.map((t) => t.name);
 
@@ -263,7 +263,7 @@ describe("registerMemoryTools", () => {
 
   it("each tool has required fields", () => {
     const server = new McpServer();
-    registerMemoryTools(server, { baseUrl: "http://localhost:4001" });
+    registerMemoryTools(server, { baseUrl: "http://localhost:5100" });
     for (const tool of server.tools.list()) {
       assert.ok(tool.name.length > 0, `tool ${tool.name} has name`);
       assert.ok(tool.description.length > 0, `tool ${tool.name} has description`);
@@ -286,7 +286,7 @@ describe("registerMemoryTools", () => {
     }) as typeof fetch;
     try {
       const server = new McpServer();
-      registerMemoryTools(server, { baseUrl: "http://localhost:4001" });
+      registerMemoryTools(server, { baseUrl: "http://localhost:5100" });
       await server.tools.call("recall_memory", {
         query: "alpha",
         project_ids: ["project-a", "project-b"],
@@ -295,7 +295,7 @@ describe("registerMemoryTools", () => {
       });
 
       assert.equal(calls.length, 1);
-      assert.equal(calls[0].url, "http://localhost:4001/api/memory/v2/unified/recall");
+      assert.equal(calls[0].url, "http://localhost:5100/api/memory/v2/unified/recall");
       assert.equal(calls[0].body.scope_type, "project");
       assert.equal(calls[0].body.scope_id, "project-a");
       assert.deepEqual(calls[0].body.project_ids, ["project-a", "project-b"]);
@@ -309,7 +309,7 @@ describe("registerMemoryTools", () => {
 describe("registerMemoryResources", () => {
   it("registers health and metrics resources", () => {
     const server = new McpServer();
-    registerMemoryResources(server, { baseUrl: "http://localhost:4001" });
+    registerMemoryResources(server, { baseUrl: "http://localhost:5100" });
     const resources = server.resources.list();
     const uris = resources.map((r) => r.uri);
 
