@@ -2,8 +2,15 @@ services:
   memory-xx:
     build: .
     ports:
-      - "4001:4001"
-    env_file: .env
+      - "5100:5100"
+    environment:
+      MEMORY_V2_WRAPPER_PORT: "5100"
+      MEMORY_V2_BIND_HOST: "0.0.0.0"
+      MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_V2_DATABASE_SCHEMA: memory_xx
+      MEMORY_V2_REDIS_URL: redis://redis:6379/0
+      MEMORY_V2_API_TOKEN: ${MEMORY_V2_API_TOKEN:-changeme}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     depends_on:
       postgres:
         condition: service_healthy
@@ -11,13 +18,13 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5100/live').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
 
   postgres:
-    image: pgvector/pg16:pg16
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

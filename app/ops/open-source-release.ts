@@ -151,6 +151,10 @@ function isDeniedByPath(relative: string): OpenSourceBlockerKind | null {
   return null;
 }
 
+function isDeniedDirectory(relative: string): boolean {
+  return DENYLIST_TOP_LEVEL.has(topLevel(relative));
+}
+
 function isAllowedForExport(relative: string): boolean {
   if (isDeniedByPath(relative)) return false;
   if (normalizePath(relative).startsWith("docs/")) return PUBLIC_DOCS.has(normalizePath(relative));
@@ -187,6 +191,7 @@ async function listFiles(root: string): Promise<string[]> {
       const rel = relativePath(root, fullPath);
       if (entry.isDirectory()) {
         if (entry.name === ".git" || entry.name === "node_modules") continue;
+        if (isDeniedDirectory(rel)) continue;
         await visit(fullPath);
         continue;
       }
