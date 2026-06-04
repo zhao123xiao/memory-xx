@@ -1419,6 +1419,7 @@ test("public generic embedding scripts do not default to local Qwen generations"
     "scripts/live-recall-smoke.ts",
     "scripts/random-recall-sample.ts",
     "app/knowledge/markdown-governance.ts",
+    "app/intelligence/graph-extraction.ts",
     "scripts/import-knowledge-chroma-export.ts",
     "scripts/test-harness/layers/L18-graph-recall.ts",
     "docs/api.md",
@@ -1434,6 +1435,12 @@ test("public generic embedding scripts do not default to local Qwen generations"
   }
 
   assert.deepEqual(stale, []);
+});
+
+test("public generic graph extraction does not hardcode local model providers", async () => {
+  const graphExtraction = await readFile("app/intelligence/graph-extraction.ts", "utf8");
+
+  assert.doesNotMatch(graphExtraction, /Qwen3|OVMS|local-qwen/u);
 });
 
 test("public doctor and control panel remediation stays provider-neutral", async () => {
