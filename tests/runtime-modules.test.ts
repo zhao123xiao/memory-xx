@@ -139,6 +139,46 @@ test("required full modules become missing_dependency when enabled but source is
   assert.equal(byName.get("lexical_sidecar")?.blocks_profile, true);
 });
 
+test("full-profile pluggable requirements can be disabled without blocking core", () => {
+  const fullProfileOnlyRequiredModules = RUNTIME_MODULES.filter(
+    (module) => module.required_in.includes("full") && !module.required_in.includes("core")
+  );
+  const missingEnvSwitch = fullProfileOnlyRequiredModules
+    .filter((module) => !module.env_enabled)
+    .map((module) => module.name);
+
+  assert.deepEqual(missingEnvSwitch, []);
+
+  const fullPluggableRequiredModules = fullProfileOnlyRequiredModules.filter((module) => module.env_enabled);
+  const env = Object.fromEntries(fullPluggableRequiredModules.map((module) => [module.env_enabled, "0"]));
+
+  assert.deepEqual(
+    fullPluggableRequiredModules.map((module) => module.name).sort(),
+    [
+      "control_panel",
+      "conversation_monitor",
+      "fastpath",
+      "governance_report",
+      "lexical_sidecar",
+      "llm_upstream",
+      "mem0_extractor",
+      "quality_runner",
+      "reranker_adapter",
+      "reranker_upstream",
+    ].sort()
+  );
+
+  const fullStates = resolveRuntimeModuleStates("full", env);
+  const coreSnapshot = buildRuntimeModuleSnapshot("core", env);
+
+  for (const module of fullPluggableRequiredModules) {
+    const state = fullStates.find((resolved) => resolved.module.name === module.name);
+    assert.equal(state?.state, "disabled", `${module.name} should be disabled`);
+    assert.equal(state?.blocks_profile, false, `${module.name} should not block when explicitly disabled`);
+    assert.equal(coreSnapshot.states[module.name]?.blocks_profile, false, `${module.name} should not block core`);
+  }
+});
+
 test("configured external upstreams require a health URL when enabled", () => {
   const states = resolveRuntimeModuleStates("full", {
     MEMORY_XX_LLM_UPSTREAM_ENABLED: "1",
