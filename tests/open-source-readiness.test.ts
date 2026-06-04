@@ -1196,6 +1196,51 @@ test("public repository exposes embedding ops smoke for manifest status and cali
   assert.match(vectorRuntime, /TMPDIR=\/tmp npm run smoke:embedding-ops/u);
 });
 
+test("public repository exposes local embedding generation estimate-only smoke", async () => {
+  const files = [
+    "scripts/generate-local-memory-embeddings.ts",
+    "scripts/generate-embeddings.ts",
+    "scripts/local-qwen8b-benchmark.ts",
+    "scripts/local-embedding-generation-smoke.ts",
+    "tests/local-embedding-generation-smoke.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+  const smoke = await readFile("scripts/local-embedding-generation-smoke.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+  const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
+  const vectorRuntime = await readFile("docs/vector-runtime.zh-CN.md", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["smoke:local-embedding-generation"], "node --import tsx scripts/local-embedding-generation-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /tests\/local-embedding-generation-smoke\.test\.ts/u);
+  assert.match(capabilities, /name: "local_embedding_generation"[\s\S]*scripts\/local-embedding-generation-smoke\.ts/u);
+  assert.match(smoke, /--estimate-only/u);
+  assert.match(smoke, /--limit=1/u);
+  assert.doesNotMatch(smoke, /--force-recreate|--target-collection|local-qwen8b-benchmark\.ts|generate-embeddings\.ts/u);
+  assert.match(readme, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
+  assert.match(operations, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
+  assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
+  assert.match(moduleCatalog, /smoke:local-embedding-generation/u);
+  assert.match(vectorRuntime, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

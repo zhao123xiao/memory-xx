@@ -101,7 +101,7 @@ matching dependencies are configured.
 | `auto_update_ops` | `memory:auto-update` |
 | `embedding_manifest` | `memory:embedding-manifest`, `smoke:embedding-ops` |
 | `embedding_calibration` | `memory:embedding-calibrate`, `smoke:embedding-ops` |
-| `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark` |
+| `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark`, `smoke:local-embedding-generation` |
 | `backup_and_restore` | `memory:backup`, `smoke:backup-ops` |
 | `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core`, `smoke:compose-profile-live`, `smoke:cache-invalidation`, `smoke:markdown-projection` |
 | `trusted_agent_tools` | `memory:trusted-agent`, `smoke:trusted-agent` |

@@ -211,6 +211,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/generate-local-memory-embeddings.ts",
       "scripts/generate-embeddings.ts",
       "scripts/local-qwen8b-benchmark.ts",
+      "scripts/local-embedding-generation-smoke.ts",
     ],
     degraded_behavior: "Bulk local vector regeneration is disabled; online writes still use the configured embedding provider.",
   },
