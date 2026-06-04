@@ -611,6 +611,18 @@ test("public harness keeps OpenClaw integration opt-in", async () => {
   assert.match(operationsZh, /MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1/u);
 });
 
+test("public operations docs and generic status tools do not require OpenClaw", async () => {
+  const operations = await readFile("docs/operations.md", "utf8");
+  const backup = await readFile("scripts/memory-backup.ts", "utf8");
+  const status = await readFile("scripts/memory-status.ts", "utf8");
+
+  assert.doesNotMatch(operations, /OpenClaw must use/u);
+  assert.doesNotMatch(operations, /OpenClaw is part of the target deployment/u);
+  assert.doesNotMatch(operations, /openclaw memory status --deep/u);
+  assert.doesNotMatch(backup, /openclaw-memory/u);
+  assert.doesNotMatch(status, /openclaw-memory/u);
+});
+
 test("public quickstart and env template keep embedding provider vendor-neutral", async () => {
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const envExample = await readFile(".env.example", "utf8");
@@ -1333,6 +1345,9 @@ test("public OVMS helpers require explicit local paths instead of private defaul
   assert.ok(manager.includes("MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"));
   assert.match(benchmark, /MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE/u);
   assert.match(platformDoctor, /<memory-xx-ovms-dir>/u);
+  assert.doesNotMatch(platformDoctor, /Windows 侧启动/u);
+  assert.doesNotMatch(manager, /<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat/u);
+  assert.doesNotMatch(manager, /WorkingDirectory '<windows-drive>\\ovms'/u);
 
   for (const [name, content] of Object.entries({ manager, benchmark, platformDoctor })) {
     assert.doesNotMatch(content, /\/mnt\/d\/ovms|api_key\.txt/u, name);

@@ -97,7 +97,7 @@ export function detectPlatformProfile(facts: PlatformFacts): PlatformDetection {
         ...(facts.hasPowerShell ? [] : ["windows_powershell"]),
         ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 OVMS 目录"]),
       ],
-      "systemctl --user start memory-xx.target；Windows 侧启动 <windows-drive>\\ovms\\start_all.bat",
+      "systemctl --user start memory-xx.target；if needed, start the optional local upstream manager configured by MEMORY_XX_OVMS_DIR",
     ),
     "windows-native": profileStatus(
       "windows-native",

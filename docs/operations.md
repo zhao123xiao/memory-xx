@@ -2,10 +2,10 @@
 
 ## Runtime Chain And Boundaries
 
-The active production chain is:
+The default online chain is:
 
 ```text
-memory-xx Postgres -> Qdrant active alias -> wrapper/fastpath/OpenClaw
+memory-xx Postgres -> Qdrant active alias -> wrapper/optional fastpath -> agent adapters
 ```
 
 - Postgres schema `memory_xx` is the source of truth.
@@ -17,13 +17,13 @@ memory-xx Postgres -> Qdrant active alias -> wrapper/fastpath/OpenClaw
   retired legacy assets, not audit mirrors for the current runtime. Do not
   treat legacy SQLite pending/stale embedding counts as current runtime
   blockers unless a separate task restores the old chain.
-- OpenClaw must use memory-xx tools (`memory_xx_recall`, `memory_xx_write`, and
-  orchestrator routes) with a scoped trusted-agent token. Keep the admin token
-  for manual operations and CLI checks only.
-- `openclaw memory status --deep` belongs to the stock legacy memorySearch
-  surface. `Memory search disabled` there does not mean memory-xx recall/write
-  is disabled; verify memory-xx through `/health`, scoped recall/write smoke,
-  projector health, and Qdrant alias checks.
+- Optional agent adapters, including OpenClaw, should call memory-xx tools
+  (`memory_xx_recall`, `memory_xx_write`, and orchestrator routes) with scoped
+  trusted-agent tokens. Keep the admin token for manual operations and CLI
+  checks only.
+- Agent-specific legacy memory status commands are not memory-xx health checks.
+  Verify memory-xx through `/health`, scoped recall/write smoke, projector
+  health, and Qdrant alias checks.
 - On WSL, run npm/tsx commands and systemd services with `TMPDIR=/tmp` to avoid
   tsx Unix socket creation under Windows temp paths.
 
@@ -146,7 +146,7 @@ TMPDIR=/tmp npm run test:conversation-monitor
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in
 the public harness so deployments without OpenClaw can still validate Core,
 enhanced, and full memory-xx modules. Require it only for environments where
-OpenClaw is part of the target deployment:
+that optional adapter is part of the target deployment:
 
 ```bash
 TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7 --require-openclaw

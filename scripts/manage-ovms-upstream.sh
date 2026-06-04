@@ -14,18 +14,18 @@ POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-/mnt/c/Windows/System32/Wind
 
 case "$kind" in
   embedding)
-    label="Qwen3 embedding upstream"
+    label="embedding upstream"
     port="${MEMORY_XX_EMBEDDING_UPSTREAM_PORT:-8082}"
-    bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-embedding.bat}"
-    model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-qwen3-embedding}"
+    bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-}"
+    model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-memory-xx-dev-embedding}"
     api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"
     process_match="--rest_port ${port}"
     ;;
   reranker)
-    label="Qwen3 reranker upstream"
+    label="reranker upstream"
     port="${MEMORY_XX_RERANKER_UPSTREAM_PORT:-8084}"
-    bat_path="${MEMORY_XX_RERANKER_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-reranker.bat}"
-    model="${MEMORY_XX_RERANKER_UPSTREAM_MODEL:-qwen3-reranker}"
+    bat_path="${MEMORY_XX_RERANKER_UPSTREAM_BAT:-}"
+    model="${MEMORY_XX_RERANKER_UPSTREAM_MODEL:-memory-xx-reranker}"
     api_key_file=""
     process_match="serve-reranker-8b.py"
     ;;
@@ -42,6 +42,10 @@ log() {
 require_ovms_dir() {
   if [[ -z "$OVMS_DIR" ]]; then
     echo "MEMORY_XX_OVMS_DIR is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$bat_path" ]]; then
+    echo "MEMORY_XX_${kind^^}_UPSTREAM_BAT is required for Windows OVMS upstream management" >&2
     exit 78
   fi
 }
@@ -82,7 +86,7 @@ start_windows_process() {
   fi
   log "starting $label via $bat_path"
   "$POWERSHELL_EXE" -NoProfile -ExecutionPolicy Bypass -Command \
-    "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${bat_path}' -WorkingDirectory '<windows-drive>\\ovms' -WindowStyle Minimized" >/dev/null
+    "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${bat_path}' -WorkingDirectory '${OVMS_DIR}' -WindowStyle Minimized" >/dev/null
 
   local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
   until healthy; do

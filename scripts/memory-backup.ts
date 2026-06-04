@@ -51,7 +51,7 @@ function copySystemdUnits(targetDir: string): string[] {
   const copied: string[] = [];
   if (!existsSync(unitDir)) return copied;
   const names = readdirSync(unitDir)
-    .filter((name) => /memory-xx|openclaw-memory|qdrant-projector/u.test(name))
+    .filter((name) => /memory-xx|qdrant-projector/u.test(name))
     .filter((name) => statSync(path.join(unitDir, name)).isFile());
   const outDir = path.join(targetDir, "systemd-user-units");
   mkdirSync(outDir, { recursive: true });
