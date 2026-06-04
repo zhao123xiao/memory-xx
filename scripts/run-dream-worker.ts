@@ -22,6 +22,10 @@ function wrapperUrl(): string {
   return (process.env.MEMORY_XX_WRAPPER_URL?.trim() || "http://127.0.0.1:5100").replace(/\/+$/u, "");
 }
 
+function workerId(): string {
+  return process.env.MEMORY_XX_WORKER_ID?.trim() || `dream-worker-${process.pid}`;
+}
+
 function statusFilePath(): string {
   return process.env.MEMORY_XX_DREAM_STATUS_FILE?.trim() ||
     `${process.cwd()}/.runtime/dream-worker.status.json`;
@@ -61,7 +65,14 @@ async function main(): Promise<void> {
   const scheduler = new DreamScheduler(worker, config);
 
   if (hasArg("--list-tasks")) {
-    const payload = { worker: "memory_dreaming", tasks: worker.listTasks(), at: new Date().toISOString() };
+    const payload = {
+      worker: "memory_dreaming",
+      worker_id: workerId(),
+      ok: true,
+      phase: "listed_tasks",
+      tasks: worker.listTasks(),
+      at: new Date().toISOString()
+    };
     await writeStatus(payload);
     console.log(JSON.stringify(payload));
     return;
@@ -69,7 +80,15 @@ async function main(): Promise<void> {
 
   if (hasArg("--once")) {
     const report = await scheduler.runOnce();
-    await writeStatus({ worker: "memory_dreaming", report, at: new Date().toISOString() });
+    const ok = report.summary.failed === 0;
+    await writeStatus({
+      worker: "memory_dreaming",
+      worker_id: workerId(),
+      ok,
+      phase: ok ? "processed" : "processed_with_failures",
+      report,
+      at: new Date().toISOString()
+    });
     console.log(JSON.stringify(report));
     if (report.summary.failed > 0) process.exitCode = 1;
     return;
@@ -84,6 +103,9 @@ main().catch(async (error) => {
   const message = error instanceof Error ? error.stack ?? error.message : String(error);
   await writeStatus({
     worker: "memory_dreaming",
+    worker_id: workerId(),
+    ok: false,
+    phase: "startup_failed",
     success: false,
     error: message,
     at: new Date().toISOString()
