@@ -43,7 +43,7 @@ export function buildRuntimeProfileStartServices(
     component.startable &&
     component.service &&
     component.kind !== "external" &&
-    states.get(component.name)?.enabled !== false
+    states.get(component.name)?.state === "enabled"
   )
   .map((component) => component.service!);
 }

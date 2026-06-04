@@ -12,10 +12,10 @@ if (!moduleName || !module) {
   process.exitCode = 2;
 } else {
   const state = resolveRuntimeModuleState(module, parseMemoryRuntimeProfile(), process.env);
-  if (state.enabled) {
+  if (state.state === "enabled") {
     process.exitCode = 0;
   } else {
-    process.stderr.write(`${module.name} disabled: ${state.reason ?? "module_disabled"}\n`);
+    process.stderr.write(`${module.name} unavailable: ${state.state}: ${state.reason ?? "module_disabled"}\n`);
     process.exitCode = 1;
   }
 }

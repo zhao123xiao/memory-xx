@@ -163,6 +163,22 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
   ]);
 });
 
+test("memory mode start plan skips modules with missing dependencies", () => {
+  const services = buildRuntimeProfileStartServices("full", {
+    MEMORY_XX_FASTPATH_ENABLED: "1",
+    MEMORY_XX_FASTPATH_SOURCE_AVAILABLE: "0",
+    MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+    MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+    MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
+    MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
+    MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
+  });
+
+  assert.equal(services.includes("memory-xx-fastpath.service"), false);
+});
+
 test("memory mode stop plan keeps disabled profile services stoppable", () => {
   const services = buildRuntimeProfileStopServices("full", {
     MEMORY_XX_FASTPATH_ENABLED: "0",
