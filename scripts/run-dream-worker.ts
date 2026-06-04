@@ -60,7 +60,7 @@ async function main(): Promise<void> {
   const worker = buildWorker();
   const config = loadDreamSchedulerConfig({
     ...process.env,
-    MEMORY_XX_DREAM_ENABLED: "true"
+    MEMORY_XX_DREAMING_ENABLED: "true"
   });
   const scheduler = new DreamScheduler(worker, config);
 

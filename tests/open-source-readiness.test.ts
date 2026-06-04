@@ -748,6 +748,9 @@ test("public repository includes memory dreaming as a pluggable full-stack modul
   assert.match(capabilities, /name: "memory_dreaming"/u);
   assert.match(capabilities, /MEMORY_XX_DREAMING_ENABLED/u);
   assert.match(capabilities, /scripts\/run-dream-worker\.ts/u);
+  const dreamWorker = await readFile("scripts/run-dream-worker.ts", "utf8");
+  assert.match(dreamWorker, /MEMORY_XX_DREAMING_ENABLED/u);
+  assert.doesNotMatch(dreamWorker, /MEMORY_XX_DREAM_ENABLED/u);
 });
 
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { DreamWorker, type DreamTask, type DreamTaskResult } from "../app/dream/dream-worker";
-import { DreamScheduler } from "../app/dream/dream-scheduler";
+import { DreamScheduler, loadDreamSchedulerConfig } from "../app/dream/dream-scheduler";
 
 function createMockTask(id: string, result: Partial<DreamTaskResult> = {}): DreamTask {
   return {
@@ -82,6 +82,24 @@ describe("DreamWorker", () => {
 });
 
 describe("DreamScheduler", () => {
+  it("uses the public memory dreaming module switch", () => {
+    const config = loadDreamSchedulerConfig({
+      MEMORY_XX_DREAMING_ENABLED: "true",
+      MEMORY_XX_DREAM_INTERVAL_MS: "2500",
+    } as NodeJS.ProcessEnv);
+
+    assert.equal(config.enabled, true);
+    assert.equal(config.intervalMs, 2500);
+  });
+
+  it("does not enable the public module through the retired dream switch", () => {
+    const config = loadDreamSchedulerConfig({
+      MEMORY_XX_DREAM_ENABLED: "true",
+    } as NodeJS.ProcessEnv);
+
+    assert.equal(config.enabled, false);
+  });
+
   it("does not start when disabled", () => {
     const worker = new DreamWorker();
     const scheduler = new DreamScheduler(worker, { intervalMs: 1000, enabled: false });

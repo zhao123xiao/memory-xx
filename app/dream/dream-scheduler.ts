@@ -17,9 +17,10 @@ const DEFAULT_OPTIONS: DreamSchedulerOptions = {
 };
 
 export function loadDreamSchedulerConfig(env: NodeJS.ProcessEnv): DreamSchedulerOptions {
+  const enabledRaw = env.MEMORY_XX_DREAMING_ENABLED;
   return {
     intervalMs: parseInt(env.MEMORY_XX_DREAM_INTERVAL_MS ?? "", 10) || DEFAULT_OPTIONS.intervalMs,
-    enabled: env.MEMORY_XX_DREAM_ENABLED === "true",
+    enabled: enabledRaw === "true" || enabledRaw === "1",
   };
 }
 
