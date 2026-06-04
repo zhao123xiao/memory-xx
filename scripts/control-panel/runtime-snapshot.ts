@@ -81,21 +81,21 @@ async function embeddingUpstreamProbe(health: Record<string, unknown>): Promise<
     const dims = Array.isArray(first.embedding) ? first.embedding.length : null;
     const ok = response.ok && dims !== null && (expectedDims === null || dims === expectedDims);
     return {
-      name: "ovms_upstream",
-      label: "本地 OVMS embedding 上游",
+      name: "embedding_provider",
+      label: "Embedding provider",
       status: ok ? "ok" : "blocked",
       detail: ok ? `embedding smoke dims=${dims} latency=${Date.now() - started}ms` : `HTTP ${response.status} dims=${dims ?? "n/a"}`,
       source: `${embeddingApiBase(health)}/embeddings`,
-      remediation: ok ? undefined : "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，并验证 127.0.0.1:8082/v3/embeddings。",
+      remediation: ok ? undefined : "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   } catch (error) {
     return {
-      name: "ovms_upstream",
-      label: "本地 OVMS embedding 上游",
+      name: "embedding_provider",
+      label: "Embedding provider",
       status: "blocked",
       detail: error instanceof Error ? error.message : String(error),
       source: `${embeddingApiBase(health)}/embeddings`,
-      remediation: "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，并验证 127.0.0.1:8082/v3/embeddings。",
+      remediation: "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   }
 }
@@ -112,20 +112,20 @@ async function rerankerUpstreamProbe(): Promise<ComponentStatus> {
     const ok = response.ok && body.includes(model);
     return {
       name: "reranker_upstream",
-      label: "本地 Qwen3 reranker 上游",
+      label: "Reranker provider",
       status: ok ? "ok" : "blocked",
       detail: ok ? `models contains ${model} latency=${Date.now() - started}ms` : `HTTP ${response.status} missing model=${model}`,
       source: url,
-      remediation: ok ? undefined : "启动 memory-xx-reranker-upstream.service，确认 Windows GPU 上的 <windows-drive>\\ovms\\run-reranker.bat 正常。",
+      remediation: ok ? undefined : "检查 MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL 或 MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL；如使用本地 upstream manager，再显式启用并启动 memory-xx-reranker-upstream.service。",
     };
   } catch (error) {
     return {
       name: "reranker_upstream",
-      label: "本地 Qwen3 reranker 上游",
+      label: "Reranker provider",
       status: "blocked",
       detail: error instanceof Error ? error.message : String(error),
       source: url,
-      remediation: "启动 memory-xx-reranker-upstream.service，确认 Windows GPU 上的 <windows-drive>\\ovms\\run-reranker.bat 正常。",
+      remediation: "检查 MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL 或 MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL；如使用本地 upstream manager，再显式启用并启动 memory-xx-reranker-upstream.service。",
     };
   }
 }
@@ -333,13 +333,13 @@ function componentStatusFromInputs(
       detail: qdrant.configured === true ? `collection=${qdrant.collection_name ?? "unknown"}` : "qdrant not configured",
       source: "wrapper /health",
     },
-    serviceComponent("embedding_upstream_manager", "Embedding upstream manager（Windows GPU 模型守护）", "memory-xx-embedding-upstream.service"),
+    serviceComponent("embedding_upstream_manager", "Embedding upstream manager（可选本地 provider 管理器）", "memory-xx-embedding-upstream.service"),
     serviceComponent("embedding_proxy", "Embedding proxy（向量生成代理）", "memory-xx-embedding-proxy.service"),
     embeddingComponent,
     serviceComponent("projector", "Qdrant projector（向量投影后台任务）", "memory-xx-qdrant-projector-worker.service"),
     serviceComponent("fastpath", "Fastpath（快速召回路径）", "memory-xx-fastpath.service"),
     serviceComponent("lexical", "Lexical sidecar（关键词召回侧车）", "memory-xx-lexical-sidecar.service"),
-    serviceComponent("reranker_upstream_manager", "Reranker upstream manager（Windows GPU 模型守护）", "memory-xx-reranker-upstream.service"),
+    serviceComponent("reranker_upstream_manager", "Reranker upstream manager（可选本地 provider 管理器）", "memory-xx-reranker-upstream.service"),
     rerankerUpstreamComponent,
     serviceComponent("reranker", "Reranker adapter（重排序适配器）", "memory-xx-reranker-adapter.service"),
     {
@@ -409,15 +409,15 @@ export async function collectRuntimeSnapshot(options: { readonly persist?: boole
     qdrantProjectionSummary(schema).catch((error) => ({ error: error instanceof Error ? error.message : String(error) })),
   ]);
   const embeddingComponent = await embeddingUpstreamProbe(health).catch((error) => ({
-    name: "ovms_upstream",
-    label: "本地 OVMS embedding 上游",
+    name: "embedding_provider",
+    label: "Embedding provider",
     status: "blocked" as const,
     detail: error instanceof Error ? error.message : String(error),
     source: "embedding probe",
   }));
   const rerankerUpstreamComponent = await rerankerUpstreamProbe().catch((error) => ({
     name: "reranker_upstream",
-    label: "本地 Qwen3 reranker 上游",
+    label: "Reranker provider",
     status: "blocked" as const,
     detail: error instanceof Error ? error.message : String(error),
     source: "reranker probe",

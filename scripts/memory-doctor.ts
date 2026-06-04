@@ -845,7 +845,7 @@ function remediationPlan(blockers: readonly string[]): string[] {
     actions.push("Run TMPDIR=/tmp npm run memory:embedding-calibrate, then apply the recommended proxy interval/concurrency and restart memory-xx-embedding-proxy.service.");
   }
   if (blockers.includes("embedding_upstream_unavailable")) {
-    actions.push("Run systemctl --user start memory-xx-embedding-upstream.service; it starts <windows-drive>\\ovms\\run-embedding.bat on Windows GPU and verifies http://127.0.0.1:8082/v3 embeddings, then rerun TMPDIR=/tmp npm run memory:doctor -- --target embedding-ready --plan.");
+    actions.push("Verify EMBEDDING_API_BASE, EMBEDDING_MODEL, EMBEDDING_DIMS, and OPENAI_API_KEY point at a reachable OpenAI-compatible embedding provider. If you intentionally use the optional local upstream manager, enable MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1 and start memory-xx-embedding-upstream.service, then rerun TMPDIR=/tmp npm run memory:doctor -- --target embedding-ready --plan.");
   }
   if (blockers.includes("embedding_generation_mismatch") || blockers.includes("embedding_manifest_missing")) {
     actions.push("Run TMPDIR=/tmp npm run memory:embedding-manifest status, then validate/activate the intended generation or rollback to the last known good generation.");
@@ -901,7 +901,7 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
       url,
       latency_ms: Date.now() - started,
       error: error instanceof Error ? error.message : String(error),
-      remediation: "Start <windows-drive>\\ovms\\run-embedding.bat, then restart/verify memory-xx-embedding-proxy.service.",
+      remediation: "Verify the configured OpenAI-compatible embedding provider and memory-xx-embedding-proxy.service. If using the optional local upstream manager, enable MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1 and start memory-xx-embedding-upstream.service.",
     };
   }
 }
@@ -1544,8 +1544,8 @@ async function main(): Promise<void> {
     reranker: { role: "质量增强", degraded_behavior: "回退到本地重排序" },
     gateway: { role: "OpenClaw 集成", degraded_behavior: "记忆服务仍可用，但集成门禁失败" },
     embedding_proxy: { role: "查询/写入向量", degraded_behavior: "回退到旧结果/缓存，或向量能力降级" },
-    ovms_upstream: { role: "Windows GPU 上的本地 Qwen3 embedding 模型", degraded_behavior: "代理在线但无法生成新向量；需要启动 memory-xx-embedding-upstream.service" },
-    reranker_upstream: { role: "Windows GPU 上的本地 Qwen3 reranker 模型", degraded_behavior: "重排序适配器在线但无法调用模型；需要启动 memory-xx-reranker-upstream.service" },
+    ovms_upstream: { role: "OpenAI-compatible embedding provider", degraded_behavior: "代理在线但无法生成新向量；检查远程 provider，或显式启用本地 upstream manager" },
+    reranker_upstream: { role: "OpenAI-compatible reranker provider", degraded_behavior: "重排序适配器在线但无法调用模型；检查远程 provider，或显式启用本地 upstream manager" },
   };
   if (target === "quality-ready" || target === "release-ready") {
     checks.quality_ready = inspectQualityReadiness(blockers, warnings);

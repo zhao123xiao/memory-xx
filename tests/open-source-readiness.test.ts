@@ -1354,6 +1354,25 @@ test("public embedding upstream manager remains opt-in for remote providers", as
   assert.match(envExample, /^MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0$/mu);
 });
 
+test("public doctor and control panel remediation stays provider-neutral", async () => {
+  const files = [
+    "scripts/memory-doctor.ts",
+    "scripts/control-panel/summary.ts",
+    "scripts/control-panel/runtime-snapshot.ts",
+    "scripts/control-panel/service-controls.ts",
+    "scripts/control-panel/renderers.ts",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/Windows GPU|<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat|本地 OVMS|本地 Qwen3|Qwen3 embedding|Qwen3 reranker|OVMS 就绪|OVMS 不可用/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("public module catalog documents every runtime module and full-stack capability", async () => {
   const catalog = await readFile("docs/module-catalog.md", "utf8");
   const missingRuntimeModules = RUNTIME_MODULES

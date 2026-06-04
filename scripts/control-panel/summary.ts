@@ -96,7 +96,7 @@ async function embeddingProbe(health: unknown): Promise<EmbeddingProbeResult> {
       dims,
       latency_ms: Date.now() - started,
       detail: detail || undefined,
-      remediation: response.ok ? undefined : "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，然后再验证 memory-xx-embedding-proxy.service。",
+      remediation: response.ok ? undefined : "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   } catch (error) {
     return {
@@ -107,7 +107,7 @@ async function embeddingProbe(health: unknown): Promise<EmbeddingProbeResult> {
       dims: null,
       latency_ms: Date.now() - started,
       error: error instanceof Error ? error.message : String(error),
-      remediation: "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，然后再验证 memory-xx-embedding-proxy.service。",
+      remediation: "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   }
 }
