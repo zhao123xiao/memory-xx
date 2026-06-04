@@ -1,5 +1,5 @@
 /**
- * Test vector retriever against shadow_r3_20260414 with real embeddings.
+ * Test vector retriever against the configured memory-xx schema with real embeddings.
  *
  * Creates a PostgresRecallRuntime with a QueryEmbeddingProvider that calls
  * the same Qwen3-Embedding-8B API, then runs 3 test queries and verifies
@@ -10,7 +10,7 @@
  *   EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1 \
  *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/test-vector-retriever.ts
  */
 

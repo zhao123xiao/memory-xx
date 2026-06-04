@@ -1,12 +1,12 @@
 /**
- * Live recall smoke test against r3 staging data.
+ * Live recall smoke test against a configured memory-xx schema.
  *
- * Runs real queries against shadow_r3_20260414 and prints top-K results
+ * Runs real queries against MEMORY_XX_DATABASE_SCHEMA and prints top-K results
  * with relevance annotations so we can judge recall quality manually.
  *
  * Usage:
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/live-recall-smoke.ts
  */
 

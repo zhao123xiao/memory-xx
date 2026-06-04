@@ -1,5 +1,5 @@
 /**
- * Generate embeddings for shadow_r3_20260414.memory_records
+ * Generate embeddings for memory_xx.memory_records
  *
  * Reads all approved + is_current records, generates 4096-dim embeddings
  * via Qwen3-Embedding-8B (OpenAI-compatible API), and writes them to
@@ -10,7 +10,7 @@
  *   EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1 \
  *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/generate-embeddings.ts
  */
 

@@ -4,7 +4,7 @@
  *
  * 用法：
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/verify-qdrant-recall.ts
  */
 

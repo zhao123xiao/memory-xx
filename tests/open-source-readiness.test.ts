@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -9,6 +9,20 @@ import test from "node:test";
 import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { buildOpenSourcePreauditReport } from "../app/ops/open-source-release";
 import { RUNTIME_MODULES } from "../app/runtime-modules";
+
+async function collectPublicFiles(root: string, extensions: readonly string[]): Promise<string[]> {
+  const entries = await readdir(root, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const fullPath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await collectPublicFiles(fullPath, extensions));
+    } else if (extensions.includes(path.extname(entry.name))) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
 
 test("open-source preaudit ignores local ignored build and runtime artifacts", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "memory-xx-preaudit-"));
@@ -557,6 +571,29 @@ test("public docs explain wrapper activation switches for optional sidecars", as
     assert.match(content, /MEMORY_INTELLIGENCE_PROVIDER=mem0/u);
     assert.match(content, /MEMORY_INTELLIGENCE_MEM0_URL/u);
   }
+});
+
+test("public functional smoke script is portable and auth-aware", async () => {
+  const script = await readFile("scripts/functional-test-memory-xx.sh", "utf8");
+
+  assert.doesNotMatch(script, /shadow_r3_\d+/u);
+  assert.doesNotMatch(script, /<linux-user-home>/u);
+  assert.match(script, /MEMORY_XX_DATABASE_SCHEMA:-memory_xx/u);
+  assert.match(script, /LOG_DIR="\$\{LOG_DIR:-\$\(pwd\)\/\.runtime\/functional-tests\}"/u);
+  assert.match(script, /MEMORY_XX_API_TOKEN/u);
+  assert.match(script, /Authorization: Bearer/u);
+  assert.doesNotMatch(script, /test_m4\s*\n\s*test_m4/u);
+});
+
+test("public scripts do not document private shadow schemas", async () => {
+  const files = await collectPublicFiles("scripts", [".ts", ".js", ".mjs", ".sh", ".ps1"]);
+  const stale = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/shadow_r3_\d+/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale.sort(), []);
 });
 
 test("public module catalog documents every runtime module and full-stack capability", async () => {

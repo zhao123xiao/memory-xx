@@ -1,13 +1,13 @@
 /**
  * Random approved-memory recall sample test.
  *
- * Deterministically samples 20 approved/current records from the live staging
+ * Deterministically samples 20 approved/current records from the configured
  * schema, then uses each sampled record's title (or content snippet fallback)
  * as the query and checks whether the original record can be recalled in top-5.
  *
  * Usage:
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/random-recall-sample.ts
  */
 

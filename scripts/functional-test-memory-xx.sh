@@ -11,10 +11,10 @@ set -uo pipefail
 
 WRAPPER="${WRAPPER:-${MEMORY_XX_WRAPPER_URL:-http://127.0.0.1:5100}}"
 PG_DB="${PG_DB:-postgres://postgres:postgres@127.0.0.1:55432/memory_xx}"
-PG_SCHEMA="${PG_SCHEMA:-shadow_r3_20260414}"
+PG_SCHEMA="${PG_SCHEMA:-${MEMORY_XX_DATABASE_SCHEMA:-memory_xx}}"
 QDRANT_BASE="${QDRANT_BASE:-http://127.0.0.1:6333}"
 QDRANT_COLLECTION="${QDRANT_COLLECTION:-memory-xx}"
-LOG_DIR="${LOG_DIR:-<linux-user-home>/logs/functional-tests}"
+LOG_DIR="${LOG_DIR:-$(pwd)/.runtime/functional-tests}"
 MODULE="${1:-all}"
 
 mkdir -p "$LOG_DIR"
@@ -31,11 +31,15 @@ info() { echo "[INFO] $1"; }
 # python-based HTTP POST helper (avoids shell quoting issues)
 http_post() {
   python3 -c "
-import json, subprocess, sys
+import json, os, subprocess, sys
 path = '$1'
 body = json.loads('''$2''')
+headers = ['-H', 'Content-Type: application/json']
+token = os.environ.get('MEMORY_XX_API_TOKEN', '').strip()
+if token:
+    headers += ['-H', f'Authorization: Bearer {token}']
 r = subprocess.run(['curl', '-s', '-X', 'POST', '${WRAPPER}' + path,
-    '-H', 'Content-Type: application/json',
+    *headers,
     '-d', json.dumps(body),
     '-w', '\nHTTP_CODE:%{http_code}'],
     capture_output=True, text=True)
