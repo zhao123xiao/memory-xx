@@ -731,6 +731,7 @@ test("package exposes an open-source verification script without runtime env gat
   assert.match(command, /npm run open-source:preaudit/u);
   assert.match(command, /tests\/open-source-readiness\.test\.ts/u);
   assert.match(command, /tests\/open-source-release\.test\.ts/u);
+  assert.match(command, /tests\/runtime-modules\.test\.ts/u);
   assert.match(command, /tests\/full-stack-capabilities\.test\.ts/u);
   assert.match(command, /npm run audit:prod/u);
   assert.doesNotMatch(command, /test:gates|test:all-gates/u);
