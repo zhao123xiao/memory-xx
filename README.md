@@ -214,33 +214,6 @@ TMPDIR=/tmp npm run memory:control-panel
 - real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
 - 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。
 
-## 开源安全说明
-
-不要提交以下内容：
-
-- `.env`、真实 token、真实 provider key
-- `.runtime/`
-- `reports/`
-- `logs/`
-- `data/`
-- 数据库 dump
-- 真实会话 JSONL
-- 真实用户记忆
-- benchmark 原始数据
-
-发布前建议运行：
-
-```bash
-TMPDIR=/tmp npm run verify:open-source
-TMPDIR=/tmp npm run check:secrets
-TMPDIR=/tmp npm run audit:prod
-rg -n "<linux-user-home>|<windows-user-home>|<api-key>|Bearer " .
-```
-
-`test:gates` / `test:all-gates` 是 runtime gate，需要真实
-`MEMORY_XX_DATABASE_URL`、`MEMORY_XX_API_TOKEN` 等运行环境变量；普通开源检查请使用
-`verify:open-source`。
-
 ## 许可证
 
 MIT。见 [LICENSE](LICENSE)。
