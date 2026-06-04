@@ -614,8 +614,11 @@ test("public runtime profile smoke is exposed as an offline open-source verifica
 
   assert.equal(packageJson.scripts["smoke:runtime-profiles"], "node --import tsx scripts/runtime-profile-smoke.ts");
   assert.match(readme, /npm run smoke:runtime-profiles/u);
+  assert.match(readme, /smoke:runtime-profiles -- --live --url/u);
   assert.match(runtimeProfiles, /npm run smoke:runtime-profiles/u);
+  assert.match(runtimeProfiles, /smoke:runtime-profiles -- --live --url/u);
   assert.match(script, /buildRuntimeModuleSnapshot/u);
+  assert.match(script, /buildRuntimeProfileLiveSmokeReport/u);
   assert.match(script, /FULL_STACK_CAPABILITIES/u);
 });
 

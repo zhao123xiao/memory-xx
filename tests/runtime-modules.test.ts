@@ -15,7 +15,7 @@ import {
   buildRuntimeProfileStopServices,
 } from "../scripts/memory-mode";
 import { classifyDoctorComponentProfileState } from "../scripts/memory-doctor";
-import { buildRuntimeProfileSmokeReport } from "../scripts/runtime-profile-smoke";
+import { buildRuntimeProfileSmokeReport, buildRuntimeProfileLiveSmokeReport } from "../scripts/runtime-profile-smoke";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -360,6 +360,36 @@ test("offline runtime profile smoke proves disabled pluggable modules do not blo
   assert.equal(report.profiles.find((profile) => profile.profile === "full")?.disabled_non_blocking.includes("fastpath"), true);
   assert.equal(report.full_stack_capabilities.missing_switch.length, 0);
   assert.equal(report.full_stack_capabilities.missing_degraded_behavior.length, 0);
+});
+
+test("live runtime profile smoke compares wrapper health module state with the public registry", () => {
+  const offline = buildRuntimeProfileSmokeReport(new Date("2026-06-04T00:00:00.000Z"));
+  const runtimeStates = Object.fromEntries([
+    ...offline.profiles
+      .find((profile) => profile.profile === "core")!
+      .required_modules.map((name) => [name, { state: "enabled", blocks_profile: false }]),
+    ["fastpath", { state: "disabled", blocks_profile: false }],
+  ]);
+  const capabilityStates = { platform_doctor: { state: "disabled" } };
+
+  const report = buildRuntimeProfileLiveSmokeReport({
+    runtime_profile: "core",
+    runtime_modules: {
+      mode: "core",
+      states: runtimeStates,
+    },
+    full_stack_capabilities: {
+      states: capabilityStates,
+    },
+  }, new Date("2026-06-04T00:00:00.000Z"));
+
+  assert.equal(report.mode, "live");
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.health.profile, "core");
+  assert.equal(report.health.runtime_modules_mode, "core");
+  assert.ok(report.health.missing_runtime_modules.includes("qdrant_proxy"));
+  assert.ok(report.health.missing_full_stack_capabilities.includes("knowledge_ingest"));
+  assert.deepEqual(report.health.blocking_runtime_modules, []);
 });
 
 test("startable runtime modules have matching public systemd units", () => {

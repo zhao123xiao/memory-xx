@@ -123,6 +123,7 @@ should block the selected profile.
 ```bash
 TMPDIR=/tmp npm run memory:mode -- status
 TMPDIR=/tmp npm run smoke:runtime-profiles
+TMPDIR=/tmp npm run smoke:runtime-profiles -- --live --url http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced

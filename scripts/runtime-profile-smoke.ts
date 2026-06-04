@@ -1,12 +1,15 @@
 import { FULL_STACK_CAPABILITIES, buildFullStackCapabilitySnapshot } from "../app/full-stack-capabilities";
 import {
+  RUNTIME_MODULES,
   buildRuntimeModuleSnapshot,
   type MemoryRuntimeProfile,
   type RuntimeEnv,
   type RuntimeModuleSnapshot,
 } from "../app/runtime-modules";
+import { parseMemoryRuntimeProfile } from "../app/runtime-profiles";
 
 type SmokeStatus = "pass" | "fail";
+type SmokeMode = "offline" | "live";
 
 interface ProfileSmokeResult {
   readonly profile: MemoryRuntimeProfile;
@@ -20,7 +23,7 @@ interface ProfileSmokeResult {
 
 interface RuntimeProfileSmokeReport {
   readonly ok: boolean;
-  readonly mode: "offline";
+  readonly mode: SmokeMode;
   readonly generated_at: string;
   readonly profiles: readonly ProfileSmokeResult[];
   readonly full_stack_capabilities: {
@@ -30,6 +33,20 @@ interface RuntimeProfileSmokeReport {
     readonly missing_degraded_behavior: readonly string[];
   };
 }
+
+interface RuntimeProfileLiveSmokeReport extends RuntimeProfileSmokeReport {
+  readonly mode: "live";
+  readonly health: {
+    readonly profile: MemoryRuntimeProfile;
+    readonly runtime_modules_mode: string | null;
+    readonly missing_runtime_modules: readonly string[];
+    readonly missing_full_stack_capabilities: readonly string[];
+    readonly blocking_runtime_modules: readonly string[];
+    readonly profile_mismatch: boolean;
+  };
+}
+
+type HealthPayload = Record<string, unknown>;
 
 const PROFILES: readonly MemoryRuntimeProfile[] = ["core", "enhanced", "full"];
 
@@ -116,8 +133,59 @@ export function buildRuntimeProfileSmokeReport(now = new Date()): RuntimeProfile
   };
 }
 
+export function buildRuntimeProfileLiveSmokeReport(health: HealthPayload, now = new Date()): RuntimeProfileLiveSmokeReport {
+  const base = buildRuntimeProfileSmokeReport(now);
+  const healthProfile = parseMemoryRuntimeProfile(readString(health.runtime_profile) ?? undefined);
+  const runtimeModules = readRecord(health.runtime_modules);
+  const runtimeModulesMode = readString(runtimeModules.mode);
+  const runtimeStates = readRecord(runtimeModules.states);
+  const fullStackCapabilities = readRecord(health.full_stack_capabilities);
+  const capabilityStates = readRecord(fullStackCapabilities.states);
+  const missingRuntimeModules = RUNTIME_MODULES
+    .map((module) => module.name)
+    .filter((name) => !(name in runtimeStates));
+  const missingFullStackCapabilities = FULL_STACK_CAPABILITIES
+    .map((capability) => capability.name)
+    .filter((name) => !(name in capabilityStates));
+  const blockingRuntimeModules = Object.entries(runtimeStates)
+    .filter(([, value]) => readBoolean(readRecord(value).blocks_profile) === true)
+    .map(([name]) => name);
+  const profileMismatch = Boolean(runtimeModulesMode && runtimeModulesMode !== healthProfile);
+  const liveOk = base.ok
+    && missingRuntimeModules.length === 0
+    && missingFullStackCapabilities.length === 0
+    && blockingRuntimeModules.length === 0
+    && !profileMismatch;
+
+  return {
+    ...base,
+    ok: liveOk,
+    mode: "live",
+    health: {
+      profile: healthProfile,
+      runtime_modules_mode: runtimeModulesMode,
+      missing_runtime_modules: missingRuntimeModules,
+      missing_full_stack_capabilities: missingFullStackCapabilities,
+      blocking_runtime_modules: blockingRuntimeModules,
+      profile_mismatch: profileMismatch,
+    },
+  };
+}
+
+async function fetchHealth(url: string): Promise<HealthPayload> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`health request failed: HTTP ${response.status}`);
+  }
+  return await response.json() as HealthPayload;
+}
+
 async function main(): Promise<void> {
-  const report = buildRuntimeProfileSmokeReport();
+  const live = process.argv.includes("--live");
+  const url = readArgValue("--url") ?? process.env.MEMORY_XX_WRAPPER_HEALTH_URL ?? "http://127.0.0.1:5100/health";
+  const report = live
+    ? buildRuntimeProfileLiveSmokeReport(await fetchHealth(url))
+    : buildRuntimeProfileSmokeReport();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (!report.ok) process.exitCode = 1;
 }
@@ -125,4 +193,24 @@ async function main(): Promise<void> {
 const entrypoint = process.argv[1] ?? "";
 if (entrypoint.endsWith("scripts/runtime-profile-smoke.ts") || entrypoint.endsWith("scripts\\runtime-profile-smoke.ts")) {
   void main();
+}
+
+function readArgValue(name: string): string | undefined {
+  const equalsArg = process.argv.find((arg) => arg.startsWith(`${name}=`));
+  if (equalsArg) return equalsArg.slice(name.length + 1);
+  const index = process.argv.indexOf(name);
+  if (index >= 0) return process.argv[index + 1];
+  return undefined;
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
 }
