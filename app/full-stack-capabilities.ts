@@ -377,6 +377,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/memory-quality-metadata-backfill.ts",
       "scripts/run-recall-shadow-r3.ts",
       "scripts/run-projection-shadow-r3.ts",
+      "scripts/full-ops-smoke.ts",
     ],
     degraded_behavior: "Release gates, landing/canary evidence, and capacity checks are not refreshed automatically; Core operations continue.",
   },
