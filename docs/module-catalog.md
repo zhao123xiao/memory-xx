@@ -102,7 +102,7 @@ matching dependencies are configured.
 | `embedding_manifest` | `memory:embedding-manifest` |
 | `embedding_calibration` | `memory:embedding-calibrate` |
 | `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark` |
-| `backup_and_restore` | `memory:backup` |
+| `backup_and_restore` | `memory:backup`, `smoke:backup-ops` |
 | `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core`, `smoke:compose-profile-live`, `smoke:cache-invalidation`, `smoke:markdown-projection` |
 | `trusted_agent_tools` | `memory:trusted-agent` |
 | `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit`, `smoke:qdrant-reconciliation` |
@@ -110,6 +110,6 @@ matching dependencies are configured.
 | `governance_operations` | `memory:governance-audit`, `memory:governance-cleanup`, `memory:governance-freeze`, `memory:governance-revert`, `memory:policy-backfill`, `memory:pending-canary-report`, `memory:pending-governance`, `memory:pending`, `memory:governance`, `memory:governance-dry-run-jobs`, `memory:governance-stuck-runs`, `memory:memory-type-backfill`, `memory:event-lifecycle`, `memory:archive-events` |
 | `runtime_observability_retention` | `memory:runtime-observability-retention`, `memory:trace-retention`, `memory:cleanup-runtime-artifacts`, `memory:archive-next-residue` |
 | `write_ticket_maintenance` | `memory:sweep-write-ticket-timeouts`, `memory:archive-write-tickets`, `memory:sweep-ingest-accepted`, `memory:sweep-low-confidence`, `smoke:write-ticket` |
-| `deployment_packaging` | `memory:migration-preflight`, `memory:deployment-bundle`, `memory:secrets-audit` |
+| `deployment_packaging` | `memory:migration-preflight`, `memory:deployment-bundle`, `memory:secrets-audit`, `smoke:backup-ops` |
 | `release_governance_gates` | `memory:p0-gate`, `memory:p1-gate`, `memory:cutover-gate`, `memory:landing-scan`, `memory:canary-7d-report`, `memory:freeze-m0`, `memory:capacity-audit`, `memory:capacity-smoke`, `memory:consistency-scan`, `memory:dlq-recovery`, `memory:quality-metadata-backfill`, `shadow:recall`, `shadow:projection`, `smoke:full-ops` |
 | `self_improvement_ops` | `memory:self-improvement`, `memory:graphiti-shadow-export`, `memory:sweep-test-pollution` |

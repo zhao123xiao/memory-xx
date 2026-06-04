@@ -222,7 +222,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_BACKUP_ENABLED",
     source_paths: ["app/ops/preflight.ts", "app/ops/rollback.ts"],
-    script_paths: ["scripts/memory-backup.ts"],
+    script_paths: ["scripts/memory-backup.ts", "scripts/backup-ops-smoke.ts"],
     degraded_behavior: "Automated backup planning is unavailable; database-native backups can still be run externally.",
   },
   {
@@ -354,7 +354,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_DEPLOYMENT_PACKAGING_ENABLED",
     source_paths: ["app/ops/preflight.ts", "app/ops/rollback.ts", "app/runtime-config-validator.ts"],
-    script_paths: ["scripts/memory-migration-preflight.ts", "scripts/memory-deployment-bundle.ts", "scripts/memory-secrets-audit.ts"],
+    script_paths: ["scripts/memory-migration-preflight.ts", "scripts/memory-deployment-bundle.ts", "scripts/memory-secrets-audit.ts", "scripts/backup-ops-smoke.ts"],
     degraded_behavior: "Deployment bundle, migration preflight, and memory-specific secrets audit must be run manually or by external tooling.",
   },
   {

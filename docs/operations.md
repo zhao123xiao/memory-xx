@@ -144,11 +144,13 @@ Public harness layers can be run individually when validating a module. `L1`
 checks the unit and HTTP contract layer, while `L19` exercises the conversation
 monitor path from JSONL spool ingestion through recall. The cache invalidation,
 write ticket, markdown projection, memory dreaming, full ops, policy ops,
-knowledge graph, Qdrant reconciliation, recall quality, and temporal ops
+knowledge graph, Qdrant reconciliation, recall quality, temporal ops, and
+backup ops
 smokes validate durable background workers, enhanced graph modules, projection
 repair status, recall/reranker quality surfaces, and temporal governance
 against live PostgreSQL, Redis, Qdrant, the configured embedding provider,
-generated projection files, safe degraded dream cycles, and
+generated projection files, safe degraded dream cycles, dry-run backup and
+deployment packaging reports, and
 full-profile maintenance/governance/quality reportability. `smoke:policy-ops`
 uses policy evaluation, auto-approval reporting, and auto-update dry-run paths;
 it does not apply approvals or updates. `smoke:knowledge-graph` uses Knowledge
@@ -160,7 +162,12 @@ intelligence compare status, trace feedback candidates, and reranker policy
 benchmark paths without writing observations, applying feedback, or running
 repair jobs. `smoke:temporal-ops` runs decay, expiry sweep, temporal policy,
 and consolidation dry-runs; consolidation rolls back its transaction and no
-archive, episode, entity, or relation writes are committed:
+archive, episode, entity, or relation writes are committed. `smoke:backup-ops`
+runs backup planning, migration preflight, deployment bundle generation into a
+temporary directory, and secrets audit with failure reporting only; it does not
+create database dumps or copy live secrets. Because backup planning is an
+admin operation, set `MEMORY_XX_CLI_TOKEN` or `MEMORY_XX_ADMIN_TOKEN` before
+running it:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -175,6 +182,7 @@ TMPDIR=/tmp npm run smoke:knowledge-graph
 TMPDIR=/tmp npm run smoke:qdrant-reconciliation
 TMPDIR=/tmp npm run smoke:recall-quality
 TMPDIR=/tmp npm run smoke:temporal-ops
+TMPDIR=/tmp npm run smoke:backup-ops
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in
