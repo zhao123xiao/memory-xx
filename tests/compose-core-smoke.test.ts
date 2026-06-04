@@ -23,6 +23,9 @@ test("compose core smoke validates core service topology and profile isolation",
   assert.deepEqual(report.profile_leaks, []);
   assert.equal(report.core_environment.MEMORY_XX_RUNTIME_PROFILE, "${MEMORY_XX_RUNTIME_PROFILE:-core}");
   assert.equal(report.core_environment.EMBEDDING_API_BASE, "http://memory-xx-embedding-proxy:5221/v1");
+  assert.equal(report.core_environment.MEMORY_XX_API_TOKEN, "${MEMORY_XX_API_TOKEN:-changeme-api}");
+  assert.equal(report.core_environment.MEMORY_XX_ADMIN_TOKEN, "${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}");
+  assert.notEqual(report.core_environment.MEMORY_XX_API_TOKEN, report.core_environment.MEMORY_XX_ADMIN_TOKEN);
 });
 
 test("compose core smoke reports duplicate service environment keys", async () => {

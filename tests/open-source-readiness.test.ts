@@ -89,7 +89,7 @@ test("docker compose keeps embedding provider defaults vendor-neutral", async ()
   };
   const sidecarReadme = await readFile("sidecars/README.md", "utf8");
 
-  assert.match(compose, /EMBEDDING_PROXY_UPSTREAM_BASE:-\$\{EMBEDDING_API_BASE:-https:\/\/embedding-provider\.example\/v1\}/u);
+  assert.match(compose, /EMBEDDING_PROXY_UPSTREAM_BASE:-\$\{EMBEDDING_API_BASE:-http:\/\/memory-xx-dev-embedding-upstream:5222\/v1\}/u);
   assert.match(compose, /^  memory-xx-dev-embedding-upstream:$/mu);
   assert.match(compose, /profiles:\s*\n\s+- dev/u);
   assert.match(compose, /sidecars\/dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
@@ -123,7 +123,7 @@ test("docker compose includes the core Qdrant projector worker", async () => {
   assert.match(compose, /^  memory-xx-migrate:$/mu);
   assert.match(compose, /command: \["node", "--import", "tsx", "scripts\/migrate\.ts"\]/u);
   assert.match(compose, /memory-xx-migrate:\s*\n\s+condition: service_completed_successfully/u);
-  assert.match(compose, /^  memory-xx:[\s\S]*?MEMORY_XX_ADMIN_TOKEN: \$\{MEMORY_XX_ADMIN_TOKEN:-\$\{MEMORY_XX_API_TOKEN:-changeme\}\}[\s\S]*?^    depends_on:/mu);
+  assert.match(compose, /^  memory-xx:[\s\S]*?MEMORY_XX_API_TOKEN: \$\{MEMORY_XX_API_TOKEN:-changeme-api\}[\s\S]*?MEMORY_XX_ADMIN_TOKEN: \$\{MEMORY_XX_ADMIN_TOKEN:-changeme-admin\}[\s\S]*?^    depends_on:/mu);
   assert.match(compose, /memory-xx-embedding-proxy:\s*\n\s+condition: service_started/u);
   assert.match(compose, /qdrant:\s*\n\s+condition: service_started/u);
 });
