@@ -2,7 +2,7 @@ services:
   memory-xx:
     build: .
     ports:
-      - "5100:5100"
+      - "${MEMORY_XX_WRAPPER_HOST_PORT:-5100}:5100"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_WRAPPER_PORT: "5100"
@@ -42,7 +42,7 @@ services:
     build: .
     command: ["node", "sidecars/embedding-proxy/embedding-proxy.mjs"]
     ports:
-      - "5221:5221"
+      - "${MEMORY_XX_EMBEDDING_PROXY_HOST_PORT:-5221}:5221"
     environment:
       MEMORY_XX_EMBEDDING_PROXY_HOST: 0.0.0.0
       MEMORY_XX_EMBEDDING_PROXY_PORT: "5221"
@@ -58,7 +58,7 @@ services:
       - dev
     command: ["node", "sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs"]
     ports:
-      - "5222:5222"
+      - "${MEMORY_XX_DEV_EMBEDDING_HOST_PORT:-5222}:5222"
     environment:
       MEMORY_XX_DEV_EMBEDDING_HOST: 0.0.0.0
       MEMORY_XX_DEV_EMBEDDING_PORT: "5222"
@@ -458,7 +458,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: memory_xx
     ports:
-      - "5432:5432"
+      - "${MEMORY_XX_POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -470,7 +470,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${MEMORY_XX_REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -482,7 +482,7 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     ports:
-      - "6333:6333"
+      - "${MEMORY_XX_QDRANT_HOST_PORT:-6333}:6333"
     volumes:
       - qdrantdata:/qdrant/storage
     restart: unless-stopped

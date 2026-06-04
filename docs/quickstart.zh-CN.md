@@ -180,6 +180,18 @@ EMBEDDING_DIMS=384 \
 docker-compose --profile dev up --build -d
 ```
 
+如果本机已经有 PostgreSQL、Redis、Qdrant 或其他 memory-xx 实例占用默认端口，可以覆盖 Compose 暴露到宿主机的端口；容器之间的连接仍使用 `postgres:5432`、`redis:6379`、`qdrant:6333` 和默认服务名：
+
+```bash
+MEMORY_XX_WRAPPER_HOST_PORT=15100 \
+MEMORY_XX_EMBEDDING_PROXY_HOST_PORT=15221 \
+MEMORY_XX_DEV_EMBEDDING_HOST_PORT=15222 \
+MEMORY_XX_POSTGRES_HOST_PORT=15432 \
+MEMORY_XX_REDIS_HOST_PORT=16379 \
+MEMORY_XX_QDRANT_HOST_PORT=16333 \
+docker-compose --profile dev up --build -d
+```
+
 增强模块通过 profile 启动：
 
 ```bash

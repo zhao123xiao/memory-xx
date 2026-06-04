@@ -128,6 +128,18 @@ EMBEDDING_DIMS=384 \
 docker-compose --profile dev up --build -d
 ```
 
+如果本机已经运行 PostgreSQL、Redis、Qdrant 或其他 memory-xx 实例，可以覆盖 Compose 暴露到宿主机的端口；容器内部连接仍使用默认端口：
+
+```bash
+MEMORY_XX_WRAPPER_HOST_PORT=15100 \
+MEMORY_XX_EMBEDDING_PROXY_HOST_PORT=15221 \
+MEMORY_XX_DEV_EMBEDDING_HOST_PORT=15222 \
+MEMORY_XX_POSTGRES_HOST_PORT=15432 \
+MEMORY_XX_REDIS_HOST_PORT=16379 \
+MEMORY_XX_QDRANT_HOST_PORT=16333 \
+docker-compose --profile dev up --build -d
+```
+
 如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
 
 ```bash
@@ -232,7 +244,7 @@ TMPDIR=/tmp npm run memory:control-panel
 
 - 本仓库是 public preview / alpha。
 - Embedding 是必需组件；reranker 是增强组件。
-- Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准；默认 Core 会启动 wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis 和 Qdrant。
+- Docker Compose 默认 Core 会启动 wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis 和 Qdrant；宿主机端口可用 `MEMORY_XX_*_HOST_PORT` 覆盖以避开本机已有服务。
 - Docker enhanced/full profile 需要同步设置 `MEMORY_XX_RUNTIME_PROFILE=enhanced/full`，否则 wrapper health、Doctor 和控制面板会按 Core 口径解释模块状态。
 - Docker full profile 会暴露 Mem0、conversation monitor、cache invalidation worker、maintenance、consolidation、detect、auto-repair、repair report、landing scan、canary report 等模块；这些模块默认仍由各自 `MEMORY_XX_*_ENABLED=0` 开关关闭，按环境开启后才执行。
 - `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 的公开源码；这些模块可按环境开启、关闭或降级。

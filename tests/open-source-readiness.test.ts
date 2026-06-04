@@ -43,7 +43,12 @@ test("docker compose uses the public pgvector image and wrapper port 5100", asyn
 
   assert.match(compose, /pgvector\/pgvector:pg16/u);
   assert.doesNotMatch(compose, /pgvector\/pg16:pg16/u);
-  assert.match(compose, /5100:5100/u);
+  assert.match(compose, /\$\{MEMORY_XX_WRAPPER_HOST_PORT:-5100\}:5100/u);
+  assert.match(compose, /\$\{MEMORY_XX_EMBEDDING_PROXY_HOST_PORT:-5221\}:5221/u);
+  assert.match(compose, /\$\{MEMORY_XX_DEV_EMBEDDING_HOST_PORT:-5222\}:5222/u);
+  assert.match(compose, /\$\{MEMORY_XX_POSTGRES_HOST_PORT:-5432\}:5432/u);
+  assert.match(compose, /\$\{MEMORY_XX_REDIS_HOST_PORT:-6379\}:6379/u);
+  assert.match(compose, /\$\{MEMORY_XX_QDRANT_HOST_PORT:-6333\}:6333/u);
   assert.doesNotMatch(compose, /4001:4001/u);
 });
 
