@@ -69,14 +69,24 @@ const ALLOWLIST_TOP_LEVEL = new Set([
 ]);
 
 const PUBLIC_DOCS = new Set([
+  "docs/agent-integration.zh-CN.md",
   "docs/api.md",
   "docs/architecture.md",
+  "docs/architecture.zh-CN.md",
+  "docs/canary.zh-CN.md",
+  "docs/control-panel.zh-CN.md",
+  "docs/features.zh-CN.md",
+  "docs/knowledge.zh-CN.md",
   "docs/migration-rollback-playbook.md",
   "docs/operations.md",
+  "docs/operations.zh-CN.md",
+  "docs/policy-governance.zh-CN.md",
+  "docs/quickstart.zh-CN.md",
   "docs/runtime-profiles.md",
   "docs/runbooks/backup-restore.md",
   "docs/runbooks/migration-rollback.md",
   "docs/runbooks/recall-quality.md",
+  "docs/vector-runtime.zh-CN.md",
 ]);
 
 const DENYLIST_TOP_LEVEL = new Set([
@@ -112,9 +122,7 @@ const DENYLIST_FILE_NAMES = new Set([
   "x27source_refx27",
 ]);
 
-const DENYLIST_RELATIVE_FILES = new Set([
-  "tests/open-source-release.test.ts",
-]);
+const DENYLIST_RELATIVE_FILES = new Set<string>();
 
 const PRIVATE_LINUX_USER = "local";
 const PRIVATE_WINDOWS_USER = "\u8d75\u6653\u6653";
