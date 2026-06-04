@@ -104,7 +104,7 @@ export function detectPlatformProfile(facts: PlatformFacts): PlatformDetection {
       [
         ...(facts.platform === "win32" ? [] : ["windows"]),
         ...(facts.hasPowerShell ? [] : ["powershell"]),
-        ...(facts.ovmsDirExists ? [] : ["D:/ovms"]),
+        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 upstream 目录"]),
       ],
       "powershell -ExecutionPolicy Bypass -File scripts/windows/start-memory-xx.ps1",
     ),

@@ -792,8 +792,8 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
     async function loadSecurityPlatformMigration() {
       const [security, platform, migration] = await Promise.allSettled([
         fetch("/api/runtime/secrets-audit", { headers: { "x-panel-token": PANEL_TOKEN } }),
-        fetch("/api/runtime/platform?profile=wsl-windows-gpu", { headers: { "x-panel-token": PANEL_TOKEN } }),
-        fetch("/api/runtime/deployment-preflight?profile=wsl-windows-gpu", { headers: { "x-panel-token": PANEL_TOKEN } }),
+        fetch("/api/runtime/platform", { headers: { "x-panel-token": PANEL_TOKEN } }),
+        fetch("/api/runtime/deployment-preflight", { headers: { "x-panel-token": PANEL_TOKEN } }),
       ]);
       if (security.status === "fulfilled" && security.value.ok) renderSecurityAudit(await security.value.json());
       if (platform.status === "fulfilled" && platform.value.ok) renderPlatformDoctor(await platform.value.json());

@@ -5,8 +5,9 @@ import { argValue, loadDotenvIfPresent, printJson } from "./lib/runtime-env.js";
 
 loadDotenvIfPresent();
 
-function profileArg(): PlatformRuntimeProfile {
-  const raw = argValue("--profile") ?? "wsl-windows-gpu";
+function profileArg(): PlatformRuntimeProfile | undefined {
+  const raw = argValue("--profile");
+  if (!raw) return undefined;
   if (raw === "linux-systemd" || raw === "wsl-windows-gpu" || raw === "windows-native" || raw === "docker-compose-local") {
     return raw;
   }

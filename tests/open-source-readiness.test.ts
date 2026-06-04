@@ -1351,6 +1351,7 @@ test("public OVMS helpers require explicit local paths instead of private defaul
   assert.doesNotMatch(platformDoctor, /Windows 侧启动/u);
   assert.doesNotMatch(manager, /\/mnt\/c\/Windows/u);
   assert.doesNotMatch(platformDoctor, /\/mnt\/c\/Windows/u);
+  assert.doesNotMatch(platformDoctor, /D:\/ovms/u);
   assert.doesNotMatch(manager, /<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat/u);
   assert.doesNotMatch(manager, /WorkingDirectory '<windows-drive>\\ovms'/u);
 
@@ -1447,6 +1448,24 @@ test("public doctor and control panel remediation stays provider-neutral", async
   for (const file of files) {
     const content = await readFile(file, "utf8");
     if (/Windows GPU|<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat|本地 OVMS|本地 Qwen3|Qwen3 embedding|Qwen3 reranker|OVMS 就绪|OVMS 不可用/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
+test("public platform tooling does not default to private WSL GPU profile", async () => {
+  const files = [
+    "scripts/memory-migration-preflight.ts",
+    "scripts/memory-deployment-bundle.ts",
+    "scripts/control-panel/routes.ts",
+    "scripts/control-panel/renderers.ts",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/\?\?\s*["']wsl-windows-gpu["']|profile=wsl-windows-gpu/u.test(content)) {
       stale.push(file);
     }
   }

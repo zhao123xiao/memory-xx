@@ -39,12 +39,13 @@ import { clampInt, objectValue, safeText, stringValue } from "./utils.js";
 
 const execFileAsync = promisify(execFile);
 
-function runtimeProfileFromUrl(url: URL): PlatformRuntimeProfile {
-  const raw = url.searchParams.get("profile") ?? "wsl-windows-gpu";
+function runtimeProfileFromUrl(url: URL): PlatformRuntimeProfile | undefined {
+  const raw = url.searchParams.get("profile");
+  if (!raw) return undefined;
   if (raw === "linux-systemd" || raw === "wsl-windows-gpu" || raw === "windows-native" || raw === "docker-compose-local") {
     return raw;
   }
-  return "wsl-windows-gpu";
+  return undefined;
 }
 
 export interface ControlPanelRouteDeps {
