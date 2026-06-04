@@ -1,10 +1,16 @@
 [Unit]
 Description=Run memory-xx production landing scan snapshot
-After=memory-xx-wrapper.service
+After=network-online.target memory-xx-wrapper.service
+Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=<project-root>
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_RUNTIME_DIR=%h/services/memory-xx/.runtime
 ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts landing_scan
-ExecStart=/usr/bin/env npm run memory:landing-scan -- --json --write-report --max-files=200
+ExecStart=/usr/bin/npm run memory:landing-scan -- --json --write-report --max-files=200
+StandardOutput=append:%h/services/memory-xx/.runtime/landing-scan.log
+StandardError=append:%h/services/memory-xx/.runtime/landing-scan.error.log

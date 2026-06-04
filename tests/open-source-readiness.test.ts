@@ -616,6 +616,27 @@ test("public systemd pluggable units honor runtime module kill switches", async 
   assert.deepEqual(missing, []);
 });
 
+test("public systemd gate units are directly installable without project-root placeholders", async () => {
+  const units = [
+    "systemd/memory-xx-landing-scan.service",
+    "systemd/memory-xx-canary-7d-report.service",
+  ];
+  const stale: string[] = [];
+  for (const unit of units) {
+    const content = await readFile(unit, "utf8");
+    if (
+      /<project-root>/u.test(content) ||
+      !/WorkingDirectory=%h\/services\/memory-xx/u.test(content) ||
+      !/EnvironmentFile=%h\/services\/memory-xx\/\.env/u.test(content) ||
+      !/MEMORY_XX_RUNTIME_DIR=%h\/services\/memory-xx\/\.runtime/u.test(content)
+    ) {
+      stale.push(unit);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<void> {
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {
