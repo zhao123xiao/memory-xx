@@ -47,6 +47,13 @@ test("docker compose uses the public pgvector image and wrapper port 5100", asyn
   assert.doesNotMatch(compose, /4001:4001/u);
 });
 
+test("docker compose keeps embedding provider defaults vendor-neutral", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+
+  assert.match(compose, /EMBEDDING_PROXY_UPSTREAM_BASE:-\$\{EMBEDDING_API_BASE:-https:\/\/embedding-provider\.example\/v1\}/u);
+  assert.doesNotMatch(compose, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
+});
+
 test("docker compose includes the core Qdrant projector worker", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 
