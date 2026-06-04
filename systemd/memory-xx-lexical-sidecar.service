@@ -10,6 +10,7 @@ EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_LEXICAL_ADDR=127.0.0.1:5210
 Environment=MEMORY_XX_LEXICAL_DEFAULT_LIMIT=50
 Environment=MEMORY_XX_LEXICAL_MAX_LIMIT=100
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts lexical_sidecar
 ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/lexical-sidecar/lexical-sidecar.mjs
 Restart=always
 RestartSec=3

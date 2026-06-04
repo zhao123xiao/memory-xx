@@ -6,4 +6,5 @@ After=memory-xx-landing-scan.service
 Type=oneshot
 WorkingDirectory=<project-root>
 Environment=TMPDIR=/tmp
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts canary_7d_report
 ExecStart=/usr/bin/env npm run memory:canary-7d-report -- --json --write-report

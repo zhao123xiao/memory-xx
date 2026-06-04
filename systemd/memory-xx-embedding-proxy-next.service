@@ -16,6 +16,7 @@ Environment=MEMORY_XX_EMBEDDING_PROXY_MAX_RETRIES=0
 Environment=MEMORY_XX_EMBEDDING_PROXY_MAX_CONCURRENCY=1
 Environment=MEMORY_XX_EMBEDDING_PROXY_MIN_INTERVAL_MS=0
 Environment=MEMORY_XX_EMBEDDING_PROXY_RATE_LIMIT_COOLDOWN_MS=30000
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts embedding_proxy
 ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/embedding-proxy/embedding-proxy.mjs
 Restart=always
 RestartSec=3

@@ -8,6 +8,7 @@ Type=oneshot
 WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts temporal_consolidation
 ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/memory-consolidate.ts
 StandardOutput=append:%h/services/memory-xx/consolidation.log
 StandardError=append:%h/services/memory-xx/consolidation.error.log

@@ -304,6 +304,19 @@ test("public systemd default target starts only core services", async () => {
   }
 });
 
+test("public systemd pluggable units honor runtime module kill switches", async () => {
+  const missing: string[] = [];
+  for (const module of RUNTIME_MODULES) {
+    if (!module.startable || !module.service || !module.env_enabled) continue;
+    const unit = `systemd/${module.service}`;
+    const content = await readFile(unit, "utf8");
+    const expected = `ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts ${module.name}`;
+    if (!content.includes(expected)) missing.push(`${module.name}:${module.service}`);
+  }
+
+  assert.deepEqual(missing, []);
+});
+
 async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<void> {
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {

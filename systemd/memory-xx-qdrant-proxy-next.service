@@ -13,6 +13,7 @@ Environment=MEMORY_XX_QDRANT_PROXY_UPSTREAM=http://127.0.0.1:6333
 Environment=MEMORY_XX_QDRANT_PROXY_FROM_COLLECTION=memory-xx
 Environment=MEMORY_XX_QDRANT_PROXY_TO_COLLECTION=memory-xx-active
 Environment=MEMORY_XX_QDRANT_PROXY_TIMEOUT_MS=30000
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts qdrant_proxy
 ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/qdrant-proxy/qdrant-collection-proxy.mjs
 Restart=always
 RestartSec=3

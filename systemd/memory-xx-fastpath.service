@@ -15,6 +15,7 @@ Environment=MEMORY_XX_FASTPATH_CACHE_PREFIX=memory-xx-active-fastpath
 Environment=MEMORY_XX_FASTPATH_HYBRID_ENABLED=true
 Environment=MEMORY_XX_FASTPATH_LEXICAL_URL=http://127.0.0.1:5210
 Environment=MEMORY_XX_LEXICAL_URL=http://127.0.0.1:5210
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts fastpath
 ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/fastpath/fastpath.mjs
 Restart=always
 RestartSec=3

@@ -9,6 +9,7 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=-%h/services/memory-xx/.env
 Environment=MEMORY_XX_MEM0_EXTRACTOR_HOST=127.0.0.1
 Environment=MEMORY_XX_MEM0_EXTRACTOR_PORT=5220
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts mem0_extractor
 ExecStart=%h/services/memory-xx/.venv/bin/python %h/services/memory-xx/sidecars/mem0-extractor/extractor.py
 Restart=always
 RestartSec=3

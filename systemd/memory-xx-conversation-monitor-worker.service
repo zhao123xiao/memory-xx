@@ -9,6 +9,7 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts conversation_monitor
 ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/run-conversation-monitor-worker.ts
 Restart=always
 RestartSec=5

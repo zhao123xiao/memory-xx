@@ -6,6 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h/services/memory-xx
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts reranker_upstream
 ExecStart=%h/services/memory-xx/scripts/manage-ovms-upstream.sh reranker run
 ExecStop=%h/services/memory-xx/scripts/manage-ovms-upstream.sh reranker stop
 Restart=always
