@@ -511,13 +511,52 @@ export function resolveRuntimeModuleStates(
   profile: MemoryRuntimeProfile,
   env: RuntimeEnv = process.env
 ): readonly RuntimeModuleResolvedState[] {
-  return RUNTIME_MODULES.map((module) => resolveRuntimeModuleState(module, profile, env));
+  const states = new Map<string, RuntimeModuleResolvedState>(
+    RUNTIME_MODULES.map((module) => [module.name, resolveRuntimeModuleSelfState(module, profile, env)])
+  );
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const module of RUNTIME_MODULES) {
+      const current = states.get(module.name);
+      if (!current || current.state !== "enabled") continue;
+
+      const unavailable = (module.dependencies ?? [])
+        .map((dependency) => states.get(dependency))
+        .find((dependency) => !dependency || dependency.state !== "enabled");
+
+      if (!unavailable) continue;
+
+      states.set(module.name, {
+        module,
+        state: "missing_dependency",
+        enabled: true,
+        blocks_profile: module.required_in.includes(profile),
+        reason: unavailable
+          ? `dependency_unavailable:${unavailable.module.name}:${unavailable.state}`
+          : "dependency_unavailable:unknown",
+      });
+      changed = true;
+    }
+  }
+
+  return RUNTIME_MODULES.map((module) => states.get(module.name) ?? resolveRuntimeModuleSelfState(module, profile, env));
 }
 
 export function resolveRuntimeModuleState(
   module: RuntimeModule,
   profile: MemoryRuntimeProfile,
   env: RuntimeEnv = process.env
+): RuntimeModuleResolvedState {
+  return resolveRuntimeModuleStates(profile, env).find((state) => state.module.name === module.name)
+    ?? resolveRuntimeModuleSelfState(module, profile, env);
+}
+
+function resolveRuntimeModuleSelfState(
+  module: RuntimeModule,
+  profile: MemoryRuntimeProfile,
+  env: RuntimeEnv
 ): RuntimeModuleResolvedState {
   const required = module.required_in.includes(profile);
   const expected = module.expected_in?.includes(profile) ?? false;

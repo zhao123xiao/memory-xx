@@ -116,7 +116,9 @@ test("runtime module plan keeps core minimal and treats enhanced modules as plug
 
 test("memory mode starts expected services for enhanced profiles", () => {
   const coreServices = buildRuntimeProfileStartServices("core");
-  const enhancedServices = buildRuntimeProfileStartServices("enhanced");
+  const enhancedServices = buildRuntimeProfileStartServices("enhanced", {
+    MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "http://127.0.0.1:9000/health",
+  });
 
   assert.deepEqual(coreServices, [
     "memory-xx-wrapper.service",
@@ -130,6 +132,16 @@ test("memory mode starts expected services for enhanced profiles", () => {
   assert.ok(enhancedServices.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(enhancedServices.includes("memory-xx-control-panel.service"));
   assert.equal(enhancedServices.includes("memory-xx-dream-worker.service"), false);
+});
+
+test("memory mode skips dependency-bound enhanced services until their upstream is configured", () => {
+  const enhancedServices = buildRuntimeProfileStartServices("enhanced", {
+    MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "",
+    MEMORY_XX_MEM0_BASE_URL: "",
+    MEMORY_INTELLIGENCE_BASE_URL: "",
+  });
+
+  assert.equal(enhancedServices.includes("memory-xx-mem0-extractor.service"), false);
 });
 
 test("memory mode start plan skips full modules disabled by kill switches", () => {
@@ -167,6 +179,23 @@ test("memory mode start plan skips modules with missing dependencies", () => {
   const services = buildRuntimeProfileStartServices("full", {
     MEMORY_XX_FASTPATH_ENABLED: "1",
     MEMORY_XX_FASTPATH_SOURCE_AVAILABLE: "0",
+    MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+    MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+    MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
+    MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
+    MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
+  });
+
+  assert.equal(services.includes("memory-xx-fastpath.service"), false);
+});
+
+test("memory mode start plan skips modules whose dependencies are unavailable", () => {
+  const services = buildRuntimeProfileStartServices("full", {
+    MEMORY_XX_EMBEDDING_PROXY_ENABLED: "0",
+    MEMORY_XX_FASTPATH_ENABLED: "1",
+    MEMORY_XX_FASTPATH_SOURCE_AVAILABLE: "1",
     MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
     MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
     MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
