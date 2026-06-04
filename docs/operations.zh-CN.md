@@ -64,6 +64,13 @@ TMPDIR=/tmp npm run memory:p1-gate
 
 candidate-only 退出至少需要满足：真实反馈样本足够、pending 不失控、Qdrant drift 为 0、P1 gate 通过、production guard 通过、default recall leakage 为 0、unknown/sensitive/test-noise auto approve 为 0、rollback rate 可解释。
 
+公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路：
+
+```bash
+TMPDIR=/tmp npm run test:unit-contract
+TMPDIR=/tmp npm run test:conversation-monitor
+```
+
 ## systemd 与平台部署
 
 `systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter、mem0 extractor、conversation monitor、control panel 等 user service/timer 模板。

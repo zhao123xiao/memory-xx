@@ -801,6 +801,21 @@ test("package exposes a production audit script pinned to the official npm regis
   assert.equal(packageJson.scripts["audit:prod"], "npm audit --omit=dev --registry=https://registry.npmjs.org");
 });
 
+test("package exposes public harness entrypoints for unit contract and conversation monitor layers", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+
+  assert.equal(packageJson.scripts["test:unit-contract"], "node --import tsx scripts/test-harness/layers/L1-unit-contract.ts");
+  assert.equal(packageJson.scripts["test:conversation-monitor"], "node --import tsx scripts/test-harness/layers/L19-conversation-monitor.ts");
+  assert.match(readme, /npm run test:unit-contract/u);
+  assert.match(operations, /npm run test:conversation-monitor/u);
+  assert.match(operationsZh, /npm run test:conversation-monitor/u);
+});
+
 test("package exposes an open-source verification script without runtime env gates", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     scripts: Record<string, string>;

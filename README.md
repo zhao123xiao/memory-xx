@@ -208,6 +208,7 @@ curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/rec
 ```bash
 TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
+TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run smoke:compose-core
 TMPDIR=/tmp npm run smoke:runtime-profiles

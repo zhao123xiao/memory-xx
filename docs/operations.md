@@ -134,6 +134,15 @@ TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
 ```
 
+Public harness layers can be run individually when validating a module. `L1`
+checks the unit and HTTP contract layer, while `L19` exercises the conversation
+monitor path from JSONL spool ingestion through recall:
+
+```bash
+TMPDIR=/tmp npm run test:unit-contract
+TMPDIR=/tmp npm run test:conversation-monitor
+```
+
 `memory:mode` probes Postgres, Redis, Qdrant, and local/Windows embedding
 dependencies but does not start those external processes. Existing systemd
 service names are preserved, including historical `*-next` names.
