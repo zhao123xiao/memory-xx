@@ -212,7 +212,7 @@ TMPDIR=/tmp npm run memory:control-panel
 
 - 本仓库是 public preview / alpha。
 - Embedding 是必需组件；reranker 是增强组件。
-- Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准。
+- Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准；默认 Core 会启动 wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis 和 Qdrant。
 - Docker enhanced/full profile 需要同步设置 `MEMORY_XX_RUNTIME_PROFILE=enhanced/full`，否则 wrapper health、Doctor 和控制面板会按 Core 口径解释模块状态。
 - `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 的公开源码；这些模块可按环境开启、关闭或降级。
 - fastpath 和 lexical sidecar 当前提供 Node.js 开源实现，部署环境可替换为更高性能实现，但必须保持 HTTP 契约兼容；禁用它们不影响 core write/recall。

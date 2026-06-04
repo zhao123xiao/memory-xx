@@ -29,6 +29,8 @@ services:
         condition: service_started
       memory-xx-embedding-proxy:
         condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:5100/live').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
@@ -48,6 +50,30 @@ services:
       MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL: ${EMBEDDING_PROXY_UPSTREAM_MODEL:-${EMBEDDING_MODEL:-Qwen3-Embedding-8B}}
       MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY: ${EMBEDDING_PROXY_UPSTREAM_API_KEY:-${OPENAI_API_KEY:-changeme}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
+    restart: unless-stopped
+
+  memory-xx-qdrant-projector-worker:
+    build: .
+    command: ["node", "--import", "tsx", "scripts/run-qdrant-projector-worker.ts"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE: /app/.runtime/qdrant-projector-worker.status.json
+      EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen3-Embedding-8B}
+      EMBEDDING_DIMS: ${EMBEDDING_DIMS:-4096}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      memory-xx-embedding-proxy:
+        condition: service_started
     restart: unless-stopped
 
   memory-xx-fastpath:

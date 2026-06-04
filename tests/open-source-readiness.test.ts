@@ -33,6 +33,16 @@ test("docker compose uses the public pgvector image and wrapper port 5100", asyn
   assert.doesNotMatch(compose, /4001:4001/u);
 });
 
+test("docker compose includes the core Qdrant projector worker", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+
+  assert.match(compose, /^  memory-xx-qdrant-projector-worker:$/mu);
+  assert.match(compose, /scripts\/run-qdrant-projector-worker\.ts/u);
+  assert.match(compose, /MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE: \/app\/\.runtime\/qdrant-projector-worker\.status\.json/u);
+  assert.match(compose, /memory-xx-embedding-proxy:\s*\n\s+condition: service_started/u);
+  assert.match(compose, /qdrant:\s*\n\s+condition: service_started/u);
+});
+
 test("docker compose exposes pluggable enhanced and full-stack services as profiles", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 

@@ -434,7 +434,8 @@ docker-compose down
 ```
 
 The default Compose command starts the Core path: wrapper, embedding proxy,
-Postgres, Redis, and Qdrant. Optional modules are exposed through profiles:
+Qdrant projector worker, Postgres, Redis, and Qdrant. Optional modules are
+exposed through profiles:
 
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
@@ -442,8 +443,8 @@ MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full 
 ```
 
 `enhanced` starts fastpath, lexical sidecar, Qdrant proxy, reranker adapter, and
-the local control panel. `full` also starts Mem0 extraction and the conversation
-monitor; include both `enhanced` and `full` compose profiles for full-stack
+the local control panel. `full` also starts Mem0 extraction, the conversation
+monitor, and cache invalidation worker; include both `enhanced` and `full` compose profiles for full-stack
 startup because full builds on enhanced modules. Model upstreams remain environment-specific; configure
 `EMBEDDING_PROXY_UPSTREAM_BASE`, `OPENAI_API_KEY`, reranker downstream URLs, and
 Mem0/LLM settings before relying on those modules.
