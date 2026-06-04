@@ -235,6 +235,7 @@ TMPDIR=/tmp npm run smoke:qdrant-reconciliation
 TMPDIR=/tmp npm run smoke:recall-quality
 TMPDIR=/tmp npm run smoke:temporal-ops
 TMPDIR=/tmp npm run smoke:backup-ops
+TMPDIR=/tmp npm run smoke:runtime-observability
 TMPDIR=/tmp npm run smoke:functional -- m1
 TMPDIR=/tmp npm run check:secrets
 TMPDIR=/tmp npm run audit:prod
@@ -246,6 +247,7 @@ TMPDIR=/tmp npm run memory:control-panel
 ```
 
 `smoke:backup-ops` 只做 dry-run/report 验收，但 backup plan 属于 admin 操作；运行前请设置 `MEMORY_XX_CLI_TOKEN` 或 `MEMORY_XX_ADMIN_TOKEN`。
+`smoke:runtime-observability` 只做 retention/report/artifact cleanup dry-run；运行前同样需要 `MEMORY_XX_CLI_TOKEN` 或 `MEMORY_XX_ADMIN_TOKEN`。
 
 ## 文档导航
 

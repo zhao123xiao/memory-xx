@@ -326,6 +326,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/trace-retention.ts",
       "scripts/memory-cleanup-runtime-artifacts.ts",
       "scripts/archive-next-residue-logs.ts",
+      "scripts/runtime-observability-smoke.ts",
     ],
     degraded_behavior: "Runtime traces and observability artifacts are not compacted automatically; online memory operations continue.",
   },
