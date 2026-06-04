@@ -81,6 +81,25 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
 });
 
+test("docker compose pluggable profile services honor runtime module switches", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const modules = [
+    ["memory-xx-fastpath", "fastpath", "MEMORY_XX_FASTPATH_ENABLED"],
+    ["memory-xx-lexical-sidecar", "lexical_sidecar", "MEMORY_XX_LEXICAL_SIDECAR_ENABLED"],
+    ["memory-xx-qdrant-proxy", "qdrant_proxy", "MEMORY_XX_QDRANT_PROXY_ENABLED"],
+    ["memory-xx-reranker-adapter", "reranker_adapter", "MEMORY_XX_RERANKER_ADAPTER_ENABLED"],
+    ["memory-xx-mem0-extractor", "mem0_extractor", "MEMORY_XX_MEM0_EXTRACTOR_ENABLED"],
+    ["memory-xx-conversation-monitor", "conversation_monitor", "MEMORY_XX_CONVERSATION_MONITOR_ENABLED"],
+    ["memory-xx-control-panel", "control_panel", "MEMORY_XX_CONTROL_PANEL_ENABLED"],
+  ] as const;
+
+  for (const [service, moduleName, envName] of modules) {
+    assert.match(compose, new RegExp(`^  ${service}:$`, "mu"), `missing compose service ${service}`);
+    assert.match(compose, new RegExp(`scripts/runtime-module-enabled\\.ts ${moduleName}`, "u"), `missing runtime switch for ${service}`);
+    assert.equal(compose.includes(`${envName}: \${${envName}:-0}`), true, `missing disabled default env for ${service}`);
+  }
+});
+
 test("docker compose exposes full-stack operations modules with runtime switches", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
   const modules = [

@@ -80,7 +80,7 @@ services:
     build: .
     profiles:
       - enhanced
-    command: ["node", "sidecars/fastpath/fastpath.mjs"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts fastpath || exit 0; exec node sidecars/fastpath/fastpath.mjs"]
     ports:
       - "5200:5200"
     environment:
@@ -90,6 +90,7 @@ services:
       MEMORY_XX_REDIS_URL: redis://redis:6379/0
       MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
       MEMORY_XX_FASTPATH_LEXICAL_URL: http://memory-xx-lexical-sidecar:5210
+      MEMORY_XX_FASTPATH_ENABLED: ${MEMORY_XX_FASTPATH_ENABLED:-0}
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,13 +104,14 @@ services:
     build: .
     profiles:
       - enhanced
-    command: ["node", "sidecars/lexical-sidecar/lexical-sidecar.mjs"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts lexical_sidecar || exit 0; exec node sidecars/lexical-sidecar/lexical-sidecar.mjs"]
     ports:
       - "5210:5210"
     environment:
       MEMORY_XX_LEXICAL_ADDR: 0.0.0.0:5210
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: ${MEMORY_XX_LEXICAL_SIDECAR_ENABLED:-0}
     depends_on:
       postgres:
         condition: service_healthy
@@ -119,7 +121,7 @@ services:
     build: .
     profiles:
       - enhanced
-    command: ["node", "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts qdrant_proxy || exit 0; exec node sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"]
     ports:
       - "6334:6334"
     environment:
@@ -128,6 +130,7 @@ services:
       MEMORY_XX_QDRANT_PROXY_UPSTREAM: http://qdrant:6333
       MEMORY_XX_QDRANT_PROXY_FROM_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
       MEMORY_XX_QDRANT_PROXY_TO_COLLECTION: ${MEMORY_XX_QDRANT_ACTIVE_COLLECTION:-memory-xx-active}
+      MEMORY_XX_QDRANT_PROXY_ENABLED: ${MEMORY_XX_QDRANT_PROXY_ENABLED:-0}
     depends_on:
       qdrant:
         condition: service_started
@@ -137,7 +140,7 @@ services:
     build: .
     profiles:
       - enhanced
-    command: ["node", "sidecars/reranker-adapter/reranker-adapter.mjs"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts reranker_adapter || exit 0; exec node sidecars/reranker-adapter/reranker-adapter.mjs"]
     ports:
       - "8085:8085"
     environment:
@@ -145,13 +148,14 @@ services:
       MEMORY_XX_RERANKER_ADAPTER_PORT: "8085"
       MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://host.docker.internal:8084/v3/rerank}
       MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://host.docker.internal:8084/v3/models}
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
     restart: unless-stopped
 
   memory-xx-control-panel:
     build: .
     profiles:
       - enhanced
-    command: ["node", "--import", "tsx", "scripts/memory-control-panel.ts"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts control_panel || exit 0; exec node --import tsx scripts/memory-control-panel.ts"]
     ports:
       - "5310:5310"
     environment:
@@ -162,6 +166,7 @@ services:
       MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
       MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme}
       MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-${MEMORY_XX_API_TOKEN:-changeme}}
+      MEMORY_XX_CONTROL_PANEL_ENABLED: ${MEMORY_XX_CONTROL_PANEL_ENABLED:-0}
     depends_on:
       memory-xx:
         condition: service_started
@@ -171,7 +176,7 @@ services:
     build: .
     profiles:
       - full
-    command: ["python3", "sidecars/mem0-extractor/extractor.py"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts mem0_extractor || exit 0; exec python3 sidecars/mem0-extractor/extractor.py"]
     ports:
       - "5220:5220"
     environment:
@@ -180,13 +185,14 @@ services:
       MEMORY_XX_MEM0_BASE_URL: ${MEMORY_XX_MEM0_BASE_URL:-${MEMORY_INTELLIGENCE_BASE_URL:-}}
       MEMORY_XX_MEM0_MODEL: ${MEMORY_XX_MEM0_MODEL:-${MEMORY_INTELLIGENCE_MODEL:-MiniMax-M2.7-highspeed}}
       MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-}}
+      MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
     restart: unless-stopped
 
   memory-xx-conversation-monitor:
     build: .
     profiles:
       - full
-    command: ["node", "--import", "tsx", "scripts/run-conversation-monitor-worker.ts"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts conversation_monitor || exit 0; exec node --import tsx scripts/run-conversation-monitor-worker.ts"]
     environment:
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
@@ -195,6 +201,7 @@ services:
       MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
       MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme}
       MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-${MEMORY_XX_API_TOKEN:-changeme}}
+      MEMORY_XX_CONVERSATION_MONITOR_ENABLED: ${MEMORY_XX_CONVERSATION_MONITOR_ENABLED:-0}
       MEMORY_XX_CONVERSATION_MONITOR: ${MEMORY_XX_CONVERSATION_MONITOR:-false}
       MEMORY_XX_CONVERSATION_AUTO_EXTRACT: ${MEMORY_XX_CONVERSATION_AUTO_EXTRACT:-false}
     depends_on:
