@@ -73,6 +73,7 @@ test("public compose core smoke is exposed as an open-source verification entryp
   const script = await readFile("scripts/compose-core-smoke.ts", "utf8");
 
   assert.equal(packageJson.scripts["smoke:compose-core"], "node --import tsx scripts/compose-core-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /npm run smoke:compose-core/u);
   assert.match(readme, /npm run smoke:compose-core/u);
   assert.match(quickstart, /npm run smoke:compose-core/u);
   assert.match(script, /memory-xx-qdrant-projector-worker/u);
