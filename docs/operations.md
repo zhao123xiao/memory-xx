@@ -227,11 +227,11 @@ use cache/stale fallback, and avoid retry storms on 429/503.
 For local OVMS embedding, point the proxy upstream at Windows port 8082:
 
 ```bash
-EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:8082/v3
-EMBEDDING_PROXY_UPSTREAM_MODEL=qwen3-embedding
-EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=/mnt/d/ovms/api_key.txt
-EMBEDDING_PROXY_MAX_CONCURRENCY=1
-EMBEDDING_PROXY_MIN_INTERVAL_MS=0
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:8082/v3
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL=qwen3-embedding
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=<path-to-api-key-file>
+MEMORY_XX_EMBEDDING_PROXY_MAX_CONCURRENCY=1
+MEMORY_XX_EMBEDDING_PROXY_MIN_INTERVAL_MS=0
 ```
 
 The Windows model launcher is `<windows-drive>\ovms\run-embedding.bat`; it should serve

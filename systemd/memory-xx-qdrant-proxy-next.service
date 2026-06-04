@@ -5,19 +5,19 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/services/memory-xx-qdrant-proxy
+WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=-%h/services/memory-xx/.env
-Environment=QDRANT_PROXY_HOST=127.0.0.1
-Environment=QDRANT_PROXY_PORT=6335
-Environment=QDRANT_PROXY_UPSTREAM=http://127.0.0.1:6333
-Environment=QDRANT_PROXY_FROM_COLLECTION=memory-xx
-Environment=QDRANT_PROXY_TO_COLLECTION=memory-xx-active
-Environment=QDRANT_PROXY_TIMEOUT_MS=30000
-ExecStart=/usr/bin/node %h/services/memory-xx-qdrant-proxy/qdrant-collection-proxy.mjs
+Environment=MEMORY_XX_QDRANT_PROXY_HOST=127.0.0.1
+Environment=MEMORY_XX_QDRANT_PROXY_PORT=6335
+Environment=MEMORY_XX_QDRANT_PROXY_UPSTREAM=http://127.0.0.1:6333
+Environment=MEMORY_XX_QDRANT_PROXY_FROM_COLLECTION=memory-xx
+Environment=MEMORY_XX_QDRANT_PROXY_TO_COLLECTION=memory-xx-active
+Environment=MEMORY_XX_QDRANT_PROXY_TIMEOUT_MS=30000
+ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/qdrant-proxy/qdrant-collection-proxy.mjs
 Restart=always
 RestartSec=3
-StandardOutput=append:%h/services/memory-xx-qdrant-proxy/qdrant-proxy.log
-StandardError=append:%h/services/memory-xx-qdrant-proxy/qdrant-proxy.error.log
+StandardOutput=append:%h/services/memory-xx/.runtime/qdrant-proxy.log
+StandardError=append:%h/services/memory-xx/.runtime/qdrant-proxy.error.log
 
 [Install]
 WantedBy=memory-xx.target

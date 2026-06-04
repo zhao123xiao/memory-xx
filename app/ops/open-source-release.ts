@@ -60,6 +60,7 @@ const ALLOWLIST_TOP_LEVEL = new Set([
   "package-lock.json",
   "package.json",
   "scripts",
+  "sidecars",
   "src",
   "systemd",
   "tests",

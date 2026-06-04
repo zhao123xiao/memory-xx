@@ -9,15 +9,33 @@ components are required, expected, or optional for the current goal.
 | Profile | Purpose | Required |
 |---|---|---|
 | `core` | Daily stable operation | wrapper, Postgres, Redis, Qdrant, embedding proxy, projector |
-| `enhanced` | Better recall latency/quality | Core required; fastpath, lexical sidecar, reranker, graph recall are expected |
-| `full` | Release, quality, governance, embedding switch validation | Enhanced services plus quality, graph, embedding manifest, and governance gates |
+| `enhanced` | Better recall latency/quality | Core required; fastpath, lexical sidecar, Qdrant proxy, reranker, Mem0 extractor, conversation monitor, and control panel are expected but degradable |
+| `full` | Release, quality, governance, embedding switch validation | Enhanced services become release requirements, plus quality and governance gates |
 
 `core` is intentionally vector-capable. It is not a lexical-only emergency mode.
 If fastpath, lexical sidecar, reranker, or graph enhancement is unavailable,
 Core recall/write should still work and should report optional degradation.
-The public repository currently treats fastpath, lexical sidecar, reranker
-adapter, embedding proxy, Qdrant proxy, and Mem0 extractor as external optional
-components; it does not promise one-command builds for those sidecars.
+
+The public repository includes source entries for embedding proxy, Qdrant proxy,
+reranker adapter, and Mem0 extractor under `sidecars/`. Fastpath and lexical
+sidecar are tracked in the runtime module registry and documented under
+`sidecars/`, but their source trees are still pending import because the first
+public export audit only found running binaries. They can be disabled with
+`MEMORY_XX_FASTPATH_ENABLED=0` and `MEMORY_XX_LEXICAL_SIDECAR_ENABLED=0`.
+
+## Runtime Module States
+
+`app/runtime-modules.ts` is the canonical module registry. Each module records:
+
+- profile role: required, expected, or optional
+- env switch, for example `MEMORY_XX_RERANKER_ADAPTER_ENABLED`
+- health URL or systemd unit when applicable
+- repo source path when source is included
+- degraded behavior when the module is disabled or unhealthy
+
+Doctor and the control panel should report states as `enabled`, `disabled`,
+`degraded`, or `missing_dependency`. A disabled optional/enhanced module should
+not block `core`; a missing required module should block the selected profile.
 
 ## Commands
 

@@ -5,18 +5,18 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/services/memory-xx-reranker-adapter
+WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=-%h/services/memory-xx/.env
-Environment=RERANKER_ADAPTER_HOST=127.0.0.1
-Environment=RERANKER_ADAPTER_PORT=8085
-Environment=RERANKER_DOWNSTREAM_URL=http://127.0.0.1:8084/v3/rerank
-Environment=RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
-Environment=RERANKER_ADAPTER_TIMEOUT_MS=10000
-ExecStart=/usr/bin/node %h/services/memory-xx-reranker-adapter/reranker-adapter.mjs
+Environment=MEMORY_XX_RERANKER_ADAPTER_HOST=127.0.0.1
+Environment=MEMORY_XX_RERANKER_ADAPTER_PORT=8085
+Environment=MEMORY_XX_RERANKER_DOWNSTREAM_URL=http://127.0.0.1:8084/v3/rerank
+Environment=MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
+Environment=MEMORY_XX_RERANKER_ADAPTER_TIMEOUT_MS=10000
+ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/reranker-adapter/reranker-adapter.mjs
 Restart=always
 RestartSec=3
-StandardOutput=append:%h/services/memory-xx-reranker-adapter/reranker-adapter.log
-StandardError=append:%h/services/memory-xx-reranker-adapter/reranker-adapter.error.log
+StandardOutput=append:%h/services/memory-xx/.runtime/reranker-adapter.log
+StandardError=append:%h/services/memory-xx/.runtime/reranker-adapter.error.log
 
 [Install]
 WantedBy=memory-xx.target

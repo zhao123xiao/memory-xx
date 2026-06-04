@@ -85,6 +85,71 @@ test("README documents required session roots and API embedding option", async (
   assert.match(readme, /sidecar/u);
 });
 
+test("public repository includes source entries for pluggable full-stack sidecars", async () => {
+  const files = [
+    "sidecars/embedding-proxy/embedding-proxy.mjs",
+    "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs",
+    "sidecars/reranker-adapter/reranker-adapter.mjs",
+    "sidecars/mem0-extractor/extractor.py",
+    "sidecars/fastpath/README.md",
+    "sidecars/lexical-sidecar/README.md",
+  ];
+  const missing: string[] = [];
+  for (const file of files) {
+    try {
+      await readFile(file, "utf8");
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  assert.deepEqual(missing, []);
+});
+
+test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
+  const files = [
+    "sidecars/embedding-proxy/embedding-proxy.mjs",
+    "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs",
+    "sidecars/reranker-adapter/reranker-adapter.mjs",
+    "sidecars/mem0-extractor/extractor.py",
+    "sidecars/fastpath/README.md",
+    "sidecars/lexical-sidecar/README.md",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale, []);
+
+  const fs = await import("node:fs/promises");
+  await assert.rejects(() => fs.stat("sidecars/embedding-proxy/embedding-proxy.log"), /ENOENT/u);
+  await assert.rejects(() => fs.stat("sidecars/mem0-extractor/__pycache__"), /ENOENT/u);
+});
+
+test("public systemd sidecar units point at repo-local sidecar sources", async () => {
+  const units = [
+    "systemd/memory-xx-embedding-proxy-next.service",
+    "systemd/memory-xx-qdrant-proxy-next.service",
+    "systemd/memory-xx-reranker-adapter-next.service",
+    "systemd/memory-xx-mem0-extractor.service",
+  ];
+  const stale: string[] = [];
+  for (const unit of units) {
+    const content = await readFile(unit, "utf8");
+    if (
+      !/sidecars\//u.test(content) ||
+      /services\/memory-xx-(embedding-proxy|qdrant-proxy|reranker-adapter|mem0-extractor)/u.test(content) ||
+      /\/mnt\/|[A-Z]:\\/u.test(content)
+    ) {
+      stale.push(unit);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("MCP test fixtures use the public wrapper port 5100", async () => {
   const content = await readFile("tests/mcp-server.test.ts", "utf8");
 

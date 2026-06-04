@@ -5,14 +5,15 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/services/memory-xx-mem0-extractor
+WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=-%h/services/memory-xx/.env
-Environment=MEMORY_INTELLIGENCE_MEM0_URL=http://127.0.0.1:5220
-ExecStart=%h/services/mem0/.venv/bin/python %h/services/memory-xx-mem0-extractor/extractor.py
+Environment=MEMORY_XX_MEM0_EXTRACTOR_HOST=127.0.0.1
+Environment=MEMORY_XX_MEM0_EXTRACTOR_PORT=5220
+ExecStart=%h/services/memory-xx/.venv/bin/python %h/services/memory-xx/sidecars/mem0-extractor/extractor.py
 Restart=always
 RestartSec=3
-StandardOutput=append:%h/services/memory-xx-mem0-extractor/mem0-extractor.log
-StandardError=append:%h/services/memory-xx-mem0-extractor/mem0-extractor.error.log
+StandardOutput=append:%h/services/memory-xx/.runtime/mem0-extractor.log
+StandardError=append:%h/services/memory-xx/.runtime/mem0-extractor.error.log
 
 [Install]
 WantedBy=memory-xx.target

@@ -210,7 +210,8 @@ TMPDIR=/tmp npm run memory:control-panel
 - 本仓库是 public preview / alpha。
 - Embedding 是必需组件；reranker 是增强组件。
 - Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准。
-- fastpath、lexical sidecar、reranker adapter、embedding proxy、Qdrant proxy、Mem0 extractor 属于 enhanced/full 外部组件；当前公开仓库不承诺一键构建这些 sidecar。
+- `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor 的公开源码；这些模块可按环境开启、关闭或降级。
+- fastpath 和 lexical sidecar 已进入 runtime module registry，但本轮只找到线上二进制，源码导入/重建仍是未完成项；禁用它们不影响 core write/recall。
 - global 自动写入默认不建议开启。
 - real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
 - 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。

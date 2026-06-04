@@ -1,0 +1,19 @@
+# Fastpath Recall Sidecar
+
+The private reference deployment currently runs a Go fastpath sidecar that
+serves `/health`, `/recall-fast`, and cache invalidation endpoints. During the
+first public memory-xx export audit, only the running ELF binary was found, not
+the source tree.
+
+This placeholder keeps the module visible in the public runtime registry while
+making the open-source gap explicit.
+
+Expected module behavior:
+
+- `MEMORY_XX_FASTPATH_ENABLED=0` disables the module.
+- If disabled or unhealthy, wrapper recall falls back to the Node path.
+- `full` profile treats this module as required for release parity.
+- `enhanced` profile treats it as expected but degradable.
+
+Do not commit copied runtime binaries here. The next implementation step is to
+import or recreate the Go source and build instructions.

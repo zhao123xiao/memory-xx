@@ -448,7 +448,7 @@ GET /health
     "mode": "core",
     "required_components": ["wrapper", "postgres", "redis", "qdrant", "embedding_proxy", "projector"],
     "expected_components": [],
-    "optional_components": ["fastpath", "lexical", "reranker", "graph_recall"]
+    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "mem0_extractor", "conversation_monitor", "control_panel"]
   },
   "vector": { "available": true, "backend": "qdrant", "primary_backend": "qdrant" },
   "qdrant": { "configured": true, "collection_name": "memory-xx-active" },
