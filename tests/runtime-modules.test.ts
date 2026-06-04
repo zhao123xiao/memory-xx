@@ -118,6 +118,7 @@ test("memory mode starts expected services for enhanced profiles", () => {
   const coreServices = buildRuntimeProfileStartServices("core");
   const enhancedServices = buildRuntimeProfileStartServices("enhanced", {
     MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "http://127.0.0.1:9000/health",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "http://127.0.0.1:8084/v3/models",
   });
 
   assert.deepEqual(coreServices, [
@@ -139,9 +140,25 @@ test("memory mode skips dependency-bound enhanced services until their upstream 
     MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "",
     MEMORY_XX_MEM0_BASE_URL: "",
     MEMORY_INTELLIGENCE_BASE_URL: "",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "",
+    MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: "",
   });
 
   assert.equal(enhancedServices.includes("memory-xx-mem0-extractor.service"), false);
+  assert.equal(enhancedServices.includes("memory-xx-reranker-adapter-next.service"), false);
+});
+
+test("remote embedding providers keep core start plan independent of local upstream manager", () => {
+  const coreServices = buildRuntimeProfileStartServices("core", {
+    MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED: "0",
+    EMBEDDING_API_BASE: "https://embedding-provider.example/v1",
+  });
+
+  assert.deepEqual(coreServices, [
+    "memory-xx-wrapper.service",
+    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-qdrant-projector-worker.service",
+  ]);
 });
 
 test("memory mode start plan skips full modules disabled by kill switches", () => {
@@ -360,6 +377,33 @@ test("configured external upstreams require a health URL when enabled", () => {
   assert.equal(byName.get("llm_upstream")?.state, "missing_dependency");
   assert.equal(byName.get("llm_upstream")?.blocks_profile, true);
   assert.equal(byName.get("llm_upstream")?.reason, "health_url_unconfigured");
+});
+
+test("reranker upstream requires an explicit health URL when enabled", () => {
+  const states = resolveRuntimeModuleStates("full", {
+    MEMORY_XX_RERANKER_UPSTREAM_ENABLED: "1",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "",
+    MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: "",
+  });
+
+  const byName = new Map(states.map((state) => [state.module.name, state]));
+
+  assert.equal(byName.get("reranker_upstream")?.state, "missing_dependency");
+  assert.equal(byName.get("reranker_upstream")?.blocks_profile, true);
+  assert.equal(byName.get("reranker_upstream")?.reason, "health_url_unconfigured");
+  assert.equal(byName.get("reranker_adapter")?.state, "missing_dependency");
+  assert.equal(byName.get("reranker_adapter")?.reason, "dependency_unavailable:reranker_upstream:missing_dependency");
+});
+
+test("reranker upstream can use adapter downstream models URL as health fallback", () => {
+  const snapshot = buildRuntimeModuleSnapshot("enhanced", {
+    MEMORY_XX_RERANKER_UPSTREAM_ENABLED: "1",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "",
+    MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: "http://reranker.example/v1/models",
+  });
+
+  assert.equal(snapshot.states.reranker_upstream?.state, "enabled");
+  assert.equal(snapshot.states.reranker_upstream?.health_url, "http://reranker.example/v1/models");
 });
 
 test("runtime module snapshot resolves upstream health URLs from injected env", () => {

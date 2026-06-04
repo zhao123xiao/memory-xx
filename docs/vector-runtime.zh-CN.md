@@ -22,6 +22,11 @@ MEMORY_XX_EMBEDDING_GENERATION_ID=local-qwen8b-int4-v1
 MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-memory-v1
 ```
 
+`memory-xx-embedding-proxy` 可以代理远程 OpenAI-compatible provider，也可以代理本机 OVMS。
+只有在需要由 systemd 管理本机 embedding upstream 时，才启用
+`MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1`。如果 `EMBEDDING_API_BASE` 指向远程
+provider，保持 `MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0` 不会阻止 Core 启动。
+
 ## Qdrant Alias 与代际管理
 
 为了避免查询向量、memory 向量、Qdrant collection、cache version 不一致，memory-xx 使用 embedding generation manifest 和 Qdrant alias 管理向量代际。
@@ -61,10 +66,16 @@ Reranker 属于增强组件。它可以提升排序质量，但不应作为最�
 ```bash
 MEMORY_XX_RERANKER_ADAPTER_ENABLED=1
 MEMORY_XX_RERANKER_UPSTREAM_ENABLED=1
+MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL=http://127.0.0.1:8084/v3/models
+MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
 MEMORY_XX_RERANKER_MODE=model
 MEMORY_XX_RERANKER_ENDPOINT=http://127.0.0.1:8085/rerank
 MEMORY_XX_RERANKER_MODEL=qwen3-reranker
 ```
+
+`MEMORY_XX_RERANKER_UPSTREAM_ENABLED=1` 必须同时提供 models/health URL。
+否则 runtime profile 会把 `reranker_upstream` 标记为 `missing_dependency`，
+并跳过依赖它的 `reranker_adapter` 启动计划。
 
 如果 `MEMORY_XX_RERANKER_MODE=model` 或 `MEMORY_XX_RERANKER_ENDPOINT` 未配置，
 wrapper 会继续使用本地排序融合；这属于正常降级，不应影响 Core write/recall。
