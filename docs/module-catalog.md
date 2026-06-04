@@ -99,8 +99,8 @@ matching dependencies are configured.
 | `recall_quality` | `memory:quality`, `memory:intelligence-quality`, `memory:reranker-policy-benchmark`, `memory:p1-evidence`, `memory:recall-repair`, `memory:trace-feedback`, `smoke:recall-quality` |
 | `auto_approval_ops` | `memory:auto-approval`, `memory:auto-approval-ops`, `memory:auto-approval-sweep`, `memory:auto-approval-limit-advisor` |
 | `auto_update_ops` | `memory:auto-update` |
-| `embedding_manifest` | `memory:embedding-manifest` |
-| `embedding_calibration` | `memory:embedding-calibrate` |
+| `embedding_manifest` | `memory:embedding-manifest`, `smoke:embedding-ops` |
+| `embedding_calibration` | `memory:embedding-calibrate`, `smoke:embedding-ops` |
 | `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark` |
 | `backup_and_restore` | `memory:backup`, `smoke:backup-ops` |
 | `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core`, `smoke:compose-profile-live`, `smoke:cache-invalidation`, `smoke:markdown-projection` |

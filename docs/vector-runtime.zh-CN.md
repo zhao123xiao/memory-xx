@@ -48,6 +48,7 @@ TMPDIR=/tmp npm run memory:qdrant-alias -- --json
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
 TMPDIR=/tmp npm run memory:auto-repair -- --dry-run --json
 TMPDIR=/tmp npm run memory:embedding-calibrate
+TMPDIR=/tmp npm run smoke:embedding-ops
 TMPDIR=/tmp npm run memory:generate-local-embeddings -- --help
 ```
 

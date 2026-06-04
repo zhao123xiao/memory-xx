@@ -183,7 +183,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_EMBEDDING_MANIFEST_ENABLED",
     source_paths: ["app/embedding/generation-manifest.ts", "app/embedding/manifest-refresh.ts"],
-    script_paths: ["scripts/embedding-manifest.ts"],
+    script_paths: ["scripts/embedding-manifest.ts", "scripts/embedding-ops-smoke.ts"],
     degraded_behavior: "Embedding generation validation is skipped; wrapper still uses the configured provider and Qdrant collection.",
   },
   {
@@ -195,7 +195,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     env_enabled: "MEMORY_XX_EMBEDDING_CALIBRATION_ENABLED",
     dependencies: ["embedding_proxy"],
     source_paths: ["app/server/embedding-provider.ts", "app/recall/query-embedding-resilience.ts"],
-    script_paths: ["scripts/embedding-calibration.ts"],
+    script_paths: ["scripts/embedding-calibration.ts", "scripts/embedding-ops-smoke.ts"],
     degraded_behavior: "Embedding timeout/concurrency recommendations are not refreshed automatically.",
   },
   {

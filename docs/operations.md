@@ -145,7 +145,7 @@ checks the unit and HTTP contract layer, while `L19` exercises the conversation
 monitor path from JSONL spool ingestion through recall. The cache invalidation,
 write ticket, markdown projection, memory dreaming, full ops, policy ops,
 knowledge graph, Qdrant reconciliation, recall quality, temporal ops, backup
-ops, runtime observability, and trusted agent
+ops, runtime observability, trusted agent, and embedding ops
 smokes validate durable background workers, enhanced graph modules, projection
 repair status, recall/reranker quality surfaces, and temporal governance
 against live PostgreSQL, Redis, Qdrant, the configured embedding provider,
@@ -171,7 +171,9 @@ running it. `smoke:runtime-observability` runs runtime retention, recall trace
 retention, and runtime artifact cleanup in dry-run/report mode; it does not
 delete traces, prune observability rows, or move residue logs. `smoke:trusted-agent`
 runs only trusted-agent and scope-grant audit/list surfaces; it does not
-register, revoke, or modify tokens:
+register, revoke, or modify tokens. `smoke:embedding-ops` reads embedding
+manifest status and runs a small calibration probe only; it does not switch
+aliases, roll back generations, or run local bulk vector jobs:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -189,6 +191,7 @@ TMPDIR=/tmp npm run smoke:temporal-ops
 TMPDIR=/tmp npm run smoke:backup-ops
 TMPDIR=/tmp npm run smoke:runtime-observability
 TMPDIR=/tmp npm run smoke:trusted-agent
+TMPDIR=/tmp npm run smoke:embedding-ops
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in
