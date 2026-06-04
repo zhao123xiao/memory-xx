@@ -68,6 +68,16 @@ EMBEDDING_DIMS=<embedding-dimensions>
 
 远程 embedding provider 可以使用任何 OpenAI-compatible API；价格、可用模型、输出维度和速率限制以 provider 文档为准。
 
+如果只想先验证 Core 链路，可以启用开发用 deterministic embedding upstream。它只用于本地 smoke，不代表真实语义召回质量：
+
+```bash
+MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
+EMBEDDING_MODEL=memory-xx-dev-embedding \
+EMBEDDING_DIMS=384 \
+docker-compose --profile dev up --build -d memory-xx-dev-embedding-upstream memory-xx-embedding-proxy
+```
+
 ## 会话来源目录
 
 如果要自动读取 Codex、Claude Code 或 OpenClaw 历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用。
@@ -152,6 +162,16 @@ TMPDIR=/tmp npm run smoke:functional -- m1
 ```bash
 TMPDIR=/tmp npm run smoke:compose-core
 docker-compose up --build -d
+```
+
+没有真实 embedding provider 时，可以先用 dev profile 验证 Core 布线：
+
+```bash
+MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
+EMBEDDING_MODEL=memory-xx-dev-embedding \
+EMBEDDING_DIMS=384 \
+docker-compose --profile dev up --build -d
 ```
 
 增强模块通过 profile 启动：

@@ -51,6 +51,11 @@ test("docker compose keeps embedding provider defaults vendor-neutral", async ()
   const compose = await readFile("docker-compose.yml", "utf8");
 
   assert.match(compose, /EMBEDDING_PROXY_UPSTREAM_BASE:-\$\{EMBEDDING_API_BASE:-https:\/\/embedding-provider\.example\/v1\}/u);
+  assert.match(compose, /^  memory-xx-dev-embedding-upstream:$/mu);
+  assert.match(compose, /profiles:\s*\n\s+- dev/u);
+  assert.match(compose, /sidecars\/dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
+  assert.match(compose, /MEMORY_XX_DEV_EMBEDDING_DIMS: \$\{MEMORY_XX_DEV_EMBEDDING_DIMS:-\$\{EMBEDDING_DIMS:-384\}\}/u);
+  assert.match(await readFile("sidecars/README.md", "utf8"), /dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
   assert.doesNotMatch(compose, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
 });
 
@@ -255,6 +260,8 @@ test("public quickstart and env template keep embedding provider vendor-neutral"
   const envExample = await readFile(".env.example", "utf8");
 
   assert.match(quickstart, /https:\/\/embedding-provider\.example\/v1/u);
+  assert.match(quickstart, /memory-xx-dev-embedding-upstream/u);
+  assert.match(quickstart, /--profile dev/u);
   assert.doesNotMatch(quickstart, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
   assert.match(envExample, /^EMBEDDING_API_BASE=https:\/\/embedding-provider\.example\/v1$/mu);
   assert.doesNotMatch(envExample, /scnet\.cn/u);
@@ -268,6 +275,8 @@ test("public repository includes source entries for pluggable full-stack sidecar
     "sidecars/mem0-extractor/extractor.py",
     "sidecars/fastpath/fastpath.mjs",
     "sidecars/lexical-sidecar/lexical-sidecar.mjs",
+    "sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs",
+    "sidecars/dev-embedding-upstream/README.md",
   ];
   const missing: string[] = [];
   for (const file of files) {

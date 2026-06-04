@@ -112,6 +112,16 @@ EMBEDDING_DIMS=<embedding-dimensions>
 
 主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。
 
+如果只想先验证 Core write/project/recall 链路，可以用 `memory-xx-dev-embedding-upstream` 开发 profile 提供 deterministic OpenAI-compatible embedding。它只用于本地 smoke，不代表真实语义召回质量：
+
+```bash
+MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
+EMBEDDING_MODEL=memory-xx-dev-embedding \
+EMBEDDING_DIMS=384 \
+docker-compose --profile dev up --build -d
+```
+
 如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
 
 ```bash

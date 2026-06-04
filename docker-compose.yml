@@ -52,6 +52,20 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     restart: unless-stopped
 
+  memory-xx-dev-embedding-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs"]
+    ports:
+      - "5222:5222"
+    environment:
+      MEMORY_XX_DEV_EMBEDDING_HOST: 0.0.0.0
+      MEMORY_XX_DEV_EMBEDDING_PORT: "5222"
+      MEMORY_XX_DEV_EMBEDDING_MODEL: ${MEMORY_XX_DEV_EMBEDDING_MODEL:-memory-xx-dev-embedding}
+      MEMORY_XX_DEV_EMBEDDING_DIMS: ${MEMORY_XX_DEV_EMBEDDING_DIMS:-${EMBEDDING_DIMS:-384}}
+    restart: unless-stopped
+
   memory-xx-qdrant-projector-worker:
     build: .
     command: ["node", "--import", "tsx", "scripts/run-qdrant-projector-worker.ts"]

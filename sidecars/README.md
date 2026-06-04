@@ -8,6 +8,7 @@ must keep working when an optional sidecar is disabled or degraded.
 | Module | Entry | Typical port |
 | --- | --- | --- |
 | Embedding proxy | `embedding-proxy/embedding-proxy.mjs` | `5221` |
+| Dev deterministic embedding upstream | `dev-embedding-upstream/dev-embedding-upstream.mjs` | `5222` |
 | Qdrant collection proxy | `qdrant-proxy/qdrant-collection-proxy.mjs` | `6334` |
 | Reranker adapter | `reranker-adapter/reranker-adapter.mjs` | `8085` |
 | Mem0-style extractor | `mem0-extractor/extractor.py` | `5220` |
