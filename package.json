@@ -31,6 +31,7 @@
     "check:migrations": "node --import tsx scripts/check-migration-order.ts",
     "smoke:compose-core": "node --import tsx scripts/compose-core-smoke.ts",
     "smoke:runtime-profiles": "node --import tsx scripts/runtime-profile-smoke.ts",
+    "smoke:functional": "bash scripts/functional-test-memory-xx.sh",
     "memory:freeze-m0": "node --import tsx scripts/freeze-m0.ts",
     "memory:capacity-smoke": "node --import tsx scripts/capacity-smoke.ts",
     "test": "node --import tsx --test tests/*.test.ts tests/coordination/*.test.ts",

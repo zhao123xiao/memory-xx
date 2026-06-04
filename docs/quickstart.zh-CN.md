@@ -142,6 +142,7 @@ curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/rec
 TMPDIR=/tmp npm run memory:status -- --json
 TMPDIR=/tmp npm run memory:pending -- --json
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
+TMPDIR=/tmp npm run smoke:functional -- m1
 ```
 
 ## Docker Compose

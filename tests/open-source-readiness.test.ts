@@ -639,8 +639,16 @@ test("public runtime profile smoke is exposed as an offline open-source verifica
 });
 
 test("public functional smoke script is portable and auth-aware", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const script = await readFile("scripts/functional-test-memory-xx.sh", "utf8");
 
+  assert.equal(packageJson.scripts["smoke:functional"], "bash scripts/functional-test-memory-xx.sh");
+  assert.match(readme, /npm run smoke:functional/u);
+  assert.match(quickstart, /npm run smoke:functional/u);
   assert.doesNotMatch(script, /shadow_r3_\d+/u);
   assert.doesNotMatch(script, /<linux-user-home>/u);
   assert.match(script, /MEMORY_XX_DATABASE_SCHEMA:-memory_xx/u);
