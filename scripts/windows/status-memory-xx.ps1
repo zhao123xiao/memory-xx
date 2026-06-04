@@ -1,9 +1,18 @@
 param(
-  [string]$ProjectRoot = "<windows-drive>\memory-xx",
-  [string]$WslProjectRoot = "<project-root>"
+  [string]$ProjectRoot = $env:MEMORY_XX_WINDOWS_PROJECT_ROOT,
+  [string]$WslProjectRoot = $env:MEMORY_XX_WSL_PROJECT_ROOT
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+  $ProjectRoot = (Get-Location).Path
+}
+
+if ([string]::IsNullOrWhiteSpace($WslProjectRoot)) {
+  $wslUser = if ($env:MEMORY_XX_WSL_USER) { $env:MEMORY_XX_WSL_USER } else { $env:USERNAME }
+  $WslProjectRoot = "/home/$wslUser/services/memory-xx"
+}
 
 function Test-HttpOk([string]$Url) {
   try {
@@ -25,6 +34,8 @@ try {
 $status = [ordered]@{
   ok = $true
   checked_at = (Get-Date).ToString("o")
+  windows_project_root = $ProjectRoot
+  wsl_project_root = $WslProjectRoot
   windows_native_project_exists = (Test-Path $ProjectRoot)
   wsl_project_exists = $wslAvailable
   wrapper_http_ok = (Test-HttpOk "http://127.0.0.1:5100/health")

@@ -610,6 +610,23 @@ test("public scripts do not document private shadow schemas", async () => {
   assert.deepEqual(stale.sort(), []);
 });
 
+test("public Windows helper scripts derive paths from env or current directory", async () => {
+  const files = await collectPublicFiles("scripts/windows", [".ps1"]);
+  const staleDefaults = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/\[[^\]]+\]\$\w+\s*=\s*"<(?:project-root|windows-drive)>/u.test(content)) {
+      staleDefaults.push(file);
+    }
+  }
+
+  assert.deepEqual(staleDefaults.sort(), []);
+  assert.match(await readFile("scripts/windows/start-memory-xx.ps1", "utf8"), /MEMORY_XX_WSL_PROJECT_ROOT/u);
+  assert.match(await readFile("scripts/windows/status-memory-xx.ps1", "utf8"), /MEMORY_XX_WSL_PROJECT_ROOT/u);
+  assert.match(await readFile("scripts/windows/stop-memory-xx.ps1", "utf8"), /MEMORY_XX_WSL_PROJECT_ROOT/u);
+  assert.match(await readFile("scripts/windows/start-ovms-upstreams.ps1", "utf8"), /MEMORY_XX_OVMS_DIR/u);
+});
+
 test("public module catalog documents every runtime module and full-stack capability", async () => {
   const catalog = await readFile("docs/module-catalog.md", "utf8");
   const missingRuntimeModules = RUNTIME_MODULES
