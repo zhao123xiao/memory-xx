@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -625,6 +626,37 @@ async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<voi
   throw new Error(`sidecar did not become ready at ${baseUrl}`);
 }
 
+async function getFreePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
+  if (!address || typeof address === "string") throw new Error("failed to allocate free port");
+  return address.port;
+}
+
+async function waitForSidecarResponse(baseUrl: string, child: ChildProcess): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`sidecar exited early with code ${child.exitCode}`);
+    }
+    try {
+      await fetch(`${baseUrl}/health`);
+      return;
+    } catch {
+      // Retry until the process binds the port.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`sidecar did not respond at ${baseUrl}`);
+}
+
 async function stopSidecar(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null) return;
   child.kill("SIGTERM");
@@ -636,7 +668,7 @@ async function stopSidecar(child: ChildProcess): Promise<void> {
 }
 
 test("fastpath sidecar starts from source and degrades safely without databases", async () => {
-  const port = 45200 + Math.floor(Math.random() * 1000);
+  const port = await getFreePort();
   const child = spawn(process.execPath, ["sidecars/fastpath/fastpath.mjs"], {
     cwd: process.cwd(),
     env: {
@@ -651,7 +683,7 @@ test("fastpath sidecar starts from source and degrades safely without databases"
 
   try {
     const baseUrl = `http://127.0.0.1:${port}`;
-    await waitForSidecar(baseUrl, child);
+    await waitForSidecarResponse(baseUrl, child);
 
     const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
       ok?: boolean;
@@ -679,7 +711,7 @@ test("fastpath sidecar starts from source and degrades safely without databases"
 });
 
 test("lexical sidecar starts from source and degrades safely without Postgres", async () => {
-  const port = 46200 + Math.floor(Math.random() * 1000);
+  const port = await getFreePort();
   const child = spawn(process.execPath, ["sidecars/lexical-sidecar/lexical-sidecar.mjs"], {
     cwd: process.cwd(),
     env: {
@@ -692,7 +724,7 @@ test("lexical sidecar starts from source and degrades safely without Postgres", 
 
   try {
     const baseUrl = `http://127.0.0.1:${port}`;
-    await waitForSidecar(baseUrl, child);
+    await waitForSidecarResponse(baseUrl, child);
 
     const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
       ok?: boolean;
@@ -714,6 +746,177 @@ test("lexical sidecar starts from source and degrades safely without Postgres", 
     assert.equal(search.ok, true);
     assert.equal(search.degraded, true);
     assert.deepEqual(search.candidates, []);
+  } finally {
+    await stopSidecar(child);
+  }
+});
+
+test("embedding proxy starts from source and reports missing upstream clearly", async () => {
+  const port = await getFreePort();
+  const child = spawn(process.execPath, ["sidecars/embedding-proxy/embedding-proxy.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_EMBEDDING_PROXY_HOST: "127.0.0.1",
+      MEMORY_XX_EMBEDDING_PROXY_PORT: String(port),
+      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE: "",
+      EMBEDDING_API_BASE: "",
+      OPENAI_API_KEY: "",
+      EMBEDDING_API_KEY: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecarResponse(baseUrl, child);
+
+    const healthResponse = await fetch(`${baseUrl}/health`);
+    const health = await healthResponse.json() as {
+      ok?: boolean;
+      upstream_configured?: boolean;
+    };
+    assert.equal(healthResponse.status, 503);
+    assert.equal(health.ok, false);
+    assert.equal(health.upstream_configured, false);
+
+    const embeddings = await fetch(`${baseUrl}/v1/embeddings`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input: "missing upstream", model: "public-test" }),
+    }).then((response) => response.json()) as {
+      error?: string;
+    };
+
+    assert.equal(embeddings.error, "embedding_proxy_not_configured");
+  } finally {
+    await stopSidecar(child);
+  }
+});
+
+test("qdrant proxy starts from source and reports upstream failures without exiting", async () => {
+  const port = await getFreePort();
+  const child = spawn(process.execPath, ["sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_QDRANT_PROXY_HOST: "127.0.0.1",
+      MEMORY_XX_QDRANT_PROXY_PORT: String(port),
+      MEMORY_XX_QDRANT_PROXY_UPSTREAM: "http://127.0.0.1:9",
+      MEMORY_XX_QDRANT_PROXY_TIMEOUT_MS: "200",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecarResponse(baseUrl, child);
+
+    const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
+      ok?: boolean;
+      upstream?: string;
+    };
+    assert.equal(health.ok, true);
+    assert.equal(health.upstream, "http://127.0.0.1:9");
+
+    const scroll = await fetch(`${baseUrl}/collections/memory-xx/points/scroll`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ limit: 1 }),
+    });
+    const payload = await scroll.json() as { error?: string };
+
+    assert.equal(scroll.status, 502);
+    assert.equal(payload.error, "qdrant_proxy_failed");
+    assert.equal(child.exitCode, null);
+  } finally {
+    await stopSidecar(child);
+  }
+});
+
+test("reranker adapter starts from source and reports missing model upstream", async () => {
+  const port = await getFreePort();
+  const child = spawn(process.execPath, ["sidecars/reranker-adapter/reranker-adapter.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_RERANKER_ADAPTER_HOST: "127.0.0.1",
+      MEMORY_XX_RERANKER_ADAPTER_PORT: String(port),
+      MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: "http://127.0.0.1:9/v3/models",
+      MEMORY_XX_RERANKER_DOWNSTREAM_URL: "http://127.0.0.1:9/v3/rerank",
+      MEMORY_XX_RERANKER_ADAPTER_TIMEOUT_MS: "200",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecarResponse(baseUrl, child);
+
+    const health = await fetch(`${baseUrl}/health`);
+    const healthPayload = await health.json() as {
+      ok?: boolean;
+      downstream_ok?: boolean;
+    };
+    assert.equal(health.status, 503);
+    assert.equal(healthPayload.ok, false);
+    assert.equal(healthPayload.downstream_ok, false);
+
+    const rerank = await fetch(`${baseUrl}/rerank`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: "q", documents: ["a", "b"] }),
+    });
+    const payload = await rerank.json() as { error?: string };
+
+    assert.equal(rerank.status, 502);
+    assert.equal(payload.error, "downstream_rerank_failed");
+    assert.equal(child.exitCode, null);
+  } finally {
+    await stopSidecar(child);
+  }
+});
+
+test("mem0 extractor starts from source and falls back when LLM endpoint is absent", async () => {
+  const port = await getFreePort();
+  const child = spawn("python3", ["sidecars/mem0-extractor/extractor.py"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_MEM0_EXTRACTOR_HOST: "127.0.0.1",
+      MEMORY_XX_MEM0_EXTRACTOR_PORT: String(port),
+      MEMORY_XX_MEM0_BASE_URL: "",
+      MEMORY_XX_MEM0_ENDPOINT: "",
+      MEMORY_XX_MEM0_API_KEY: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecar(baseUrl, child);
+
+    const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
+      ok?: boolean;
+      endpoint_configured?: boolean;
+    };
+    assert.equal(health.ok, true);
+    assert.equal(health.endpoint_configured, false);
+
+    const extraction = await fetch(`${baseUrl}/extract`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "请记住：memory-xx 开源版必须支持模块热插拔。" }),
+    }).then((response) => response.json()) as {
+      ok?: boolean;
+      mem0_fallback_reason?: string;
+      fallback_used?: boolean;
+      memories?: unknown[];
+    };
+
+    assert.equal(extraction.ok, true);
+    assert.ok(Array.isArray(extraction.memories));
+    assert.ok(extraction.memories.length > 0);
   } finally {
     await stopSidecar(child);
   }

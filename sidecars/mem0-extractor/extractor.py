@@ -594,6 +594,8 @@ class Handler(BaseHTTPRequestHandler):
                 "service": "memory-xx-mem0-extractor",
                 "protocol": PROTOCOL,
                 "model": MODEL,
+                "endpoint_configured": bool(ENDPOINT),
+                "api_key_configured": bool(API_KEY),
                 "endpoint_host": parsed.netloc,
                 "concurrency": MAX_CONCURRENCY,
                 "mem0_prompt_assets": mem0_prompts is not None,
