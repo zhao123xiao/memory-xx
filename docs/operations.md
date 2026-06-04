@@ -138,6 +138,11 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode full
 dependencies but does not start those external processes. Existing systemd
 service names are preserved, including historical `*-next` names.
 
+`systemd/memory-xx.target` starts only the Core online chain by default:
+wrapper, Qdrant projector worker, and embedding proxy. Start enhanced/full
+modules with `memory:up -- --mode enhanced`, `memory:up -- --mode full`, or
+explicit individual systemd units after their model/API dependencies are ready.
+
 ## P1/P2 Production Closure
 
 P1 promotes PostgreSQL `memory_xx` to the only Source of Truth. Manual audit and

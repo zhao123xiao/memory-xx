@@ -3,15 +3,6 @@ Description=memory-xx production service group
 Wants=memory-xx-wrapper.service
 Wants=memory-xx-qdrant-projector-worker.service
 Wants=memory-xx-embedding-proxy-next.service
-Wants=memory-xx-embedding-upstream.service
-Wants=memory-xx-fastpath.service
-Wants=memory-xx-lexical-sidecar.service
-Wants=memory-xx-reranker-adapter-next.service
-Wants=memory-xx-reranker-upstream.service
-Wants=memory-xx-qdrant-proxy-next.service
-Wants=memory-xx-mem0-extractor.service
-Wants=memory-xx-conversation-monitor-worker.service
-Wants=memory-xx-control-panel.service
 After=network-online.target
 
 [Install]

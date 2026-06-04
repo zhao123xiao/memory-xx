@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = path.resolve(__dirname, "../..");
 
 function resolveEnvPath(): string {
   if (process.env.MEMORY_XX_ENV_PATH?.trim()) {

@@ -60,6 +60,15 @@ Existing service names are preserved, including historical `*-next` names such
 as `memory-xx-embedding-proxy-next.service`. Runtime profiles classify those
 services; they do not rename them.
 
+`systemd/memory-xx.target` is intentionally Core-only. It starts wrapper,
+projector, and embedding proxy so a default user install does not accidentally
+pull environment-specific enhanced/full modules such as reranker, Mem0,
+conversation monitor, or the control panel.
+
+Use `TMPDIR=/tmp npm run memory:up -- --mode enhanced` or start individual
+`systemd/` units to opt into enhanced modules. Use `--mode full` only when the
+local model/API dependencies for the full stack are configured.
+
 Core services are never stopped by `memory:down`. `memory:down -- --mode
 enhanced` stops only enhanced/full optional services such as fastpath, lexical
 sidecar, and reranker.

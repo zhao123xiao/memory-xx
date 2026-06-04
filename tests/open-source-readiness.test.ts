@@ -220,10 +220,33 @@ test("public systemd worker and control units point at repo-local source scripts
     }
   }
 
-  const target = await readFile("systemd/memory-xx.target", "utf8");
-  assert.match(target, /Wants=memory-xx-conversation-monitor-worker\.service/u);
-  assert.match(target, /Wants=memory-xx-control-panel\.service/u);
   assert.deepEqual(stale, []);
+});
+
+test("public systemd default target starts only core services", async () => {
+  const target = await readFile("systemd/memory-xx.target", "utf8");
+
+  for (const coreService of [
+    "memory-xx-wrapper.service",
+    "memory-xx-qdrant-projector-worker.service",
+    "memory-xx-embedding-proxy-next.service",
+  ]) {
+    assert.match(target, new RegExp(`^Wants=${coreService.replaceAll(".", "\\.")}$`, "mu"));
+  }
+
+  for (const pluggableService of [
+    "memory-xx-embedding-upstream.service",
+    "memory-xx-fastpath.service",
+    "memory-xx-lexical-sidecar.service",
+    "memory-xx-reranker-adapter-next.service",
+    "memory-xx-reranker-upstream.service",
+    "memory-xx-qdrant-proxy-next.service",
+    "memory-xx-mem0-extractor.service",
+    "memory-xx-conversation-monitor-worker.service",
+    "memory-xx-control-panel.service",
+  ]) {
+    assert.doesNotMatch(target, new RegExp(`^Wants=${pluggableService.replaceAll(".", "\\.")}$`, "mu"));
+  }
 });
 
 async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<void> {

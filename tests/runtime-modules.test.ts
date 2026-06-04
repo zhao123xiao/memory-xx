@@ -9,6 +9,7 @@ import {
   RUNTIME_MODULES,
   resolveRuntimeModuleStates,
 } from "../app/runtime-modules";
+import { buildRuntimeProfileStartServices } from "../scripts/memory-mode";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -58,6 +59,23 @@ test("runtime module plan keeps core minimal and treats enhanced modules as plug
   assert.equal(full.required_modules.some((module) => module.name === "mem0_extractor"), true);
   assert.equal(full.required_modules.some((module) => module.name === "conversation_monitor"), true);
   assert.equal(full.required_modules.some((module) => module.name === "control_panel"), true);
+});
+
+test("memory mode starts expected services for enhanced profiles", () => {
+  const coreServices = buildRuntimeProfileStartServices("core");
+  const enhancedServices = buildRuntimeProfileStartServices("enhanced");
+
+  assert.deepEqual(coreServices, [
+    "memory-xx-wrapper.service",
+    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-qdrant-projector-worker.service",
+  ]);
+  assert.ok(enhancedServices.includes("memory-xx-fastpath.service"));
+  assert.ok(enhancedServices.includes("memory-xx-lexical-sidecar.service"));
+  assert.ok(enhancedServices.includes("memory-xx-reranker-adapter-next.service"));
+  assert.ok(enhancedServices.includes("memory-xx-mem0-extractor.service"));
+  assert.ok(enhancedServices.includes("memory-xx-conversation-monitor-worker.service"));
+  assert.ok(enhancedServices.includes("memory-xx-control-panel.service"));
 });
 
 test("disabled enhanced modules do not block core readiness", () => {

@@ -68,11 +68,14 @@ candidate-only 退出至少需要满足：真实反馈样本足够、pending 不
 
 `systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter、mem0 extractor、conversation monitor、control panel 等 user service/timer 模板。
 
+`memory-xx.target` 默认只拉起 Core 在线链路：wrapper、Qdrant projector worker 和 embedding proxy。fastpath、lexical sidecar、reranker、Mem0 extractor、conversation monitor、control panel 等模块需要按环境显式开启，避免公开用户缺少本地模型或 LLM endpoint 时影响 Core 运行。
+
 ```bash
 mkdir -p ~/.config/systemd/user
-cp systemd/memory-xx-qdrant-projector-worker.service ~/.config/systemd/user/
+cp systemd/memory-xx*.service systemd/memory-xx*.timer systemd/memory-xx.target ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now memory-xx-qdrant-projector-worker.service
+systemctl --user enable --now memory-xx.target
+TMPDIR=/tmp npm run memory:up -- --mode enhanced
 ```
 
 Windows / WSL / GPU 模型服务属于可选部署形态。公开用户需要按自己的环境配置 embedding upstream、reranker upstream、OpenVINO/OVMS 或其他 OpenAI-compatible endpoint。
