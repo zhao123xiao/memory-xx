@@ -125,6 +125,7 @@
     "memory:control-panel": "node --import tsx scripts/memory-control-panel.ts",
     "memory:embedding-manifest": "node --import tsx scripts/embedding-manifest.ts",
     "memory:quality": "node --import tsx scripts/memory-quality.ts",
+    "memory:dev-embedding-upstream": "node sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs",
     "memory:qdrant-alias": "node --import tsx scripts/qdrant-alias.ts",
     "memory:embedding-calibrate": "node --import tsx scripts/embedding-calibration.ts",
     "memory:generate-local-embeddings": "node --import tsx scripts/generate-local-memory-embeddings.ts",

@@ -15,6 +15,10 @@ must keep working when an optional sidecar is disabled or degraded.
 | Fastpath recall | `fastpath/fastpath.mjs` | `5200` |
 | Lexical recall | `lexical-sidecar/lexical-sidecar.mjs` | `5210` |
 
+Run the dev deterministic embedding upstream with
+`TMPDIR=/tmp npm run memory:dev-embedding-upstream` when you need a local
+OpenAI-compatible endpoint for smoke tests before configuring a real provider.
+
 ## Fastpath And Lexical Implementations
 
 The running private reference deployment uses optimized Go/Rust binaries for

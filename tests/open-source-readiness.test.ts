@@ -49,13 +49,19 @@ test("docker compose uses the public pgvector image and wrapper port 5100", asyn
 
 test("docker compose keeps embedding provider defaults vendor-neutral", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const sidecarReadme = await readFile("sidecars/README.md", "utf8");
 
   assert.match(compose, /EMBEDDING_PROXY_UPSTREAM_BASE:-\$\{EMBEDDING_API_BASE:-https:\/\/embedding-provider\.example\/v1\}/u);
   assert.match(compose, /^  memory-xx-dev-embedding-upstream:$/mu);
   assert.match(compose, /profiles:\s*\n\s+- dev/u);
   assert.match(compose, /sidecars\/dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
   assert.match(compose, /MEMORY_XX_DEV_EMBEDDING_DIMS: \$\{MEMORY_XX_DEV_EMBEDDING_DIMS:-\$\{EMBEDDING_DIMS:-384\}\}/u);
-  assert.match(await readFile("sidecars/README.md", "utf8"), /dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
+  assert.equal(packageJson.scripts["memory:dev-embedding-upstream"], "node sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs");
+  assert.match(sidecarReadme, /dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
+  assert.match(sidecarReadme, /npm run memory:dev-embedding-upstream/u);
   assert.doesNotMatch(compose, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
 });
 
@@ -261,6 +267,7 @@ test("public quickstart and env template keep embedding provider vendor-neutral"
 
   assert.match(quickstart, /https:\/\/embedding-provider\.example\/v1/u);
   assert.match(quickstart, /memory-xx-dev-embedding-upstream/u);
+  assert.match(quickstart, /npm run memory:dev-embedding-upstream/u);
   assert.match(quickstart, /--profile dev/u);
   assert.doesNotMatch(quickstart, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
   assert.match(envExample, /^EMBEDDING_API_BASE=https:\/\/embedding-provider\.example\/v1$/mu);

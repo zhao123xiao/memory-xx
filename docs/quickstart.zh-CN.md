@@ -71,6 +71,12 @@ EMBEDDING_DIMS=<embedding-dimensions>
 如果只想先验证 Core 链路，可以启用开发用 deterministic embedding upstream。它只用于本地 smoke，不代表真实语义召回质量：
 
 ```bash
+TMPDIR=/tmp npm run memory:dev-embedding-upstream
+```
+
+Docker Compose 场景可以用 `dev` profile 启动同一个开发 upstream：
+
+```bash
 MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
 EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
 EMBEDDING_MODEL=memory-xx-dev-embedding \

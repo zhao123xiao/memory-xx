@@ -115,6 +115,12 @@ EMBEDDING_DIMS=<embedding-dimensions>
 如果只想先验证 Core write/project/recall 链路，可以用 `memory-xx-dev-embedding-upstream` 开发 profile 提供 deterministic OpenAI-compatible embedding。它只用于本地 smoke，不代表真实语义召回质量：
 
 ```bash
+TMPDIR=/tmp npm run memory:dev-embedding-upstream
+```
+
+Docker Compose 也可以用 `dev` profile 启动同一个开发 upstream：
+
+```bash
 MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
 EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
 EMBEDDING_MODEL=memory-xx-dev-embedding \
