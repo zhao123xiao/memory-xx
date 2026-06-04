@@ -140,6 +140,27 @@ test("docker compose pluggable services expose host ports through environment ov
   }
 });
 
+test("public env and docs document pluggable compose host port overrides", async () => {
+  const publicText = [
+    await readFile(".env.example", "utf8"),
+    await readFile("configs/memory-xx-wrapper.env.example", "utf8"),
+    await readFile("README.md", "utf8"),
+    await readFile("docs/quickstart.zh-CN.md", "utf8"),
+  ].join("\n");
+  const hostPortVars = [
+    "MEMORY_XX_FASTPATH_HOST_PORT",
+    "MEMORY_XX_LEXICAL_HOST_PORT",
+    "MEMORY_XX_QDRANT_PROXY_HOST_PORT",
+    "MEMORY_XX_RERANKER_ADAPTER_HOST_PORT",
+    "MEMORY_XX_CONTROL_PANEL_HOST_PORT",
+    "MEMORY_XX_MEM0_EXTRACTOR_HOST_PORT",
+  ];
+
+  const missing = hostPortVars.filter((name) => !publicText.includes(name));
+
+  assert.deepEqual(missing, []);
+});
+
 test("docker compose does not let non-wrapper services inherit wrapper healthcheck", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
   const ownHealthchecks = new Map([
