@@ -313,7 +313,42 @@ test("Dockerfile includes source needed by public pluggable modules", async () =
   assert.match(dockerfile, /COPY sidecars\/ sidecars\//u);
   assert.match(dockerfile, /COPY scripts\/ scripts\//u);
   assert.match(dockerfile, /COPY app\/ app\//u);
+  assert.match(dockerfile, /COPY src\/ src\//u);
   assert.match(dockerfile, /COPY tsconfig\.json \.\//u);
+});
+
+test("Dockerfile builder copies every TypeScript source root before build", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+  const tsconfig = JSON.parse(await readFile("tsconfig.json", "utf8")) as { readonly include?: readonly string[] };
+  const beforeBuild = dockerfile.split(/RUN npm run build/u)[0] ?? "";
+  const missing: string[] = [];
+
+  for (const include of tsconfig.include ?? []) {
+    const root = include.split("/")[0];
+    if (!root || root.includes("*")) continue;
+    const copyPattern = new RegExp(`COPY\\s+${root}/\\s+${root}/`, "u");
+    if (!copyPattern.test(beforeBuild)) missing.push(root);
+  }
+
+  assert.deepEqual(missing, []);
+});
+
+test("Dockerfile builder copies scripts used by TypeScript test imports before build", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+  const beforeBuild = dockerfile.split(/RUN npm run build/u)[0] ?? "";
+
+  assert.match(beforeBuild, /COPY scripts\/ scripts\//u);
+});
+
+test("Dockerfile runtime installs locked production dependencies without ad-hoc tsx reinstall", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly dependencies?: Readonly<Record<string, string>>;
+  };
+
+  assert.equal(Boolean(packageJson.dependencies?.tsx), true);
+  assert.match(dockerfile, /RUN npm ci --omit=dev/u);
+  assert.doesNotMatch(dockerfile, /npm install --no-save tsx/u);
 });
 
 test("public env examples use the same default wrapper port", async () => {

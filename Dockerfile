@@ -5,6 +5,9 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY app/ app/
+COPY src/ src/
+COPY scripts/ scripts/
+COPY tests/ tests/
 RUN npm run build
 
 # Stage 2: Production image
@@ -14,11 +17,12 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 python3-requests \
   && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev && npm install --no-save tsx
+RUN npm ci --omit=dev
 COPY --from=builder /app/dist/ dist/
 COPY tsconfig.json ./
 COPY wrapper-entry.mjs ./
 COPY app/ app/
+COPY src/ src/
 COPY scripts/ scripts/
 COPY sidecars/ sidecars/
 COPY configs/ configs/
