@@ -2,13 +2,13 @@
  * Generate embeddings for memory_xx.memory_records
  *
  * Reads all approved + is_current records, generates 4096-dim embeddings
- * via Qwen3-Embedding-8B (OpenAI-compatible API), and writes them to
+ * via an OpenAI-compatible API, and writes them to
  * the content_embedding column.
  *
  * Usage:
  *   OPENAI_API_KEY=sk-xxx \
  *   EMBEDDING_API_BASE=https://embedding-provider.example/v1 \
- *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
+ *   EMBEDDING_MODEL=memory-xx-dev-embedding \
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
  *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/generate-embeddings.ts
@@ -31,7 +31,7 @@ function loadEmbeddingConfig(): EmbeddingConfig {
   if (!apiKey) throw new Error("OPENAI_API_KEY or EMBEDDING_API_KEY is required");
 
   const apiBase = process.env.EMBEDDING_API_BASE?.trim() || "https://embedding-provider.example/v1";
-  const model = process.env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B";
+  const model = process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
   const dims = parseInt(process.env.EMBEDDING_DIMS?.trim() || "4096", 10);
 
   return { apiKey, apiBase, model, dims };

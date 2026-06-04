@@ -1375,6 +1375,27 @@ test("public embedding defaults are provider-neutral", async () => {
   assert.match(await readFile("docs/vector-runtime.zh-CN.md", "utf8"), /MEMORY_XX_EMBEDDING_GENERATION_ID=memory-xx-default-v1/u);
 });
 
+test("public generic embedding scripts do not default to local Qwen generations", async () => {
+  const files = [
+    "scripts/generate-embeddings.ts",
+    "scripts/generate-local-memory-embeddings.ts",
+    "scripts/embedding-manifest.ts",
+    "scripts/embedding-calibration.ts",
+    "scripts/control-panel/summary.ts",
+    "scripts/control-panel/runtime-snapshot.ts",
+    "scripts/memory-doctor.ts",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/Qwen3-Embedding-8B|memory-xx-local-qwen8b-int4(?:-v1)?|local-qwen8b-int4-v1/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("public doctor and control panel remediation stays provider-neutral", async () => {
   const files = [
     "scripts/memory-doctor.ts",

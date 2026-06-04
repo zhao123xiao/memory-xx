@@ -882,7 +882,7 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
         "content-type": "application/json",
         ...(process.env.EMBEDDING_API_KEY ? { authorization: `Bearer ${process.env.EMBEDDING_API_KEY}` } : {}),
       },
-      body: JSON.stringify({ model: model || "Qwen3-Embedding-8B", input: `memory-xx doctor embedding upstream smoke ${randomUUID()}` }),
+      body: JSON.stringify({ model: model || "memory-xx-dev-embedding", input: `memory-xx doctor embedding upstream smoke ${randomUUID()}` }),
       signal: AbortSignal.timeout(10000),
     });
     const body = await response.json().catch(() => ({})) as any;

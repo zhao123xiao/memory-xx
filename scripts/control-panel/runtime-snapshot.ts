@@ -63,7 +63,7 @@ function embeddingApiBase(health: Record<string, unknown>): string {
 
 async function embeddingUpstreamProbe(health: Record<string, unknown>): Promise<ComponentStatus> {
   const provider = objectValue(health.embedding_provider);
-  const model = stringValue(provider.model) || process.env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B";
+  const model = stringValue(provider.model) || process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
   const expectedDims = numberValue(provider.dims);
   const started = Date.now();
   try {

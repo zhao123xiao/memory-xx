@@ -267,7 +267,7 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error("OPENAI_API_KEY or EMBEDDING_PROXY_UPSTREAM_API_KEY is required");
   const base = env("EMBEDDING_PROXY_UPSTREAM_BASE", env("EMBEDDING_API_BASE", "https://embedding-provider.example/v1")).replace(/\/+$/u, "");
   const url = `${base}/embeddings`;
-  const model = env("EMBEDDING_MODEL", "Qwen3-Embedding-8B");
+  const model = env("EMBEDDING_MODEL", "memory-xx-dev-embedding");
   const dims = intEnv("EMBEDDING_DIMS", 4096);
   const timeoutMs = intEnv("EMBEDDING_CALIBRATION_TIMEOUT_MS", 7000);
   const cooldownMs = intEnv("EMBEDDING_CALIBRATION_COOLDOWN_MS", 15000);

@@ -58,7 +58,7 @@ async function embeddingProbe(health: unknown): Promise<EmbeddingProbeResult> {
   const model = stringValue(provider.model) ||
     stringValue(activeGeneration.model) ||
     process.env.EMBEDDING_MODEL?.trim() ||
-    "Qwen3-Embedding-8B";
+    "memory-xx-dev-embedding";
   const expectedDims = positiveIntValue(provider.dims) ||
     positiveIntValue(activeGeneration.dims) ||
     positiveIntValue(process.env.EMBEDDING_DIMS) ||
