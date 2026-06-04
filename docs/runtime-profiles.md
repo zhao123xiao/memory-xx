@@ -61,6 +61,13 @@ The public `configs/memory-xx-wrapper.env.example` lists every
 `full_stack_capabilities.states[*].env_enabled` switch with a default `0` value
 so operators can opt into each package explicitly.
 
+Memory dreaming is exposed as the experimental `memory_dreaming` capability.
+Enable it with `MEMORY_XX_DREAMING_ENABLED=1`, then run
+`TMPDIR=/tmp npm run run:dream-worker -- --once` for a single cycle or start
+`memory-xx-dream-worker.service` / the `memory-xx-dream-worker` Compose
+full-profile service. It calls wrapper health, audit, and optional repair tasks;
+when disabled, Core write/recall is unaffected.
+
 ## Runtime Module States
 
 `app/runtime-modules.ts` is the canonical module registry. Each module records:

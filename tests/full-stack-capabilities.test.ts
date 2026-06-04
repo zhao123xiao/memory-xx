@@ -58,6 +58,21 @@ test("full-stack capability manifest references exported source and CLI paths", 
   assert.deepEqual(missing, []);
 });
 
+test("full-stack capability CLI paths have public npm entrypoints", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const commands = Object.values(packageJson.scripts).join("\n");
+  const missing = FULL_STACK_CAPABILITIES
+    .flatMap((capability) => capability.script_paths.map((script) => `${capability.name}:${script}`))
+    .filter((entry) => {
+      const script = entry.split(":").slice(1).join(":");
+      return !commands.includes(script);
+    });
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("full-stack capability manifest classifies production CLI scripts not modeled as services", () => {
   const covered = new Set(FULL_STACK_CAPABILITIES.flatMap((capability) => capability.script_paths));
   const expected = [

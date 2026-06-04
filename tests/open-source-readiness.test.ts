@@ -55,6 +55,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
     "memory-xx-mem0-extractor",
     "memory-xx-conversation-monitor",
     "memory-xx-markdown-projection",
+    "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
     "memory-xx-control-panel",
   ]) {
@@ -68,6 +69,9 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /scripts\/run-conversation-monitor-worker\.ts/u);
   assert.match(compose, /scripts\/run-markdown-projection-worker\.ts/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts markdown_projection/u);
+  assert.match(compose, /scripts\/run-dream-worker\.ts/u);
+  assert.match(compose, /scripts\/capability-enabled\.ts memory_dreaming/u);
+  assert.match(compose, /MEMORY_XX_DREAMING_ENABLED: \$\{MEMORY_XX_DREAMING_ENABLED:-0\}/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
   assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
@@ -233,6 +237,41 @@ test("public repository includes markdown projection as a pluggable full-stack m
   assert.match(runtimeModules, /startable: true/u);
 });
 
+test("public repository includes memory dreaming as a pluggable full-stack module", async () => {
+  const files = [
+    "app/dream/index.ts",
+    "app/dream/dream-worker.ts",
+    "app/dream/dream-scheduler.ts",
+    "app/dream/dream-tasks.ts",
+    "scripts/run-dream-worker.ts",
+    "systemd/memory-xx-dream-worker.service",
+    "tests/dream.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["run:dream-worker"], "node --import tsx scripts/run-dream-worker.ts");
+  assert.match(await readFile("systemd/memory-xx-dream-worker.service", "utf8"), /scripts\/capability-enabled\.ts memory_dreaming/u);
+  assert.match(capabilities, /name: "memory_dreaming"/u);
+  assert.match(capabilities, /MEMORY_XX_DREAMING_ENABLED/u);
+  assert.match(capabilities, /scripts\/run-dream-worker\.ts/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",
@@ -299,6 +338,7 @@ test("public systemd worker and control units point at repo-local source scripts
   const units = [
     ["systemd/memory-xx-conversation-monitor-worker.service", "scripts/run-conversation-monitor-worker.ts"],
     ["systemd/memory-xx-markdown-projection.service", "scripts/run-markdown-projection-worker.ts"],
+    ["systemd/memory-xx-dream-worker.service", "scripts/run-dream-worker.ts"],
     ["systemd/memory-xx-control-panel.service", "scripts/memory-control-panel.ts"],
   ] as const;
   const stale: string[] = [];
