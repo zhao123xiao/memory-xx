@@ -54,6 +54,9 @@ capability is disabled by default. `/health` exposes the same manifest as
 env switch, exported source/script paths, state, and degraded behavior. A
 disabled capability should not block Core unless a service module in
 `runtime_modules.states` is also required by the selected runtime profile.
+The public `configs/memory-xx-wrapper.env.example` lists every
+`full_stack_capabilities.states[*].env_enabled` switch with a default `0` value
+so operators can opt into each package explicitly.
 
 ## Runtime Module States
 

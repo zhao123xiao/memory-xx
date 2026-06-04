@@ -115,6 +115,20 @@ test("memory npm scripts are classified by runtime modules or full-stack capabil
   assert.deepEqual(missing.sort(), []);
 });
 
+test("full-stack capability env switches are documented in public env examples", () => {
+  const envExample = [
+    readFileSync(".env.example", "utf8"),
+    readFileSync("configs/memory-xx.env.example", "utf8"),
+    readFileSync("configs/memory-xx-wrapper.env.example", "utf8"),
+  ].join("\n");
+  const missing = FULL_STACK_CAPABILITIES
+    .map((capability) => capability.env_enabled)
+    .filter((name): name is string => Boolean(name))
+    .filter((name) => !envExample.includes(name));
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("full-stack capability manifest keeps experimental capabilities disabled by default", () => {
   const experimentalEnabled = FULL_STACK_CAPABILITIES
     .filter((capability) => capability.maturity === "experimental" && capability.default_enabled)
