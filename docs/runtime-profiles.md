@@ -33,6 +33,7 @@ as `llm_upstream` in `/health`; set `MEMORY_XX_MEM0_BASE_URL` or
 - profile role: required, expected, or optional
 - env switch, for example `MEMORY_XX_RERANKER_ADAPTER_ENABLED`
 - health URL or systemd unit when applicable
+- whether an enabled external upstream must have a configured health URL
 - repo source path when source is included
 - degraded behavior when the module is disabled or unhealthy
 

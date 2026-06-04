@@ -125,6 +125,21 @@ test("required full modules become missing_dependency when enabled but source is
   assert.equal(byName.get("lexical_sidecar")?.blocks_profile, true);
 });
 
+test("configured external upstreams require a health URL when enabled", () => {
+  const states = resolveRuntimeModuleStates("full", {
+    MEMORY_XX_LLM_UPSTREAM_ENABLED: "1",
+    MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "",
+    MEMORY_XX_MEM0_BASE_URL: "",
+    MEMORY_INTELLIGENCE_BASE_URL: "",
+  });
+
+  const byName = new Map(states.map((state) => [state.module.name, state]));
+
+  assert.equal(byName.get("llm_upstream")?.state, "missing_dependency");
+  assert.equal(byName.get("llm_upstream")?.blocks_profile, true);
+  assert.equal(byName.get("llm_upstream")?.reason, "health_url_unconfigured");
+});
+
 test("runtime module snapshot exposes compact health payload names and states", () => {
   const snapshot = buildRuntimeModuleSnapshot("enhanced", {
     MEMORY_XX_FASTPATH_ENABLED: "0",

@@ -13,6 +13,7 @@ export interface RuntimeModule {
   readonly default_enabled?: boolean;
   readonly service?: string;
   readonly health_url?: string;
+  readonly require_health_url_when_enabled?: boolean;
   readonly source_path?: string;
   readonly command?: string;
   readonly dependencies?: readonly string[];
@@ -48,6 +49,7 @@ export interface RuntimeModuleSnapshotItem {
   readonly kind: RuntimeModuleKind;
   readonly service?: string;
   readonly health_url?: string;
+  readonly require_health_url_when_enabled?: boolean;
   readonly source_path?: string;
   readonly env_enabled?: string;
   readonly dependencies?: readonly string[];
@@ -234,6 +236,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     kind: "external",
     env_enabled: "MEMORY_XX_LLM_UPSTREAM_ENABLED",
     health_url: process.env.MEMORY_XX_LLM_UPSTREAM_HEALTH_URL?.trim() || process.env.MEMORY_XX_MEM0_BASE_URL?.trim() || process.env.MEMORY_INTELLIGENCE_BASE_URL?.trim(),
+    require_health_url_when_enabled: true,
     required_in: ["full"],
     expected_in: ["enhanced"],
     default_enabled: false,
@@ -357,6 +360,16 @@ export function resolveRuntimeModuleState(
     };
   }
 
+  if (module.require_health_url_when_enabled && !module.health_url?.trim()) {
+    return {
+      module,
+      state: "missing_dependency",
+      enabled: true,
+      blocks_profile: required,
+      reason: "health_url_unconfigured",
+    };
+  }
+
   return {
     module,
     state: "enabled",
@@ -385,6 +398,7 @@ export function buildRuntimeModuleSnapshot(
       kind: resolved.module.kind,
       service: resolved.module.service,
       health_url: resolved.module.health_url,
+      require_health_url_when_enabled: resolved.module.require_health_url_when_enabled,
       source_path: resolved.module.source_path,
       env_enabled: resolved.module.env_enabled,
       dependencies: resolved.module.dependencies,
