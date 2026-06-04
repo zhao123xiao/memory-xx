@@ -24,6 +24,14 @@ async function collectPublicFiles(root: string, extensions: readonly string[]): 
   return files;
 }
 
+function composeServiceBlock(compose: string, service: string): string {
+  const start = compose.search(new RegExp(`^  ${service}:$`, "m"));
+  if (start < 0) return "";
+  const rest = compose.slice(start + 1);
+  const next = rest.search(new RegExp(`\\n  [a-z0-9-]+:$`, "m"));
+  return next < 0 ? compose.slice(start) : compose.slice(start, start + 1 + next);
+}
+
 test("open-source preaudit ignores local ignored build and runtime artifacts", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "memory-xx-preaudit-"));
   await writeFile(path.join(root, "README.md"), "# memory-xx\n", "utf8");
@@ -82,6 +90,15 @@ test("docker compose includes the core Qdrant projector worker", async () => {
   assert.match(compose, /^  memory-xx:[\s\S]*?MEMORY_XX_ADMIN_TOKEN: \$\{MEMORY_XX_ADMIN_TOKEN:-\$\{MEMORY_XX_API_TOKEN:-changeme\}\}[\s\S]*?^    depends_on:/mu);
   assert.match(compose, /memory-xx-embedding-proxy:\s*\n\s+condition: service_started/u);
   assert.match(compose, /qdrant:\s*\n\s+condition: service_started/u);
+});
+
+test("docker compose keeps core long-running services restartable", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+
+  for (const service of ["memory-xx", "memory-xx-embedding-proxy", "memory-xx-qdrant-projector-worker"]) {
+    assert.match(composeServiceBlock(compose, service), /restart: unless-stopped/u, service);
+  }
+  assert.match(composeServiceBlock(compose, "memory-xx-migrate"), /restart: "no"/u);
 });
 
 test("public compose core smoke is exposed as an open-source verification entrypoint", async () => {
@@ -154,6 +171,91 @@ test("docker compose pluggable profile services honor runtime module switches", 
     assert.match(compose, new RegExp(`^  ${service}:$`, "mu"), `missing compose service ${service}`);
     assert.match(compose, new RegExp(`scripts/runtime-module-enabled\\.ts ${moduleName}`, "u"), `missing runtime switch for ${service}`);
     assert.equal(compose.includes(`${envName}: \${${envName}:-0}`), true, `missing disabled default env for ${service}`);
+  }
+});
+
+test("docker compose passes runtime profile into pluggable module guards", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const services = [
+    "memory-xx-fastpath",
+    "memory-xx-lexical-sidecar",
+    "memory-xx-qdrant-proxy",
+    "memory-xx-reranker-adapter",
+    "memory-xx-mem0-extractor",
+    "memory-xx-conversation-monitor",
+    "memory-xx-markdown-projection",
+    "memory-xx-dream-worker",
+    "memory-xx-cache-invalidation-worker",
+    "memory-xx-write-ticket-worker",
+    "memory-xx-control-panel",
+    "memory-xx-maintenance",
+    "memory-xx-consolidation",
+    "memory-xx-detect",
+    "memory-xx-auto-repair",
+    "memory-xx-repair-report",
+    "memory-xx-landing-scan",
+    "memory-xx-canary-7d-report",
+  ];
+  const missing: string[] = [];
+
+  for (const service of services) {
+    const block = composeServiceBlock(compose, service);
+    if (!block.includes("scripts/runtime-module-enabled.ts")) continue;
+    if (!block.includes("MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}")) {
+      missing.push(service);
+    }
+  }
+
+  assert.deepEqual(missing, []);
+});
+
+test("docker compose guarded pluggable modules do not restart successful disabled exits", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const restarted: string[] = [];
+  for (const module of RUNTIME_MODULES) {
+    if (!module.startable || !module.service || !module.env_enabled) continue;
+    const service = module.service
+      .replace(/\.service$/u, "")
+      .replace(/-next$/u, "")
+      .replace(/-worker$/u, "");
+    const block = composeServiceBlock(compose, service);
+    if (!block.includes("scripts/runtime-module-enabled.ts")) continue;
+    if (block.includes("restart: unless-stopped") || block.includes("restart: always")) restarted.push(service);
+  }
+
+  assert.deepEqual(restarted, []);
+});
+
+test("docker compose restart policy matches pluggable module lifecycle", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const longRunning = [
+    "memory-xx-fastpath",
+    "memory-xx-lexical-sidecar",
+    "memory-xx-qdrant-proxy",
+    "memory-xx-reranker-adapter",
+    "memory-xx-mem0-extractor",
+    "memory-xx-conversation-monitor",
+    "memory-xx-dream-worker",
+    "memory-xx-cache-invalidation-worker",
+    "memory-xx-write-ticket-worker",
+    "memory-xx-control-panel",
+  ];
+  const oneShot = [
+    "memory-xx-markdown-projection",
+    "memory-xx-maintenance",
+    "memory-xx-consolidation",
+    "memory-xx-detect",
+    "memory-xx-auto-repair",
+    "memory-xx-repair-report",
+    "memory-xx-landing-scan",
+    "memory-xx-canary-7d-report",
+  ];
+
+  for (const service of longRunning) {
+    assert.match(composeServiceBlock(compose, service), /restart: on-failure/u, service);
+  }
+  for (const service of oneShot) {
+    assert.match(composeServiceBlock(compose, service), /restart: "no"/u, service);
   }
 });
 

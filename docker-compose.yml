@@ -114,6 +114,7 @@ services:
     ports:
       - "5200:5200"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_FASTPATH_ADDR: 0.0.0.0:5200
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
@@ -128,7 +129,7 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-lexical-sidecar:
     build: .
@@ -138,6 +139,7 @@ services:
     ports:
       - "5210:5210"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_LEXICAL_ADDR: 0.0.0.0:5210
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
@@ -145,7 +147,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-qdrant-proxy:
     build: .
@@ -155,6 +157,7 @@ services:
     ports:
       - "6334:6334"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_QDRANT_PROXY_HOST: 0.0.0.0
       MEMORY_XX_QDRANT_PROXY_PORT: "6334"
       MEMORY_XX_QDRANT_PROXY_UPSTREAM: http://qdrant:6333
@@ -164,7 +167,7 @@ services:
     depends_on:
       qdrant:
         condition: service_started
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-reranker-adapter:
     build: .
@@ -174,12 +177,13 @@ services:
     ports:
       - "8085:8085"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_RERANKER_ADAPTER_HOST: 0.0.0.0
       MEMORY_XX_RERANKER_ADAPTER_PORT: "8085"
       MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://host.docker.internal:8084/v3/rerank}
       MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://host.docker.internal:8084/v3/models}
       MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-control-panel:
     build: .
@@ -189,6 +193,7 @@ services:
     ports:
       - "5310:5310"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_CONTROL_PANEL_PORT: "5310"
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -200,7 +205,7 @@ services:
     depends_on:
       memory-xx:
         condition: service_started
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-mem0-extractor:
     build: .
@@ -210,13 +215,14 @@ services:
     ports:
       - "5220:5220"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_MEM0_EXTRACTOR_HOST: 0.0.0.0
       MEMORY_XX_MEM0_EXTRACTOR_PORT: "5220"
       MEMORY_XX_MEM0_BASE_URL: ${MEMORY_XX_MEM0_BASE_URL:-${MEMORY_INTELLIGENCE_BASE_URL:-}}
       MEMORY_XX_MEM0_MODEL: ${MEMORY_XX_MEM0_MODEL:-${MEMORY_INTELLIGENCE_MODEL:-MiniMax-M2.7-highspeed}}
       MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-}}
       MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-conversation-monitor:
     build: .
@@ -224,6 +230,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts conversation_monitor || exit 0; exec node --import tsx scripts/run-conversation-monitor-worker.ts"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -239,7 +246,7 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-markdown-projection:
     build: .
@@ -247,6 +254,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts markdown_projection || exit 0; exec node --import tsx scripts/run-markdown-projection-worker.ts"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -265,6 +273,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts memory_dreaming || exit 0; exec node --import tsx scripts/run-dream-worker.ts"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
@@ -276,7 +285,7 @@ services:
     depends_on:
       memory-xx:
         condition: service_started
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-cache-invalidation-worker:
     build: .
@@ -284,6 +293,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts cache_invalidation_worker || exit 0; exec node --import tsx scripts/run-cache-invalidation-worker.ts"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -295,7 +305,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-write-ticket-worker:
     build: .
@@ -303,6 +313,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts write_ticket_worker || exit 0; exec node --import tsx scripts/run-write-ticket-worker.ts"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -314,7 +325,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: on-failure
 
   memory-xx-maintenance:
     build: .
@@ -322,6 +333,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts maintenance_orchestrator || exit 0; exec npm run memory:maintenance -- run --mode auto --json"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -349,6 +361,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts temporal_consolidation || exit 0; exec npm run memory:consolidate"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -365,6 +378,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts runtime_issue_detection || exit 0; exec npm run memory:auto-repair -- --json"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -389,6 +403,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts auto_repair || exit 0; exec npm run memory:auto-repair -- --apply --json"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -411,6 +426,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts repair_report || exit 0; npm run memory:auto-repair -- --json; exec npm run memory:doctor -- --target ops-ready --mode full --plan"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -435,6 +451,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts landing_scan || exit 0; exec npm run memory:landing-scan -- --json --write-report --max-files=200"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
@@ -455,6 +472,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts canary_7d_report || exit 0; exec npm run memory:canary-7d-report -- --json --write-report"]
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
