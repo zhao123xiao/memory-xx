@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { buildOpenSourcePreauditReport, exportOpenSourceProject } from "../app/ops/open-source-release";
+import { buildParityAuditReport } from "../scripts/open-source-parity-audit";
 
 async function withTempDir<T>(callback: (dir: string) => T | Promise<T>): Promise<T> {
   const dir = mkdtempSync(path.join(tmpdir(), "memory-xx-export-"));
@@ -149,5 +150,75 @@ test("open source export preserves manifest-declared full-stack capabilities", a
         assert.equal(existsSync(path.join(targetDir, script)), true, `missing ${capability.name}:${script}`);
       }
     }
+  });
+});
+
+test("parity audit allows only documented historical reference-only gaps", async () => {
+  await withTempDir(async (parent) => {
+    const referenceName = ["memory", "v2"].join("-");
+    const referenceRoot = path.join(parent, referenceName);
+    const publicRoot = path.join(parent, "memory-xx");
+    write(referenceRoot, "package.json", JSON.stringify({
+      scripts: {
+        "memory:status": "node --import tsx scripts/memory-status.ts",
+        "memory:quality": "node --import tsx scripts/memory-quality.ts",
+      },
+    }, null, 2));
+    write(publicRoot, "package.json", JSON.stringify({
+      scripts: {
+        "memory:status": "node --import tsx scripts/memory-status.ts",
+        "memory:quality": "node --import tsx scripts/memory-quality.ts",
+        "smoke:runtime-profiles": "node --import tsx scripts/runtime-profile-smoke.ts",
+      },
+    }, null, 2));
+    write(referenceRoot, "scripts/memory-status.ts", `console.log(${JSON.stringify(referenceName)});\n`);
+    write(publicRoot, "scripts/memory-status.ts", "console.log('memory-xx');\n");
+    write(referenceRoot, "scripts/memory-quality.ts", "console.log('quality');\n");
+    write(publicRoot, "scripts/memory-quality.ts", "console.log('quality');\n");
+    write(referenceRoot, `configs/${referenceName}.env.example`, `${["MEMORY", "V2"].join("_")}_DATABASE_URL=postgres://example\n`);
+    write(publicRoot, "configs/memory-xx.env.example", "MEMORY_XX_DATABASE_URL=postgres://example\n");
+    write(referenceRoot, "docs/生产闭环补齐方案.md", "# internal historical plan\n");
+    write(referenceRoot, "app/server/http-handlers.ts.pre-bak-restore", "backup\n");
+
+    const report = await buildParityAuditReport({ referenceRoot, publicRoot });
+
+    assert.equal(report.ok, true);
+    assert.deepEqual(report.missing_npm_scripts, []);
+    assert.deepEqual(report.blockers, []);
+    assert.deepEqual(report.reference_only_blockers, []);
+    assert.deepEqual([...report.reference_only_allowed].sort(), [
+      "app/server/http-handlers.ts.pre-bak-restore",
+      "docs/生产闭环补齐方案.md",
+    ]);
+  });
+});
+
+test("parity audit blocks missing public npm scripts and source files", async () => {
+  await withTempDir(async (parent) => {
+    const referenceName = ["memory", "v2"].join("-");
+    const referenceRoot = path.join(parent, referenceName);
+    const publicRoot = path.join(parent, "memory-xx");
+    write(referenceRoot, "package.json", JSON.stringify({
+      scripts: {
+        "memory:status": "node --import tsx scripts/memory-status.ts",
+        "memory:missing": "node --import tsx scripts/memory-missing.ts",
+      },
+    }, null, 2));
+    write(publicRoot, "package.json", JSON.stringify({
+      scripts: {
+        "memory:status": "node --import tsx scripts/memory-status.ts",
+      },
+    }, null, 2));
+    write(referenceRoot, "scripts/memory-status.ts", `console.log(${JSON.stringify(referenceName)});\n`);
+    write(publicRoot, "scripts/memory-status.ts", "console.log('memory-xx');\n");
+    write(referenceRoot, "scripts/memory-missing.ts", "console.log('missing');\n");
+
+    const report = await buildParityAuditReport({ referenceRoot, publicRoot });
+
+    assert.equal(report.ok, false);
+    assert.deepEqual(report.missing_npm_scripts, ["memory:missing"]);
+    assert.deepEqual(report.reference_only_blockers, ["scripts/memory-missing.ts"]);
+    assert.match(report.blockers.join("\n"), /missing_npm_script:memory:missing/u);
+    assert.match(report.blockers.join("\n"), /reference_only_file:scripts\/memory-missing\.ts/u);
   });
 });

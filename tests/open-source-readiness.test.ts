@@ -2286,3 +2286,18 @@ test("package exposes an open-source verification script without runtime env gat
   assert.match(command, /npm run audit:prod/u);
   assert.doesNotMatch(command, /test:gates|test:all-gates/u);
 });
+
+test("package exposes optional reference parity audit without making it a public verification gate", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const source = await readFile("scripts/open-source-parity-audit.ts", "utf8");
+
+  assert.equal(packageJson.scripts["open-source:parity-audit"], "node --import tsx scripts/open-source-parity-audit.ts");
+  assert.doesNotMatch(packageJson.scripts["verify:open-source"], /open-source:parity-audit/u);
+  assert.match(readme, /open-source:parity-audit -- --reference-root "\$MEMORY_XX_PARITY_REFERENCE_ROOT" --json/u);
+  assert.match(source, /MEMORY_XX_PARITY_REFERENCE_ROOT/u);
+  assert.match(source, /missing_npm_script/u);
+  assert.match(source, /reference_only_file/u);
+});

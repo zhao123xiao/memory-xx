@@ -220,6 +220,7 @@ TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
 TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run verify:open-source
+TMPDIR=/tmp npm run open-source:parity-audit -- --reference-root "$MEMORY_XX_PARITY_REFERENCE_ROOT" --json
 TMPDIR=/tmp npm run smoke:compose-core
 TMPDIR=/tmp npm run smoke:compose-profile-live
 TMPDIR=/tmp npm run smoke:runtime-profiles
@@ -258,6 +259,7 @@ TMPDIR=/tmp npm run memory:control-panel
 `smoke:local-embedding-generation` 只运行 estimate-only 小样本验收；不会创建 Qdrant collection、写入 points 或更新 manifest。
 `smoke:governance-ops` 只运行 pending/report/scan 类治理面；不会 apply、freeze、revert、cleanup 或修改记录。
 `smoke:self-improvement-ops` 只生成 report-only self-improvement proposal、Graphiti shadow export 和 test pollution dry-run；不会写 memory、写 markdown、apply 或 cleanup。
+`open-source:parity-audit` 是发布维护者使用的参考树对比工具，需要显式传入本机 reference root；普通用户安装和 Core 启动不需要运行它。
 
 ## 文档导航
 
