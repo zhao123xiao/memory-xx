@@ -229,12 +229,16 @@ test("public compose core smoke is exposed as an open-source verification entryp
   };
   const readme = await readFile("README.md", "utf8");
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
   const script = await readFile("scripts/compose-core-smoke.ts", "utf8");
 
   assert.equal(packageJson.scripts["smoke:compose-core"], "node --import tsx scripts/compose-core-smoke.ts");
+  assert.equal(packageJson.scripts["smoke:compose-profile-live"], "node --import tsx scripts/compose-core-smoke.ts --live");
   assert.match(packageJson.scripts["verify:open-source"], /npm run smoke:compose-core/u);
   assert.match(readme, /npm run smoke:compose-core/u);
+  assert.match(readme, /npm run smoke:compose-profile-live/u);
   assert.match(quickstart, /npm run smoke:compose-core/u);
+  assert.match(operations, /npm run smoke:compose-profile-live/u);
   assert.match(script, /memory-xx-qdrant-projector-worker/u);
   assert.match(script, /enhanced\/full services must stay behind profiles/u);
 });

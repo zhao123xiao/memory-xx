@@ -209,6 +209,7 @@ docker-compose --profile dev up --build -d
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
 MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
+TMPDIR=/tmp npm run smoke:compose-profile-live
 ```
 
 `enhanced` 会额外启动 fastpath、lexical sidecar、Qdrant proxy、reranker adapter 和本地控制面板；`full` 会包含 enhanced 服务，并再暴露 Mem0 extractor、conversation monitor、cache invalidation worker，以及 maintenance、consolidation、detect、auto-repair、repair report、landing scan、canary report 等运维/门禁模块。这些 full 模块默认仍由各自 `MEMORY_XX_*_ENABLED=0` 开关关闭，按环境开启后才执行。模型上游仍需要按本机环境配置，例如 `EMBEDDING_PROXY_UPSTREAM_BASE`、`OPENAI_API_KEY`、reranker downstream URL 和 Mem0/LLM 参数。

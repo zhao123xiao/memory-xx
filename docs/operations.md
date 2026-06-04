@@ -132,7 +132,13 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
+TMPDIR=/tmp npm run smoke:compose-profile-live
 ```
+
+`smoke:compose-profile-live` should be run after a Compose profile is up. It
+compares `docker compose ps --all` with the wrapper `/health` runtime module
+snapshot, so enabled enhanced/full modules must have a matching running
+container while disabled module containers may exit cleanly.
 
 Public harness layers can be run individually when validating a module. `L1`
 checks the unit and HTTP contract layer, while `L19` exercises the conversation

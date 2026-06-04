@@ -221,6 +221,7 @@ TMPDIR=/tmp npm test
 TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run smoke:compose-core
+TMPDIR=/tmp npm run smoke:compose-profile-live
 TMPDIR=/tmp npm run smoke:runtime-profiles
 TMPDIR=/tmp npm run smoke:runtime-profiles -- --live --url http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 TMPDIR=/tmp npm run smoke:cache-invalidation

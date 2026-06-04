@@ -30,6 +30,7 @@
     "check:db-invariants": "node --import tsx scripts/check-db-invariants.ts",
     "check:migrations": "node --import tsx scripts/check-migration-order.ts",
     "smoke:compose-core": "node --import tsx scripts/compose-core-smoke.ts",
+    "smoke:compose-profile-live": "node --import tsx scripts/compose-core-smoke.ts --live",
     "smoke:runtime-profiles": "node --import tsx scripts/runtime-profile-smoke.ts",
     "smoke:conversation-monitor": "node --import tsx scripts/conversation-monitor-smoke.ts",
     "smoke:cache-invalidation": "node --import tsx scripts/cache-invalidation-smoke.ts",
