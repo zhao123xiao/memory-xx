@@ -206,6 +206,7 @@ TMPDIR=/tmp npm run memory:control-panel
 | Canary 与生产就绪 | [docs/canary.zh-CN.md](docs/canary.zh-CN.md) |
 | API 参考 | [docs/api.md](docs/api.md) |
 | Runtime profile | [docs/runtime-profiles.md](docs/runtime-profiles.md) |
+| Module catalog | [docs/module-catalog.md](docs/module-catalog.md) |
 
 ## 当前状态与边界
 

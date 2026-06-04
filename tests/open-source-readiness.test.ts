@@ -6,7 +6,9 @@ import path from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 import test from "node:test";
 
+import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { buildOpenSourcePreauditReport } from "../app/ops/open-source-release";
+import { RUNTIME_MODULES } from "../app/runtime-modules";
 
 test("open-source preaudit ignores local ignored build and runtime artifacts", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "memory-xx-preaudit-"));
@@ -426,6 +428,19 @@ test("public docs expose runtime module state semantics", async () => {
   assert.match(runtimeProfiles, /runtime_modules\.states/u);
   assert.match(runtimeProfiles, /full_stack_capabilities\.states/u);
   assert.match(runtimeProfiles, /enabled.*disabled.*degraded.*missing_dependency/us);
+});
+
+test("public module catalog documents every runtime module and full-stack capability", async () => {
+  const catalog = await readFile("docs/module-catalog.md", "utf8");
+  const missingRuntimeModules = RUNTIME_MODULES
+    .map((module) => module.name)
+    .filter((name) => !catalog.includes(`| \`${name}\``));
+  const missingCapabilities = FULL_STACK_CAPABILITIES
+    .map((capability) => capability.name)
+    .filter((name) => !catalog.includes(`| \`${name}\``));
+
+  assert.deepEqual(missingRuntimeModules, []);
+  assert.deepEqual(missingCapabilities, []);
 });
 
 test("MCP test fixtures use the public wrapper port 5100", async () => {

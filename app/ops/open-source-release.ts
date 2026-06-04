@@ -78,6 +78,7 @@ const PUBLIC_DOCS = new Set([
   "docs/features.zh-CN.md",
   "docs/knowledge.zh-CN.md",
   "docs/migration-rollback-playbook.md",
+  "docs/module-catalog.md",
   "docs/operations.md",
   "docs/operations.zh-CN.md",
   "docs/policy-governance.zh-CN.md",
