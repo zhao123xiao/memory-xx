@@ -17,10 +17,10 @@ If fastpath, lexical sidecar, reranker, or graph enhancement is unavailable,
 Core recall/write should still work and should report optional degradation.
 
 The public repository includes source entries for embedding proxy, Qdrant proxy,
-reranker adapter, and Mem0 extractor under `sidecars/`. Fastpath and lexical
-sidecar are tracked in the runtime module registry and documented under
-`sidecars/`, but their source trees are still pending import because the first
-public export audit only found running binaries. They can be disabled with
+reranker adapter, Mem0 extractor, fastpath, and lexical recall under
+`sidecars/`. Fastpath and lexical recall ship Node.js implementations of the
+HTTP sidecar contracts; optimized Go/Rust implementations can replace them in a
+deployment as long as the contracts stay compatible. They can be disabled with
 `MEMORY_XX_FASTPATH_ENABLED=0` and `MEMORY_XX_LEXICAL_SIDECAR_ENABLED=0`.
 
 ## Runtime Module States

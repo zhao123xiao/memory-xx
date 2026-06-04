@@ -1,11 +1,9 @@
 # Lexical Recall Sidecar
 
-The private reference deployment currently runs a Rust lexical sidecar backed by
-PostgreSQL lexical terms. During the first public memory-xx export audit, only
-the running ELF binary was found, not the source tree.
-
-This placeholder keeps the module visible in the public runtime registry while
-making the open-source gap explicit.
+`lexical-sidecar.mjs` is the public Node.js implementation of the memory-xx
+lexical recall sidecar contract. It serves `/health`, `/search`, and `/recall`.
+The private reference deployment can use an optimized implementation, but this
+source entry keeps enhanced/full profiles open-source runnable.
 
 Expected module behavior:
 
@@ -14,6 +12,7 @@ Expected module behavior:
   lexical paths already available inside the wrapper.
 - `full` profile treats this module as required for release parity.
 - `enhanced` profile treats it as expected but degradable.
+- If PostgreSQL is not configured, `/search` returns `ok: true`,
+  `degraded: true`, and an empty candidate list instead of crashing.
 
-Do not commit copied runtime binaries here. The next implementation step is to
-import or recreate the Rust source and build instructions.
+Do not commit copied runtime binaries here.

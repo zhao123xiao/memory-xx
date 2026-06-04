@@ -245,10 +245,10 @@ test("control panel component statuses use runtime module snapshot states", () =
       fastpath: {
         state: "disabled",
         role: "expected",
-        label: "Go fastpath recall sidecar",
+        label: "Fastpath recall sidecar",
         kind: "sidecar",
         service: "memory-xx-fastpath.service",
-        source_path: "sidecars/fastpath/README.md",
+        source_path: "sidecars/fastpath/fastpath.mjs",
         degraded_behavior: "Recall falls back to Node.",
       },
       mem0_extractor: {

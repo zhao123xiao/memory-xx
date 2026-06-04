@@ -1,12 +1,9 @@
 # Fastpath Recall Sidecar
 
-The private reference deployment currently runs a Go fastpath sidecar that
-serves `/health`, `/recall-fast`, and cache invalidation endpoints. During the
-first public memory-xx export audit, only the running ELF binary was found, not
-the source tree.
-
-This placeholder keeps the module visible in the public runtime registry while
-making the open-source gap explicit.
+`fastpath.mjs` is the public Node.js implementation of the memory-xx fastpath
+contract. It serves `/health`, `/recall-fast`, and `/admin/cache/invalidate`.
+The private reference deployment can use an optimized implementation, but this
+source entry keeps enhanced/full profiles open-source runnable.
 
 Expected module behavior:
 
@@ -14,6 +11,7 @@ Expected module behavior:
 - If disabled or unhealthy, wrapper recall falls back to the Node path.
 - `full` profile treats this module as required for release parity.
 - `enhanced` profile treats it as expected but degradable.
+- If PostgreSQL or lexical sidecar is not configured, `/recall-fast` returns
+  `ok: true`, `degraded: true`, and an empty candidate list instead of crashing.
 
-Do not commit copied runtime binaries here. The next implementation step is to
-import or recreate the Go source and build instructions.
+Do not commit copied runtime binaries here.

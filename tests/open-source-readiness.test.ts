@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { once } from "node:events";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { spawn, type ChildProcess } from "node:child_process";
 import test from "node:test";
 
 import { buildOpenSourcePreauditReport } from "../app/ops/open-source-release";
@@ -91,8 +93,8 @@ test("public repository includes source entries for pluggable full-stack sidecar
     "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs",
     "sidecars/reranker-adapter/reranker-adapter.mjs",
     "sidecars/mem0-extractor/extractor.py",
-    "sidecars/fastpath/README.md",
-    "sidecars/lexical-sidecar/README.md",
+    "sidecars/fastpath/fastpath.mjs",
+    "sidecars/lexical-sidecar/lexical-sidecar.mjs",
   ];
   const missing: string[] = [];
   for (const file of files) {
@@ -112,8 +114,8 @@ test("public sidecar sources use memory-xx names and avoid runtime artifacts", a
     "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs",
     "sidecars/reranker-adapter/reranker-adapter.mjs",
     "sidecars/mem0-extractor/extractor.py",
-    "sidecars/fastpath/README.md",
-    "sidecars/lexical-sidecar/README.md",
+    "sidecars/fastpath/fastpath.mjs",
+    "sidecars/lexical-sidecar/lexical-sidecar.mjs",
   ];
   const stale: string[] = [];
   for (const file of files) {
@@ -134,13 +136,15 @@ test("public systemd sidecar units point at repo-local sidecar sources", async (
     "systemd/memory-xx-qdrant-proxy-next.service",
     "systemd/memory-xx-reranker-adapter-next.service",
     "systemd/memory-xx-mem0-extractor.service",
+    "systemd/memory-xx-fastpath.service",
+    "systemd/memory-xx-lexical-sidecar.service",
   ];
   const stale: string[] = [];
   for (const unit of units) {
     const content = await readFile(unit, "utf8");
     if (
       !/sidecars\//u.test(content) ||
-      /services\/memory-xx-(embedding-proxy|qdrant-proxy|reranker-adapter|mem0-extractor)/u.test(content) ||
+      /services\/memory-xx-(embedding-proxy|qdrant-proxy|reranker-adapter|mem0-extractor|fastpath|lexical-sidecar)/u.test(content) ||
       /\/mnt\/|[A-Z]:\\/u.test(content)
     ) {
       stale.push(unit);
@@ -148,6 +152,117 @@ test("public systemd sidecar units point at repo-local sidecar sources", async (
   }
 
   assert.deepEqual(stale, []);
+});
+
+async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`sidecar exited early with code ${child.exitCode}`);
+    }
+    try {
+      const response = await fetch(`${baseUrl}/health`);
+      if (response.ok) return;
+    } catch {
+      // Retry until the process binds the port.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`sidecar did not become ready at ${baseUrl}`);
+}
+
+async function stopSidecar(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null) return;
+  child.kill("SIGTERM");
+  await Promise.race([
+    once(child, "exit"),
+    new Promise((resolve) => setTimeout(resolve, 1000)),
+  ]);
+  if (child.exitCode === null) child.kill("SIGKILL");
+}
+
+test("fastpath sidecar starts from source and degrades safely without databases", async () => {
+  const port = 45200 + Math.floor(Math.random() * 1000);
+  const child = spawn(process.execPath, ["sidecars/fastpath/fastpath.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_FASTPATH_ADDR: `127.0.0.1:${port}`,
+      MEMORY_XX_DATABASE_URL: "",
+      MEMORY_XX_REDIS_URL: "",
+      MEMORY_XX_QDRANT_BASE_URL: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecar(baseUrl, child);
+
+    const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
+      ok?: boolean;
+      status?: string;
+    };
+    assert.equal(health.ok, true);
+    assert.equal(health.status, "degraded");
+
+    const recall = await fetch(`${baseUrl}/recall-fast`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: "missing database still returns safely", scopeType: "user", scopeId: "u1", topK: 3 }),
+    }).then((response) => response.json()) as {
+      ok?: boolean;
+      candidates?: unknown[];
+      degraded?: boolean;
+    };
+
+    assert.equal(recall.ok, true);
+    assert.equal(recall.degraded, true);
+    assert.deepEqual(recall.candidates, []);
+  } finally {
+    await stopSidecar(child);
+  }
+});
+
+test("lexical sidecar starts from source and degrades safely without Postgres", async () => {
+  const port = 46200 + Math.floor(Math.random() * 1000);
+  const child = spawn(process.execPath, ["sidecars/lexical-sidecar/lexical-sidecar.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH ?? "",
+      MEMORY_XX_LEXICAL_ADDR: `127.0.0.1:${port}`,
+      MEMORY_XX_DATABASE_URL: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForSidecar(baseUrl, child);
+
+    const health = await fetch(`${baseUrl}/health`).then((response) => response.json()) as {
+      ok?: boolean;
+      status?: string;
+    };
+    assert.equal(health.ok, true);
+    assert.equal(health.status, "degraded");
+
+    const search = await fetch(`${baseUrl}/search`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: "missing database", scopeType: "user", scopeId: "u1", limit: 3 }),
+    }).then((response) => response.json()) as {
+      ok?: boolean;
+      candidates?: unknown[];
+      degraded?: boolean;
+    };
+
+    assert.equal(search.ok, true);
+    assert.equal(search.degraded, true);
+    assert.deepEqual(search.candidates, []);
+  } finally {
+    await stopSidecar(child);
+  }
 });
 
 test("public docs expose runtime module state semantics", async () => {

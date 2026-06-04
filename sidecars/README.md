@@ -11,13 +11,16 @@ must keep working when an optional sidecar is disabled or degraded.
 | Qdrant collection proxy | `qdrant-proxy/qdrant-collection-proxy.mjs` | `6334` |
 | Reranker adapter | `reranker-adapter/reranker-adapter.mjs` | `8085` |
 | Mem0-style extractor | `mem0-extractor/extractor.py` | `5220` |
+| Fastpath recall | `fastpath/fastpath.mjs` | `5200` |
+| Lexical recall | `lexical-sidecar/lexical-sidecar.mjs` | `5210` |
 
-## Pending Source Import
+## Fastpath And Lexical Implementations
 
-The running private reference deployment also uses Go fastpath and Rust lexical
-sidecars. Only their running binaries were found during the first public export
-audit, so this repository currently ships module metadata and placeholders for
-those two components until their source trees are imported.
+The running private reference deployment uses optimized Go/Rust binaries for
+fastpath and lexical recall. This public repository ships Node.js source
+implementations for the same sidecar contracts so enhanced/full profiles remain
+open-source runnable. Operators can replace them with optimized implementations
+as long as the HTTP contracts stay compatible.
 
 Do not commit logs, `.env` files, caches, pycache directories, model artifacts,
 or copied runtime binaries into this directory.

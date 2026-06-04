@@ -33,8 +33,8 @@ test("runtime module registry describes full-stack pluggable modules", () => {
   assert.equal(modules.get("qdrant_proxy")?.source_path, "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs");
   assert.equal(modules.get("reranker_adapter")?.source_path, "sidecars/reranker-adapter/reranker-adapter.mjs");
   assert.equal(modules.get("mem0_extractor")?.source_path, "sidecars/mem0-extractor/extractor.py");
-  assert.equal(modules.get("fastpath")?.source_path, "sidecars/fastpath/README.md");
-  assert.equal(modules.get("lexical_sidecar")?.source_path, "sidecars/lexical-sidecar/README.md");
+  assert.equal(modules.get("fastpath")?.source_path, "sidecars/fastpath/fastpath.mjs");
+  assert.equal(modules.get("lexical_sidecar")?.source_path, "sidecars/lexical-sidecar/lexical-sidecar.mjs");
 });
 
 test("runtime module plan keeps core minimal and treats enhanced modules as pluggable", () => {

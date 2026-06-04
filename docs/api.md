@@ -458,7 +458,7 @@ GET /health
         "role": "optional",
         "enabled": false,
         "blocks_profile": false,
-        "source_path": "sidecars/fastpath/README.md",
+        "source_path": "sidecars/fastpath/fastpath.mjs",
         "degraded_behavior": "Recall falls back to the Node wrapper path with higher latency."
       },
       "mem0_extractor": {
