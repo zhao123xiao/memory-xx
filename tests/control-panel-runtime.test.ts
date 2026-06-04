@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -274,3 +274,34 @@ test("control panel component statuses use runtime module snapshot states", () =
   assert.equal(byName.get("mem0_extractor")?.status, "blocked");
   assert.equal(byName.get("mem0_extractor")?.source, "sidecars/mem0-extractor/extractor.py");
 });
+
+test("control panel component statuses include worker status file failures", () => withRuntimeDir(() => {
+  const statusFile = join(process.env.MEMORY_XX_RUNTIME_DIR ?? "", "write-ticket-worker.status.json");
+  writeFileSync(statusFile, JSON.stringify({
+    worker_id: "write-ticket-worker-test",
+    ok: false,
+    phase: "startup_failed",
+    error: "connect ECONNREFUSED 127.0.0.1:5432",
+    at: "2026-06-04T00:00:00.000Z",
+  }), "utf8");
+
+  const components = buildComponentStatusesFromRuntimeModules({
+    states: {
+      write_ticket_worker: {
+        state: "enabled",
+        role: "expected",
+        label: "Write ticket worker",
+        kind: "worker",
+        service: "memory-xx-write-ticket-worker.service",
+        source_path: "scripts/run-write-ticket-worker.ts",
+        degraded_behavior: "Asynchronous writes are not processed automatically.",
+      },
+    },
+  });
+
+  const worker = components.find((component) => component.name === "write_ticket_worker");
+  assert.equal(worker?.status, "blocked");
+  assert.match(worker?.detail ?? "", /startup_failed/u);
+  assert.match(worker?.detail ?? "", /ECONNREFUSED/u);
+  assert.equal(worker?.source, statusFile);
+}));
