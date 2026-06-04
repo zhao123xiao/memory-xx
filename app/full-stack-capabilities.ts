@@ -339,6 +339,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/archive-write-tickets.ts",
       "scripts/sweep-ingest-accepted.ts",
       "scripts/sweep-low-confidence-buffer.ts",
+      "scripts/write-ticket-smoke.ts",
     ],
     degraded_behavior: "Expired write tickets are not swept or archived automatically; new writes still use the normal idempotency path.",
   },
