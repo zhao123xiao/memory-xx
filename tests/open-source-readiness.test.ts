@@ -31,6 +31,39 @@ test("docker compose uses the public pgvector image and wrapper port 5100", asyn
   assert.doesNotMatch(compose, /4001:4001/u);
 });
 
+test("docker compose exposes pluggable enhanced and full-stack services as profiles", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+
+  for (const service of [
+    "memory-xx-embedding-proxy",
+    "memory-xx-fastpath",
+    "memory-xx-lexical-sidecar",
+    "memory-xx-qdrant-proxy",
+    "memory-xx-reranker-adapter",
+    "memory-xx-mem0-extractor",
+    "memory-xx-conversation-monitor",
+    "memory-xx-control-panel",
+  ]) {
+    assert.match(compose, new RegExp(`^  ${service}:`, "mu"), `missing compose service ${service}`);
+  }
+
+  assert.match(compose, /profiles:\s*\n\s+- enhanced/u);
+  assert.match(compose, /profiles:\s*\n\s+- full/u);
+  assert.match(compose, /sidecars\/fastpath\/fastpath\.mjs/u);
+  assert.match(compose, /sidecars\/lexical-sidecar\/lexical-sidecar\.mjs/u);
+  assert.match(compose, /scripts\/run-conversation-monitor-worker\.ts/u);
+  assert.match(compose, /scripts\/memory-control-panel\.ts/u);
+});
+
+test("Dockerfile includes source needed by public pluggable modules", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+
+  assert.match(dockerfile, /COPY sidecars\/ sidecars\//u);
+  assert.match(dockerfile, /COPY scripts\/ scripts\//u);
+  assert.match(dockerfile, /COPY app\/ app\//u);
+  assert.match(dockerfile, /COPY tsconfig\.json \.\//u);
+});
+
 test("public env examples use the same default wrapper port", async () => {
   const fs = await import("node:fs/promises");
   const rootEnv = await fs.readFile(".env.example", "utf8");

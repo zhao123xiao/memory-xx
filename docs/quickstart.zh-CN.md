@@ -143,3 +143,20 @@ TMPDIR=/tmp npm run memory:status -- --json
 TMPDIR=/tmp npm run memory:pending -- --json
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
 ```
+
+## Docker Compose
+
+默认 Compose 启动 Core 路径：wrapper、embedding proxy、PostgreSQL、Redis、Qdrant。
+
+```bash
+docker-compose up --build -d
+```
+
+增强模块通过 profile 启动：
+
+```bash
+docker-compose --profile enhanced up --build -d
+docker-compose --profile full up --build -d
+```
+
+`enhanced` 会额外启动 fastpath、lexical sidecar、Qdrant proxy、reranker adapter 和本地控制面板；`full` 会再启动 Mem0 extractor 和 conversation monitor。模型上游仍需要按本机环境配置，例如 `EMBEDDING_PROXY_UPSTREAM_BASE`、`OPENAI_API_KEY`、reranker downstream URL 和 Mem0/LLM 参数。
