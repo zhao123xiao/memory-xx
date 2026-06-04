@@ -231,7 +231,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_PLATFORM_DOCTOR_ENABLED",
     source_paths: ["app/ops/preflight.ts", "app/runtime-config-validator.ts", "app/runtime-modules.ts"],
-    script_paths: ["scripts/memory-platform-doctor.ts", "scripts/memory-doctor.ts", "scripts/runtime-profile-smoke.ts", "scripts/compose-core-smoke.ts", "scripts/cache-invalidation-smoke.ts"],
+    script_paths: ["scripts/memory-platform-doctor.ts", "scripts/memory-doctor.ts", "scripts/runtime-profile-smoke.ts", "scripts/compose-core-smoke.ts", "scripts/cache-invalidation-smoke.ts", "scripts/markdown-projection-smoke.ts"],
     degraded_behavior: "Automated environment diagnosis is unavailable; health endpoints and explicit checks still work.",
   },
   {

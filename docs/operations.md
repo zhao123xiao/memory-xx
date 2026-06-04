@@ -136,15 +136,17 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode full
 
 Public harness layers can be run individually when validating a module. `L1`
 checks the unit and HTTP contract layer, while `L19` exercises the conversation
-monitor path from JSONL spool ingestion through recall. The cache invalidation
-and write ticket smokes validate durable background workers against live
-PostgreSQL, Redis, Qdrant, and the configured embedding provider:
+monitor path from JSONL spool ingestion through recall. The cache invalidation,
+write ticket, and markdown projection smokes validate durable background
+workers against live PostgreSQL, Redis, Qdrant, the configured embedding
+provider, and generated projection files:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run test:conversation-monitor
 TMPDIR=/tmp npm run smoke:cache-invalidation
 TMPDIR=/tmp npm run smoke:write-ticket
+TMPDIR=/tmp npm run smoke:markdown-projection
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in

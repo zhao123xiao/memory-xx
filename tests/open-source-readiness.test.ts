@@ -753,8 +753,10 @@ test("public repository includes markdown projection as a pluggable full-stack m
     "scripts/source-mode.ts",
     "scripts/run-projection-shadow-r3.ts",
     "scripts/run-markdown-projection-worker.ts",
+    "scripts/markdown-projection-smoke.ts",
     "systemd/memory-xx-markdown-projection.service",
     "tests/projection-foundation.test.ts",
+    "tests/markdown-projection-smoke.test.ts",
   ];
   const missing: string[] = [];
   const stale: string[] = [];
@@ -1724,15 +1726,19 @@ test("package exposes public harness entrypoints for unit contract and conversat
   assert.equal(packageJson.scripts["smoke:conversation-monitor"], "node --import tsx scripts/conversation-monitor-smoke.ts");
   assert.equal(packageJson.scripts["smoke:cache-invalidation"], "node --import tsx scripts/cache-invalidation-smoke.ts");
   assert.equal(packageJson.scripts["smoke:write-ticket"], "node --import tsx scripts/write-ticket-smoke.ts");
+  assert.equal(packageJson.scripts["smoke:markdown-projection"], "node --import tsx scripts/markdown-projection-smoke.ts");
   assert.match(readme, /npm run test:unit-contract/u);
   assert.match(readme, /npm run smoke:cache-invalidation/u);
   assert.match(readme, /npm run smoke:write-ticket/u);
+  assert.match(readme, /npm run smoke:markdown-projection/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
   assert.match(operations, /npm run smoke:cache-invalidation/u);
   assert.match(operations, /npm run smoke:write-ticket/u);
+  assert.match(operations, /npm run smoke:markdown-projection/u);
   assert.match(operationsZh, /npm run test:conversation-monitor/u);
   assert.match(operationsZh, /npm run smoke:cache-invalidation/u);
   assert.match(operationsZh, /npm run smoke:write-ticket/u);
+  assert.match(operationsZh, /npm run smoke:markdown-projection/u);
 });
 
 test("package exposes an open-source verification script without runtime env gates", async () => {
