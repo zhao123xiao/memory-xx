@@ -225,7 +225,7 @@ function secretFinding(relative: string, line: string, lineNumber: number): Open
       message: "contains a secret-like literal",
     };
   }
-  if (/^\s*(?:OPENAI_API_KEY|QDRANT_API_KEY|MEMORY_V2_(?:API|ADMIN|CLI)_TOKEN)\s*=\s*[^#\s<]/u.test(line)) {
+  if (/^\s*(?:OPENAI_API_KEY|QDRANT_API_KEY|MEMORY_XX_(?:API|ADMIN|CLI)_TOKEN)\s*=\s*[^#\s<]/u.test(line)) {
     return {
       kind: "secret_like_literal",
       severity: "blocker",
@@ -314,7 +314,7 @@ function sanitizePackageLockJson(content: string): string {
 
 function sanitizeEnvExample(content: string): string {
   return content.split(/\r?\n/u).map((line) => {
-    if (/^\s*(?:OPENAI_API_KEY|EMBEDDING_API_KEY|QDRANT_API_KEY|MEMORY_INTELLIGENCE_.*API_KEY|QDRANT_API_KEY|MEMORY_V2_(?:API|MCP|ADMIN|CLI)_TOKEN)=/u.test(line)) {
+    if (/^\s*(?:OPENAI_API_KEY|EMBEDDING_API_KEY|QDRANT_API_KEY|MEMORY_INTELLIGENCE_.*API_KEY|QDRANT_API_KEY|MEMORY_XX_(?:API|MCP|ADMIN|CLI)_TOKEN)=/u.test(line)) {
       return line.replace(/=.*/u, "=<set-in-env>");
     }
     return sanitizeOpenSourceText(line, { renameProject: true });
@@ -325,7 +325,7 @@ function sanitizeWorkflow(content: string): string {
   return sanitizeOpenSourceText(content, { renameProject: true })
     .replace(/postgres:\/\/postgres:postgres@/gu, "postgres://postgres@")
     .replace(/OPENAI_API_KEY=test-key/gu, "OPENAI_API_KEY=<set-in-env>")
-    .replace(/MEMORY_V2_API_TOKEN=test-token/gu, "MEMORY_V2_API_TOKEN=<set-in-env>");
+    .replace(/MEMORY_XX_API_TOKEN=test-token/gu, "MEMORY_XX_API_TOKEN=<set-in-env>");
 }
 
 function sanitizeSecurityTest(content: string): string {

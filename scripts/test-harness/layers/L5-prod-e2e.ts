@@ -41,7 +41,7 @@ async function main() {
   };
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/write"), writeBody, { token });
+    const resp = await httpPost(apiUrl("/api/memory/xx/write"), writeBody, { token });
     const body = resp.body as any;
     memoryId = body?.memoryId || body?.memory_id || "";
     check("write", !!memoryId,
@@ -59,7 +59,7 @@ async function main() {
   // 2. Approve
   try {
     const resp = await httpPost(
-      apiUrl(`/api/memory/v2/review/memories/${memoryId}/approve`),
+      apiUrl(`/api/memory/xx/review/memories/${memoryId}/approve`),
       { requestId: randomUUID(), actorId: "l5-prod-e2e" },
       { token },
     );
@@ -84,7 +84,7 @@ async function main() {
 
   // 4. Recall
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: recallNeedle,
       scope_context: {
         user_id: "l5-e2e",
@@ -108,7 +108,7 @@ async function main() {
 
   // 5. Forget/Tombstone
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/orchestrator/forget-memory"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/orchestrator/forget-memory"), {
       memoryId,
       mode: "tombstone",
       actorId: "l5-prod-e2e",
@@ -156,7 +156,7 @@ async function main() {
 
   // 8. Verify primed recall cache no longer returns the tombstoned memory.
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: recallNeedle,
       scope_context: {
         user_id: "l5-e2e",

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
 
-const root = process.env.MEMORY_V2_PROJECT_ROOT || "<project-root>";
+const root = process.env.MEMORY_XX_PROJECT_ROOT || "<project-root>";
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const archiveDir = path.join(root, "logs", "archive-next-residue", stamp);
 

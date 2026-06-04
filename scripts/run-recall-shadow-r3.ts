@@ -7,7 +7,7 @@ import {
   InMemoryMigrationAuditRepository,
   RecallShadowCompareHarness,
   ScopeType,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   type RecallResponse,
   type RecallResultItem,
   type RecallScopeRef,
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   await fs.mkdir(outputDir, { recursive: true });
 
   const records = await loadRecords(batchDir);
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const runtime = createPostgresRecallRuntime({
     config,
     query_embedding_provider: {

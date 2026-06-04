@@ -13,8 +13,8 @@ import { readString } from "./request-parsing";
 
 export function trustedAutoApprove(agentId: string, mode: ExtractionMode): boolean {
   if (mode !== "auto_approve") return false;
-  if (process.env.MEMORY_V2_TRUSTED_AGENT_AUTO_APPROVE !== "true") return false;
-  const trustedAgents = (process.env.MEMORY_V2_TRUSTED_AGENTS ?? "")
+  if (process.env.MEMORY_XX_TRUSTED_AGENT_AUTO_APPROVE !== "true") return false;
+  const trustedAgents = (process.env.MEMORY_XX_TRUSTED_AGENTS ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
@@ -22,7 +22,7 @@ export function trustedAutoApprove(agentId: string, mode: ExtractionMode): boole
 }
 
 export function isTrustedAgent(agentId: string): boolean {
-  const trustedAgents = (process.env.MEMORY_V2_TRUSTED_AGENTS ?? "")
+  const trustedAgents = (process.env.MEMORY_XX_TRUSTED_AGENTS ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
@@ -46,11 +46,11 @@ export interface SilentApprovePolicy {
 }
 
 async function loadCandidateOnlyRuntimeFlag(): Promise<{ readonly enabled: boolean; readonly reasons: readonly string[] }> {
-  if (process.env.MEMORY_V2_INTELLIGENCE_CANDIDATE_ONLY === "true") {
+  if (process.env.MEMORY_XX_INTELLIGENCE_CANDIDATE_ONLY === "true") {
     return { enabled: true, reasons: ["env_candidate_only"] };
   }
 
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   try {
     const raw = await readFile(path.join(runtimeDir, "intelligence-candidate-only.json"), "utf8");
     const parsed = JSON.parse(raw) as { enabled?: unknown; reasons?: unknown };
@@ -275,7 +275,7 @@ export async function recordAutoApprovalAudit(input: {
       ...(productionCanaryDecision
         ? {
             production_canary: true,
-            production_canary_run_id: process.env.MEMORY_V2_PRODUCTION_CANARY_RUN_ID?.trim() || "memory-production-canary-7d-v1",
+            production_canary_run_id: process.env.MEMORY_XX_PRODUCTION_CANARY_RUN_ID?.trim() || "memory-production-canary-7d-v1",
           }
         : {}),
       ...(input.policy.low_value ? { low_value: input.policy.low_value } : {}),

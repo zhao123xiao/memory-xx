@@ -82,7 +82,7 @@ function readOptionalPositiveInt(env: NodeJS.ProcessEnv, name: string): number |
 }
 
 function readRerankerPolicy(env: NodeJS.ProcessEnv): RerankerPolicy {
-  const raw = (env.MEMORY_V2_RERANKER_POLICY ?? "adaptive").trim().toLowerCase();
+  const raw = (env.MEMORY_XX_RERANKER_POLICY ?? "adaptive").trim().toLowerCase();
   return raw === "force_top1" || raw === "always" ? raw : "adaptive";
 }
 
@@ -226,7 +226,7 @@ function scoreCacheKey(input: {
   readonly selected: readonly RetrieverCandidate[];
   readonly modelWeight: number;
 }): string {
-  const generation = process.env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || "";
+  const generation = process.env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "";
   const candidateSignature = input.selected
     .map((candidate) => `${candidate.memory_id}:${candidate.record.updated_at ?? ""}:${candidate.score.toFixed(6)}`)
     .join("|");
@@ -254,7 +254,7 @@ function readCachedScores(key: string): Map<string, number> | null {
 
 function writeCachedScores(key: string, scores: Map<string, number>, ttlMs: number): void {
   if (ttlMs <= 0 || scores.size === 0) return;
-  const maxEntries = readPositiveInt(process.env, "MEMORY_V2_RERANKER_CACHE_MAX_ENTRIES", 500);
+  const maxEntries = readPositiveInt(process.env, "MEMORY_XX_RERANKER_CACHE_MAX_ENTRIES", 500);
   while (rerankScoreCache.size >= maxEntries) {
     const oldest = rerankScoreCache.keys().next().value;
     if (!oldest) break;
@@ -324,13 +324,13 @@ export async function rerankCandidatesWithOptionalModel(
     };
   }
 
-  const mode = (env.MEMORY_V2_RERANKER_MODE ?? "").trim().toLowerCase();
-  const endpoint = (env.MEMORY_V2_RERANKER_ENDPOINT ?? "").trim();
+  const mode = (env.MEMORY_XX_RERANKER_MODE ?? "").trim().toLowerCase();
+  const endpoint = (env.MEMORY_XX_RERANKER_ENDPOINT ?? "").trim();
   const policyForcesModel = policy === "force_top1" || policy === "always";
   const minCandidates = policyForcesModel
-    ? Math.min(readPositiveInt(env, "MEMORY_V2_RERANKER_MIN_CANDIDATES", 4), 2)
-    : readPositiveInt(env, "MEMORY_V2_RERANKER_MIN_CANDIDATES", 4);
-  const minGap = readFraction(env, "MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD", 0.20);
+    ? Math.min(readPositiveInt(env, "MEMORY_XX_RERANKER_MIN_CANDIDATES", 4), 2)
+    : readPositiveInt(env, "MEMORY_XX_RERANKER_MIN_CANDIDATES", 4);
+  const minGap = readFraction(env, "MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD", 0.20);
   const forceModelRerank = constraints.force_model_rerank === true || policyForcesModel;
   if (
     policy !== "always" &&
@@ -382,15 +382,15 @@ export async function rerankCandidatesWithOptionalModel(
     };
   }
 
-  const configuredTimeoutMs = readRuntimePositiveInt(env, "recall.reranker.timeout_ms", "MEMORY_V2_RERANKER_TIMEOUT_MS", 1500);
-  const timeoutCapMs = readOptionalPositiveInt(env, "MEMORY_V2_RERANKER_TIMEOUT_CAP_MS");
+  const configuredTimeoutMs = readRuntimePositiveInt(env, "recall.reranker.timeout_ms", "MEMORY_XX_RERANKER_TIMEOUT_MS", 1500);
+  const timeoutCapMs = readOptionalPositiveInt(env, "MEMORY_XX_RERANKER_TIMEOUT_CAP_MS");
   const timeoutMs = timeoutCapMs === undefined ? configuredTimeoutMs : Math.min(configuredTimeoutMs, timeoutCapMs);
-  const model = (env.MEMORY_V2_RERANKER_MODEL ?? "qwen3-reranker").trim() || "qwen3-reranker";
-  const maxCandidates = Math.max(1, readPositiveInt(env, "MEMORY_V2_RERANKER_MAX_CANDIDATES", policyForcesModel ? 8 : 10));
-  const modelWeight = readFraction(env, "MEMORY_V2_RERANKER_MODEL_WEIGHT", 0.25);
+  const model = (env.MEMORY_XX_RERANKER_MODEL ?? "qwen3-reranker").trim() || "qwen3-reranker";
+  const maxCandidates = Math.max(1, readPositiveInt(env, "MEMORY_XX_RERANKER_MAX_CANDIDATES", policyForcesModel ? 8 : 10));
+  const modelWeight = readFraction(env, "MEMORY_XX_RERANKER_MODEL_WEIGHT", 0.25);
   const selected = local.slice(0, maxCandidates);
   const rest = local.slice(maxCandidates);
-  const cacheTtlMs = readRuntimeNonNegativeInt(env, "cache.reranker.ttl_ms", "MEMORY_V2_RERANKER_CACHE_TTL_MS", 60_000);
+  const cacheTtlMs = readRuntimeNonNegativeInt(env, "cache.reranker.ttl_ms", "MEMORY_XX_RERANKER_CACHE_TTL_MS", 60_000);
   const cacheKey = scoreCacheKey({
     endpoint,
     model,
@@ -418,8 +418,8 @@ export async function rerankCandidatesWithOptionalModel(
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(env.MEMORY_V2_RERANKER_API_KEY?.trim()
-          ? { authorization: `Bearer ${env.MEMORY_V2_RERANKER_API_KEY.trim()}` }
+        ...(env.MEMORY_XX_RERANKER_API_KEY?.trim()
+          ? { authorization: `Bearer ${env.MEMORY_XX_RERANKER_API_KEY.trim()}` }
           : {})
       },
       body: JSON.stringify({

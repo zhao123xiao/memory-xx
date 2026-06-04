@@ -54,7 +54,7 @@ export class SemanticWriteLock {
     readonly ttlMs?: number;
     readonly waitTimeoutMs?: number;
   }): Promise<SemanticWriteLockAcquireResult> {
-    if ((process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND?.trim() || "local") === "redis") {
+    if ((process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND?.trim() || "local") === "redis") {
       try {
         const redisResult = await this.acquireRedis(input);
         if (redisResult) return redisResult;
@@ -111,7 +111,7 @@ export class SemanticWriteLock {
     readonly ttlMs?: number;
     readonly waitTimeoutMs?: number;
   }): Promise<SemanticWriteLockAcquireResult | null> {
-    const url = process.env.MEMORY_V2_REDIS_URL?.trim() || process.env.REDIS_URL?.trim() || "";
+    const url = process.env.MEMORY_XX_REDIS_URL?.trim() || process.env.REDIS_URL?.trim() || "";
     if (!url) {
       if (configuredInstanceCount() > 1) {
         throw new Error("redis_semantic_lock_unconfigured");
@@ -187,16 +187,16 @@ export class SemanticWriteLock {
 }
 
 function configuredInstanceCount(): number {
-  const parsed = Number.parseInt(process.env.MEMORY_V2_INSTANCE_COUNT?.trim() || "1", 10);
+  const parsed = Number.parseInt(process.env.MEMORY_XX_INSTANCE_COUNT?.trim() || "1", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 function readDedupeEmbeddingThreshold(): number {
-  const raw = process.env.MEMORY_V2_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD?.trim();
+  const raw = process.env.MEMORY_XX_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD?.trim();
   if (!raw) return DEFAULT_SIMILARITY_THRESHOLD;
   const parsed = Number.parseFloat(raw);
   if (!Number.isFinite(parsed) || parsed < 0.5 || parsed > 1) {
-    throw new Error("MEMORY_V2_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD 必须在 0.5 到 1 之间。");
+    throw new Error("MEMORY_XX_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD 必须在 0.5 到 1 之间。");
   }
   return parsed;
 }

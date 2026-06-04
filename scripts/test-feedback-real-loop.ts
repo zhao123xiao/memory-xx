@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { promisify } from "node:util";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { shouldFreezeAutoApprovalCohortMetrics } from "../app/governance/auto-approval-feedback.js";
 import { collectRuntimeSnapshot } from "./control-panel/runtime-snapshot.js";
 import { quoteIdent } from "./lib/runtime-env.js";
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   const memoryId = `memory_${randomUUID()}`;
   const requestId = `request_${randomUUID()}`;
   const traceId = `recall_trace_${randomUUID()}`;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const failures: Record<string, unknown>[] = [];

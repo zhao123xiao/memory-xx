@@ -12,7 +12,7 @@ import type { NormalizedCreateMemoryCommand } from "../../shared/contracts/write
 import { mapMemoryRecordRow } from "../adapters/postgres-row-mappers";
 
 function activeEmbeddingGeneration(): string | null {
-  return process.env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || null;
+  return process.env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || null;
 }
 
 export interface UpdateMemoryRecordStateInput {

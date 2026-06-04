@@ -122,10 +122,10 @@ export function loadIntelligenceConfig(env: NodeJS.ProcessEnv = process.env): In
     lowConfidenceThreshold: parseFiniteNumberEnv(env, "MEMORY_INTELLIGENCE_LOW_CONFIDENCE_THRESHOLD", 0.75),
     maxTokens: parsePositiveIntEnv(env, "MEMORY_INTELLIGENCE_MAX_TOKENS", 256),
     llmCircuit: {
-      windowMs: parseRangedIntEnv(env, "MEMORY_V2_LLM_CIRCUIT_WINDOW_MS", 60_000, 1_000, 600_000),
-      minCalls: parseRangedIntEnv(env, "MEMORY_V2_LLM_CIRCUIT_MIN_CALLS", 5, 1, 100),
-      failureRate: parseRangedFloatEnv(env, "MEMORY_V2_LLM_CIRCUIT_FAILURE_RATE", 0.5, 0, 1),
-      cooldownMs: parseRangedIntEnv(env, "MEMORY_V2_LLM_CIRCUIT_COOLDOWN_MS", 30_000, 1_000, 600_000),
+      windowMs: parseRangedIntEnv(env, "MEMORY_XX_LLM_CIRCUIT_WINDOW_MS", 60_000, 1_000, 600_000),
+      minCalls: parseRangedIntEnv(env, "MEMORY_XX_LLM_CIRCUIT_MIN_CALLS", 5, 1, 100),
+      failureRate: parseRangedFloatEnv(env, "MEMORY_XX_LLM_CIRCUIT_FAILURE_RATE", 0.5, 0, 1),
+      cooldownMs: parseRangedIntEnv(env, "MEMORY_XX_LLM_CIRCUIT_COOLDOWN_MS", 30_000, 1_000, 600_000),
     },
   };
 }

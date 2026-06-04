@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { apiUrl, httpPost } from "./test-harness/lib/http-client";
 import { config } from "./test-harness/config";
 import { loadDotenvIfPresent, quoteIdent } from "./lib/runtime-env";
@@ -118,7 +118,7 @@ function buildScenario(index: number, runId: string): Scenario {
 }
 
 async function withTemporaryCanaryScope(scopeKey: string, fn: () => Promise<void>): Promise<void> {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   const file = join(runtimeDir, "auto-approval-canary.json");
   const hadOriginal = existsSync(file);
   const original = hadOriginal ? await readFile(file, "utf8") : "";
@@ -170,7 +170,7 @@ async function fetchMemoryRows(pool: Pool, schema: string, ids: readonly string[
 
 async function cleanupRun(pool: Pool, schema: string, runId: string, memoryIds: readonly string[]): Promise<void> {
   for (const memoryId of memoryIds) {
-    await httpPost(apiUrl("/api/memory/v2/unified/forget"), {
+    await httpPost(apiUrl("/api/memory/xx/unified/forget"), {
       memory_id: memoryId,
       agent_id: "llm-conversation-simulation",
       mode: "tombstone",
@@ -194,7 +194,7 @@ async function main(): Promise<void> {
   const runId = `llm-${Date.now().toString(36)}-${marker()}`;
   const scopeId = `llm-sim-${runId}`;
   const scopeKey = `project:${scopeId}`;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const scenarios = Array.from({ length: total }, (_, index) => buildScenario(index, runId));
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
         const conversationId = `llm-sim-${runId}-${scenario.index}`;
         const sessionId = `llm-sim-session-${runId}-${scenario.index}`;
         try {
-          const response = await httpPost(apiUrl("/api/memory/v2/conversation/ingest"), {
+          const response = await httpPost(apiUrl("/api/memory/xx/conversation/ingest"), {
             conversation_id: conversationId,
             session_id: sessionId,
             agent_id: "codex",
@@ -280,7 +280,7 @@ async function main(): Promise<void> {
     const approvedIds = results.flatMap((item) => item.approved_count > 0 ? item.candidate_memory_ids : []);
     const recallSamples: Array<Record<string, unknown>> = [];
     for (const memoryId of approvedIds.slice(0, 3)) {
-      const recall = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+      const recall = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
         query: runId,
         scope_type: "project",
         scope_id: scopeId,

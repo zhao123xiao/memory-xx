@@ -48,9 +48,9 @@ function quoteIdent(value: string): string {
 }
 
 async function collectPostgres(env: Record<string, string>): Promise<Record<string, unknown>> {
-  const databaseUrl = env.MEMORY_V2_DATABASE_URL ?? "";
-  const schema = env.MEMORY_V2_DATABASE_SCHEMA || "memory_xx";
-  if (!databaseUrl) return { available: false, reason: "MEMORY_V2_DATABASE_URL not configured" };
+  const databaseUrl = env.MEMORY_XX_DATABASE_URL ?? "";
+  const schema = env.MEMORY_XX_DATABASE_SCHEMA || "memory_xx";
+  if (!databaseUrl) return { available: false, reason: "MEMORY_XX_DATABASE_URL not configured" };
 
   const pool = new Pool({ connectionString: databaseUrl, max: 2 });
   try {
@@ -110,15 +110,15 @@ async function collectPostgres(env: Record<string, string>): Promise<Record<stri
 }
 
 async function collectQdrant(env: Record<string, string>): Promise<Record<string, unknown>> {
-  const baseUrl = env.MEMORY_V2_QDRANT_BASE_URL || "";
-  const collection = env.MEMORY_V2_QDRANT_COLLECTION || env.MEMORY_V2_QDRANT_COLLECTION_NAME || "";
+  const baseUrl = env.MEMORY_XX_QDRANT_BASE_URL || "";
+  const collection = env.MEMORY_XX_QDRANT_COLLECTION || env.MEMORY_XX_QDRANT_COLLECTION_NAME || "";
   if (!baseUrl || !collection) return { available: false, reason: "qdrant url or collection not configured" };
   try {
     const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/collections/${encodeURIComponent(collection)}/points/count`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(env.MEMORY_V2_QDRANT_API_KEY ? { "api-key": env.MEMORY_V2_QDRANT_API_KEY } : {}),
+        ...(env.MEMORY_XX_QDRANT_API_KEY ? { "api-key": env.MEMORY_XX_QDRANT_API_KEY } : {}),
       },
       body: JSON.stringify({ exact: true }),
       signal: AbortSignal.timeout(5_000),
@@ -137,8 +137,8 @@ async function collectQdrant(env: Record<string, string>): Promise<Record<string
 }
 
 async function collectRedis(env: Record<string, string>): Promise<Record<string, unknown>> {
-  const url = env.MEMORY_V2_REDIS_URL || "";
-  if (!url) return { available: false, reason: "MEMORY_V2_REDIS_URL not configured" };
+  const url = env.MEMORY_XX_REDIS_URL || "";
+  if (!url) return { available: false, reason: "MEMORY_XX_REDIS_URL not configured" };
   const client = createClient({ url });
   try {
     await client.connect();
@@ -158,8 +158,8 @@ async function collectRedis(env: Record<string, string>): Promise<Record<string,
 }
 
 async function collectMetrics(env: Record<string, string>): Promise<Record<string, unknown>> {
-  const token = env.MEMORY_V2_API_TOKEN || env.MEMORY_V2_ADMIN_TOKEN || "";
-  const baseUrl = env.MEMORY_V2_WRAPPER_URL || `http://127.0.0.1:${env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+  const token = env.MEMORY_XX_API_TOKEN || env.MEMORY_XX_ADMIN_TOKEN || "";
+  const baseUrl = env.MEMORY_XX_WRAPPER_URL || `http://127.0.0.1:${env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
   try {
     const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/metrics`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -349,7 +349,7 @@ async function main(): Promise<void> {
   const outputDir = join(process.cwd(), "artifacts", "capacity", date);
   mkdirSync(outputDir, { recursive: true, mode: 0o700 });
 
-  const envPath = process.env.MEMORY_V2_ENV_PATH || join(process.cwd(), ".env");
+  const envPath = process.env.MEMORY_XX_ENV_PATH || join(process.cwd(), ".env");
   const fileEnv = readEnvFile(envPath);
   const env = { ...fileEnv, ...process.env } as Record<string, string>;
   const capturedAt = new Date().toISOString();

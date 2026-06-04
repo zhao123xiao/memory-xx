@@ -1,5 +1,5 @@
 export function resolvePanelPort(env: NodeJS.ProcessEnv = process.env): number {
-  const raw = env.MEMORY_V2_CONTROL_PANEL_PORT?.trim();
+  const raw = env.MEMORY_XX_CONTROL_PANEL_PORT?.trim();
   const parsed = raw ? Number.parseInt(raw, 10) : 5310;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5310;
 }

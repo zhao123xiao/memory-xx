@@ -17,8 +17,8 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import pg from "pg";
 
-const DB_URL = process.env.MEMORY_V2_DATABASE_URL || "postgres://postgres:postgres@127.0.0.1:5432/memory_xx";
-const SCHEMA = process.env.MEMORY_V2_DATABASE_SCHEMA || "memory_xx";
+const DB_URL = process.env.MEMORY_XX_DATABASE_URL || "postgres://postgres:postgres@127.0.0.1:5432/memory_xx";
+const SCHEMA = process.env.MEMORY_XX_DATABASE_SCHEMA || "memory_xx";
 const dryRun = process.argv.includes("--dry-run");
 const debug = process.argv.includes("--debug");
 

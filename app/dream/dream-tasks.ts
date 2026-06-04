@@ -5,7 +5,7 @@ import { createLogger } from "../shared/logger";
 
 const log = createLogger("dream-tasks");
 
-function dreamFetch(url: string, init: RequestInit = {}, timeoutMs = Number.parseInt(process.env.MEMORY_V2_DREAM_TASK_TIMEOUT_MS ?? "5000", 10)): Promise<Response> {
+function dreamFetch(url: string, init: RequestInit = {}, timeoutMs = Number.parseInt(process.env.MEMORY_XX_DREAM_TASK_TIMEOUT_MS ?? "5000", 10)): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 5000);
   return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeout));
@@ -27,7 +27,7 @@ export function createConsistencyAuditTask(deps: {
     description: "Audit memory database for consistency issues (orphaned records, missing events)",
     async execute(): Promise<DreamTaskResult> {
       const start = Date.now();
-      const res = await dreamFetch(`${base}/api/memory/v2/orchestrator/audit-memory-consistency`, {
+      const res = await dreamFetch(`${base}/api/memory/xx/orchestrator/audit-memory-consistency`, {
         method: "POST",
         headers,
         body: JSON.stringify({ include_records: false }),
@@ -77,7 +77,7 @@ export function createAutoRepairTask(deps: {
     description: "Automatically repair consistency issues found during audit",
     async execute(): Promise<DreamTaskResult> {
       const start = Date.now();
-      const res = await dreamFetch(`${base}/api/memory/v2/orchestrator/repair-memory-consistency`, {
+      const res = await dreamFetch(`${base}/api/memory/xx/orchestrator/repair-memory-consistency`, {
         method: "POST",
         headers,
         body: JSON.stringify({ dry_run: deps.dryRun ?? true }),

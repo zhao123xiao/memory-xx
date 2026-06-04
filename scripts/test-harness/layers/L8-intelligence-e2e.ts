@@ -72,7 +72,7 @@ async function main() {
 
   try {
     for (const tc of extractionCases) {
-      const resp = await httpPost(apiUrl("/api/memory/v2/intelligence/extract"), {
+      const resp = await httpPost(apiUrl("/api/memory/xx/intelligence/extract"), {
         text: tc.text,
         agent_id: "l8-intelligence-e2e",
         scope_hint: scopeHint,
@@ -143,7 +143,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/intelligence/smart-write"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/intelligence/smart-write"), {
       text,
       agent_id: "l8-intelligence-e2e",
       scope_hint: scopeHint,

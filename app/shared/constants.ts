@@ -8,14 +8,14 @@ import {
 } from "./types";
 
 export const API_PREFIXES: ApiPrefixMap = {
-  base: "/api/memory/v2",
-  write: "/api/memory/v2/write",
-  ingest: "/api/memory/v2/ingest",
-  review: "/api/memory/v2/review",
-  recall: "/api/memory/v2/recall",
-  orchestrator: "/api/memory/v2/orchestrator",
-  projection: "/api/memory/v2/projection",
-  ops: "/api/memory/v2/ops"
+  base: "/api/memory/xx",
+  write: "/api/memory/xx/write",
+  ingest: "/api/memory/xx/ingest",
+  review: "/api/memory/xx/review",
+  recall: "/api/memory/xx/recall",
+  orchestrator: "/api/memory/xx/orchestrator",
+  projection: "/api/memory/xx/projection",
+  ops: "/api/memory/xx/ops"
 };
 
 export const LONG_TERM_SCOPE_TYPES = [

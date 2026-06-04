@@ -13,7 +13,7 @@ import { loadIntelligenceConfig } from "../app/intelligence/config";
 const execFileAsync = promisify(execFile);
 
 function loadLocalEnv(): Record<string, string> {
-  const envPath = process.env.MEMORY_V2_ENV_PATH?.trim() || path.join(process.cwd(), ".env");
+  const envPath = process.env.MEMORY_XX_ENV_PATH?.trim() || path.join(process.cwd(), ".env");
   const loaded: Record<string, string> = {};
   try {
     const raw = fs.readFileSync(envPath, "utf8");
@@ -40,10 +40,10 @@ function env(key: string, fallback = ""): string {
 }
 
 const runtimeConfig = {
-  wrapperUrl: env("MEMORY_V2_WRAPPER_URL", `http://127.0.0.1:${env("MEMORY_V2_WRAPPER_PORT", "5100")}`).replace(/\/+$/, ""),
-  wrapperToken: env("MEMORY_V2_ADMIN_TOKEN", env("MEMORY_V2_API_TOKEN")),
-  dbUrl: env("MEMORY_V2_DATABASE_URL", "postgres://postgres:postgres@127.0.0.1:5432/memory_xx"),
-  dbSchema: env("MEMORY_V2_DATABASE_SCHEMA", "memory_xx"),
+  wrapperUrl: env("MEMORY_XX_WRAPPER_URL", `http://127.0.0.1:${env("MEMORY_XX_WRAPPER_PORT", "5100")}`).replace(/\/+$/, ""),
+  wrapperToken: env("MEMORY_XX_ADMIN_TOKEN", env("MEMORY_XX_API_TOKEN")),
+  dbUrl: env("MEMORY_XX_DATABASE_URL", "postgres://postgres:postgres@127.0.0.1:5432/memory_xx"),
+  dbSchema: env("MEMORY_XX_DATABASE_SCHEMA", "memory_xx"),
 };
 
 function createPool(): pg.Pool {
@@ -133,18 +133,18 @@ function envFlag(name: string, fallback = false): boolean {
 }
 
 function readOptions(): CliOptions {
-  const threshold = Number.parseInt(process.env.MEMORY_V2_SELF_IMPROVEMENT_RECURRENCE_PROMOTE_THRESHOLD ?? "3", 10);
+  const threshold = Number.parseInt(process.env.MEMORY_XX_SELF_IMPROVEMENT_RECURRENCE_PROMOTE_THRESHOLD ?? "3", 10);
   return {
     dryRun: hasArg("--dry-run"),
     json: hasArg("--json"),
-    writeMarkdown: hasArg("--write-markdown") || envFlag("MEMORY_V2_SELF_IMPROVEMENT_MARKDOWN", false),
+    writeMarkdown: hasArg("--write-markdown") || envFlag("MEMORY_XX_SELF_IMPROVEMENT_MARKDOWN", false),
     writeMemory: !hasArg("--no-write-memory"),
-    scopeId: process.env.MEMORY_V2_SELF_IMPROVEMENT_SCOPE_ID?.trim() || "memory-xx-self-improvement",
+    scopeId: process.env.MEMORY_XX_SELF_IMPROVEMENT_SCOPE_ID?.trim() || "memory-xx-self-improvement",
     recurrencePromoteThreshold: Number.isFinite(threshold) && threshold > 0 ? threshold : 3,
     skipQuality: hasArg("--skip-quality"),
     deterministic: hasArg("--deterministic"),
-    collectorTimeoutMs: argNumber("--collector-timeout-ms", Number.parseInt(process.env.MEMORY_V2_SELF_IMPROVEMENT_COLLECTOR_TIMEOUT_MS ?? "90000", 10) || 90_000),
-    llmTimeoutMs: argNumber("--llm-timeout-ms", Number.parseInt(process.env.MEMORY_V2_SELF_IMPROVEMENT_LLM_TIMEOUT_MS ?? "45000", 10) || 45_000),
+    collectorTimeoutMs: argNumber("--collector-timeout-ms", Number.parseInt(process.env.MEMORY_XX_SELF_IMPROVEMENT_COLLECTOR_TIMEOUT_MS ?? "90000", 10) || 90_000),
+    llmTimeoutMs: argNumber("--llm-timeout-ms", Number.parseInt(process.env.MEMORY_XX_SELF_IMPROVEMENT_LLM_TIMEOUT_MS ?? "45000", 10) || 45_000),
   };
 }
 
@@ -648,7 +648,7 @@ function entryText(entry: SelfImprovementEntry): string {
 }
 
 async function writeEntry(entry: SelfImprovementEntry, scopeId: string): Promise<Record<string, unknown>> {
-  const response = await fetch(`${runtimeConfig.wrapperUrl}/api/memory/v2/write`, {
+  const response = await fetch(`${runtimeConfig.wrapperUrl}/api/memory/xx/write`, {
     method: "POST",
     headers: {
       "content-type": "application/json",

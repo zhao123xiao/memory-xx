@@ -3,11 +3,11 @@ import { Pool } from "pg";
 
 import {
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
-  type MemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
+  type MemoryXXPostgresConfig,
 } from "../db/adapters/postgres-config";
 import { readPgBoolean } from "../db/row-value-readers";
-import { loadMemoryV2QdrantConfig } from "../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
 import { loadMemoryRedisConfig } from "../cache";
 import { EFFECTIVE_RECALLABLE_SQL_WHERE_CLAUSE } from "../shared/predicates";
 
@@ -108,11 +108,11 @@ export function hashEmbeddingBase(value: string | undefined): string | null {
 }
 
 export function defaultEmbeddingGenerationId(env: NodeJS.ProcessEnv = process.env): string {
-  return env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1";
+  return env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1";
 }
 
 export function defaultEmbeddingTextStrategy(env: NodeJS.ProcessEnv = process.env): string {
-  return env.MEMORY_V2_EMBEDDING_TEXT_STRATEGY?.trim() || "title_summary_scope_type_layer_content_v1";
+  return env.MEMORY_XX_EMBEDDING_TEXT_STRATEGY?.trim() || "title_summary_scope_type_layer_content_v1";
 }
 
 export function defaultQueryCacheVersion(generationId: string): string {
@@ -150,7 +150,7 @@ function normalizeManifest(row: Record<string, unknown>): EmbeddingGenerationMan
 
 export async function getActiveEmbeddingGeneration(
   pool: Pool,
-  config: MemoryV2PostgresConfig = loadMemoryV2PostgresConfig()
+  config: MemoryXXPostgresConfig = loadMemoryXXPostgresConfig()
 ): Promise<EmbeddingGenerationManifest | null> {
   const schema = quoteIdent(config.schema);
   const result = await pool.query(`SELECT * FROM ${schema}.memory_embedding_generations WHERE status = 'active' ORDER BY activated_at DESC NULLS LAST, updated_at DESC LIMIT 1`);
@@ -160,7 +160,7 @@ export async function getActiveEmbeddingGeneration(
 export async function getEmbeddingGenerationById(
   pool: Pool,
   generationId: string,
-  config: MemoryV2PostgresConfig = loadMemoryV2PostgresConfig()
+  config: MemoryXXPostgresConfig = loadMemoryXXPostgresConfig()
 ): Promise<EmbeddingGenerationManifest | null> {
   const schema = quoteIdent(config.schema);
   const result = await pool.query(`SELECT * FROM ${schema}.memory_embedding_generations WHERE generation_id = $1 LIMIT 1`, [generationId]);
@@ -169,7 +169,7 @@ export async function getEmbeddingGenerationById(
 
 async function activeApprovedCount(
   pool: Pool,
-  config: MemoryV2PostgresConfig
+  config: MemoryXXPostgresConfig
 ): Promise<number> {
   const schema = quoteIdent(config.schema);
   const result = await pool.query(`
@@ -269,9 +269,9 @@ export async function verifyQdrantPayloadGeneration(input: {
 export async function inspectEmbeddingGenerationHealth(
   env: NodeJS.ProcessEnv = process.env
 ): Promise<EmbeddingGenerationHealth> {
-  const pgConfig = loadMemoryV2PostgresConfig(env);
+  const pgConfig = loadMemoryXXPostgresConfig(env);
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
-  const qdrantConfig = loadMemoryV2QdrantConfig(env);
+  const qdrantConfig = loadMemoryXXQdrantConfig(env);
   const redisConfig = loadMemoryRedisConfig(env);
   const errors: string[] = [];
   try {
@@ -339,9 +339,9 @@ export async function inspectEmbeddingGenerationHealth(
       ? qdrantConfig.collection_name === active.qdrant_alias || qdrantConfig.collection_name === active.target_collection
       : null;
     const redisMatch = active ? redisConfig.prefix === active.redis_prefix : null;
-    const cacheVersion = env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "";
+    const cacheVersion = env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "";
     const cacheMatch = active ? cacheVersion === active.query_cache_version : null;
-    const generationEnv = env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || "";
+    const generationEnv = env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "";
     const generationEnvMatch = active ? generationEnv === active.generation_id : null;
     const aliasTargetMatch = active ? aliasTarget === active.target_collection : null;
 

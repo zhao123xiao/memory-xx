@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Invoke-WslMemoryV2([string]$Command) {
+function Invoke-WslMemoryXX([string]$Command) {
   wsl.exe bash -lc "cd '$WslProjectRoot' && $Command"
   if ($LASTEXITCODE -ne 0) {
     throw "WSL command failed: $Command"
@@ -16,8 +16,8 @@ function Invoke-WslMemoryV2([string]$Command) {
 try {
   wsl.exe test -d $WslProjectRoot | Out-Null
   if ($LASTEXITCODE -eq 0) {
-    Invoke-WslMemoryV2 "TMPDIR=/tmp npm run memory:platform-doctor -- --profile=wsl-windows-gpu --json || true"
-    $cmd = "cd '$WslProjectRoot' && TMPDIR=/tmp MEMORY_V2_CONTROL_PANEL_PORT=$ControlPanelPort nohup npm run memory:control-panel > .runtime/control-panel-windows-launch.log 2>&1 &"
+    Invoke-WslMemoryXX "TMPDIR=/tmp npm run memory:platform-doctor -- --profile=wsl-windows-gpu --json || true"
+    $cmd = "cd '$WslProjectRoot' && TMPDIR=/tmp MEMORY_XX_CONTROL_PANEL_PORT=$ControlPanelPort nohup npm run memory:control-panel > .runtime/control-panel-windows-launch.log 2>&1 &"
     wsl.exe bash -lc $cmd | Out-Null
     $url = "http://127.0.0.1:$ControlPanelPort/"
     if (-not $NoBrowser) { Start-Process $url }

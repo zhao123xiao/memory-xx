@@ -23,7 +23,7 @@ export interface RecoverExpiredAcceptedInput {
 const DEFAULT_INGEST_LEASE_TTL_SECONDS = 120;
 
 function defaultLeaseOwner(): string {
-  return process.env.MEMORY_V2_WORKER_ID?.trim() || `pid-${process.pid}`;
+  return process.env.MEMORY_XX_WORKER_ID?.trim() || `pid-${process.pid}`;
 }
 
 function addSecondsIso(iso: string, seconds: number): string {

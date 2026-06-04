@@ -18,13 +18,13 @@ async function main(): Promise<void> {
   ]);
   await initRuntime();
   const once = process.argv.includes("--once");
-  const intervalMs = runtimePositiveInt("worker.write_ticket.interval_ms", "MEMORY_V2_WRITE_TICKET_WORKER_INTERVAL_MS", 1000);
-  const workerId = process.env.MEMORY_V2_WORKER_ID?.trim() || `write-ticket-worker-${process.pid}`;
+  const intervalMs = runtimePositiveInt("worker.write_ticket.interval_ms", "MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS", 1000);
+  const workerId = process.env.MEMORY_XX_WORKER_ID?.trim() || `write-ticket-worker-${process.pid}`;
   do {
     const result = await processPendingWriteTickets({
       workerId,
-      limit: runtimePositiveInt("worker.write_ticket.batch_size", "MEMORY_V2_WRITE_TICKET_WORKER_BATCH_SIZE", 10),
-      leaseTtlSeconds: runtimePositiveInt("worker.write_ticket.lease_ttl_seconds", "MEMORY_V2_WRITE_TICKET_LEASE_TTL_SECONDS", 120)
+      limit: runtimePositiveInt("worker.write_ticket.batch_size", "MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE", 10),
+      leaseTtlSeconds: runtimePositiveInt("worker.write_ticket.lease_ttl_seconds", "MEMORY_XX_WRITE_TICKET_LEASE_TTL_SECONDS", 120)
     });
     process.stdout.write(JSON.stringify({ worker_id: workerId, ...result, at: new Date().toISOString() }) + "\n");
     if (once) break;

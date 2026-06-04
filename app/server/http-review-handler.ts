@@ -17,7 +17,7 @@ import type { MemoryPermission } from "./permissions";
 import { enforceMemoryIdPermission } from "./scope-enforcement";
 import { resolveWriteErrorStatus } from "./http-write-handler";
 
-const REVIEW_ROUTE_RE = /^\/api\/memory\/v2\/review\/memories\/([^/]+)\/(approve|reject|archive|supersede|tombstone|update-candidate)$/;
+const REVIEW_ROUTE_RE = /^\/api\/memory\/xx\/review\/memories\/([^/]+)\/(approve|reject|archive|supersede|tombstone|update-candidate)$/;
 
 function reviewPermissionForAction(action: string): MemoryPermission {
   return action === "archive" || action === "tombstone" ? "memory:governance_revert" : "memory:governance_apply";

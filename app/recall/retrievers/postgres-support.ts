@@ -2,7 +2,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 import {
   createPostgresPoolConfig,
-  type MemoryV2PostgresConfig
+  type MemoryXXPostgresConfig
 } from "../../db/adapters/postgres-config";
 import {
   ensureSchema,
@@ -13,7 +13,7 @@ import { ScopeType, type JsonObject } from "../../shared";
 import { type QueryConstraints, type RecallRecord } from "../types";
 
 export interface PostgresRecallOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly pool?: Pool;
 }
 

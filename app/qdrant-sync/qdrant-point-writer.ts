@@ -1,9 +1,9 @@
-import { loadMemoryV2QdrantConfig, type MemoryV2QdrantConfig } from "../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig, type MemoryXXQdrantConfig } from "../recall/qdrant-config";
 import type { QdrantPointUpsert, QdrantPointWriter } from "./projector";
 import { recordQdrantTimeout } from "../observability/qdrant-health";
 
 export interface HttpQdrantPointWriterOptions {
-  readonly config?: MemoryV2QdrantConfig;
+  readonly config?: MemoryXXQdrantConfig;
   readonly base_url?: string;
   readonly api_key?: string;
   readonly collection_name?: string;
@@ -46,12 +46,12 @@ export class HttpQdrantPointWriter implements QdrantPointWriter {
   private readonly timeoutMs: number;
 
   constructor(options: HttpQdrantPointWriterOptions = {}) {
-    const config = options.config ?? loadMemoryV2QdrantConfig();
+    const config = options.config ?? loadMemoryXXQdrantConfig();
     this.baseUrl = options.base_url ?? config.base_url;
     this.apiKey = options.api_key ?? config.api_key;
     this.collectionName = options.collection_name ?? config.collection_name;
     this.fetchImpl = options.fetchImpl ?? fetch;
-    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_V2_QDRANT_WRITE_TIMEOUT_MS", 5000);
+    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_XX_QDRANT_WRITE_TIMEOUT_MS", 5000);
   }
 
   async upsert(points: readonly QdrantPointUpsert[]): Promise<void> {

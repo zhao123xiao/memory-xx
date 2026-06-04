@@ -6,10 +6,10 @@ After=memory-xx-wrapper.service postgresql.service
 Type=simple
 WorkingDirectory=<project-root>
 Environment=TMPDIR=/tmp
-Environment=MEMORY_V2_CONVERSATION_MONITOR=1
-Environment=MEMORY_V2_CONVERSATION_AUTO_EXTRACT=1
-Environment=MEMORY_V2_CONVERSATION_SOURCE_TAIL=1
-Environment=MEMORY_V2_CONVERSATION_SOURCE_BACKFILL=0
+Environment=MEMORY_XX_CONVERSATION_MONITOR=1
+Environment=MEMORY_XX_CONVERSATION_AUTO_EXTRACT=1
+Environment=MEMORY_XX_CONVERSATION_SOURCE_TAIL=1
+Environment=MEMORY_XX_CONVERSATION_SOURCE_BACKFILL=0
 ExecStart=/usr/bin/env npm run run:conversation-monitor-worker
 Restart=on-failure
 RestartSec=5

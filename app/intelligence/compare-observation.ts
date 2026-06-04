@@ -85,7 +85,7 @@ export function getIntelligenceCompareObservationSnapshot(): {
 } {
   const highDiff = observations.filter((item) =>
     item.memory_count_diff > 0 ||
-    item.confidence_diff >= Number.parseFloat(process.env.MEMORY_V2_INTELLIGENCE_COMPARE_CONFIDENCE_DIFF_THRESHOLD ?? "0.25") ||
+    item.confidence_diff >= Number.parseFloat(process.env.MEMORY_XX_INTELLIGENCE_COMPARE_CONFIDENCE_DIFF_THRESHOLD ?? "0.25") ||
     item.primary_schema_valid !== item.fallback_schema_valid
   );
   return {

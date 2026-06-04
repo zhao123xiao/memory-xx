@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 function resolveEnvPath(): string {
-  if (process.env.MEMORY_V2_ENV_PATH?.trim()) {
-    return process.env.MEMORY_V2_ENV_PATH.trim();
+  if (process.env.MEMORY_XX_ENV_PATH?.trim()) {
+    return process.env.MEMORY_XX_ENV_PATH.trim();
   }
 
   const cwdEnvPath = path.join(process.cwd(), ".env");
@@ -65,24 +65,24 @@ export interface TestConfig {
   reportDir: string;
 }
 
-const wrapperUrlFallback = `http://127.0.0.1:${env("MEMORY_V2_WRAPPER_PORT", "5100")}`;
+const wrapperUrlFallback = `http://127.0.0.1:${env("MEMORY_XX_WRAPPER_PORT", "5100")}`;
 
 export const config: TestConfig = {
-  wrapperUrl: env("MEMORY_V2_WRAPPER_URL", wrapperUrlFallback).replace(/\/+$/, ""),
+  wrapperUrl: env("MEMORY_XX_WRAPPER_URL", wrapperUrlFallback).replace(/\/+$/, ""),
   fastpathUrl: "http://127.0.0.1:5200",
   lexicalUrl: "http://127.0.0.1:5210",
-  qdrantUrl: env("MEMORY_V2_QDRANT_BASE_URL", "http://127.0.0.1:6333").replace(/\/+$/, ""),
-  redisUrl: env("MEMORY_V2_REDIS_URL", "redis://127.0.0.1:6381/0"),
-  gatewayUrl: env("OPENCLAW_GATEWAY_URL", env("MEMORY_V2_GATEWAY_URL", "http://127.0.0.1:18789")).replace(/\/+$/, ""),
-  wrapperToken: env("MEMORY_V2_ADMIN_TOKEN", env("MEMORY_V2_API_TOKEN")),
+  qdrantUrl: env("MEMORY_XX_QDRANT_BASE_URL", "http://127.0.0.1:6333").replace(/\/+$/, ""),
+  redisUrl: env("MEMORY_XX_REDIS_URL", "redis://127.0.0.1:6381/0"),
+  gatewayUrl: env("OPENCLAW_GATEWAY_URL", env("MEMORY_XX_GATEWAY_URL", "http://127.0.0.1:18789")).replace(/\/+$/, ""),
+  wrapperToken: env("MEMORY_XX_ADMIN_TOKEN", env("MEMORY_XX_API_TOKEN")),
   gatewayToken: env("OPENCLAW_GATEWAY_TOKEN"),
-  dbUrl: env("MEMORY_V2_DATABASE_URL", "postgres://postgres:postgres@127.0.0.1:5432/memory_xx"),
-  dbSchema: env("MEMORY_V2_DATABASE_SCHEMA", "memory_xx"),
-  qdrantCollection: env("MEMORY_V2_QDRANT_COLLECTION", "memory-xx"),
-  projectRoot: env("MEMORY_V2_PROJECT_ROOT", process.cwd()),
-  evalBaselinePath: env("MEMORY_V2_EVAL_BASELINE_PATH", path.join(env("MEMORY_V2_PROJECT_ROOT", process.cwd()), "scripts/test-harness/baselines/benchmark-v1-baseline.json")),
-  evalRunnerPath: env("MEMORY_V2_EVAL_RUNNER_PATH", path.join(env("MEMORY_V2_PROJECT_ROOT", process.cwd()), "scripts/test-harness/recall-quality-smoke.mjs")),
-  reportDir: env("MEMORY_V2_REPORT_DIR", path.join(env("MEMORY_V2_PROJECT_ROOT", process.cwd()), "reports/memory-xx-tests")),
+  dbUrl: env("MEMORY_XX_DATABASE_URL", "postgres://postgres:postgres@127.0.0.1:5432/memory_xx"),
+  dbSchema: env("MEMORY_XX_DATABASE_SCHEMA", "memory_xx"),
+  qdrantCollection: env("MEMORY_XX_QDRANT_COLLECTION", "memory-xx"),
+  projectRoot: env("MEMORY_XX_PROJECT_ROOT", process.cwd()),
+  evalBaselinePath: env("MEMORY_XX_EVAL_BASELINE_PATH", path.join(env("MEMORY_XX_PROJECT_ROOT", process.cwd()), "scripts/test-harness/baselines/benchmark-v1-baseline.json")),
+  evalRunnerPath: env("MEMORY_XX_EVAL_RUNNER_PATH", path.join(env("MEMORY_XX_PROJECT_ROOT", process.cwd()), "scripts/test-harness/recall-quality-smoke.mjs")),
+  reportDir: env("MEMORY_XX_REPORT_DIR", path.join(env("MEMORY_XX_PROJECT_ROOT", process.cwd()), "reports/memory-xx-tests")),
 };
 
 export function validateConfig(requiredKeys: (keyof TestConfig)[]): string[] {

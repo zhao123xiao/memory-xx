@@ -6,12 +6,12 @@ import { readConversationSourceRuntimeStatus } from "../app/conversation/convers
 import { buildMemoryStatusTruth } from "../app/governance/memory-status-truth";
 
 function wrapperUrl(): string {
-  return (process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "")) ||
-    `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+  return (process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "")) ||
+    `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
 }
 
 function authToken(): string {
-  return process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_API_TOKEN?.trim() || "";
+  return process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_API_TOKEN?.trim() || "";
 }
 
 async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
@@ -71,9 +71,9 @@ function readTimers(): { ok: boolean; timers: string[]; error?: string } {
 }
 
 async function readQdrantAlias(): Promise<unknown> {
-  const base = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
+  const base = process.env.MEMORY_XX_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
   const headers: Record<string, string> = {};
-  if (process.env.MEMORY_V2_QDRANT_API_KEY?.trim()) headers["api-key"] = process.env.MEMORY_V2_QDRANT_API_KEY.trim();
+  if (process.env.MEMORY_XX_QDRANT_API_KEY?.trim()) headers["api-key"] = process.env.MEMORY_XX_QDRANT_API_KEY.trim();
   return fetchJson(`${base}/aliases`, { headers });
 }
 
@@ -93,7 +93,7 @@ function summarizeHealth(body: any): Record<string, unknown> {
 
 async function main(): Promise<void> {
   const runtimeOnly = process.argv.includes("--runtime-only");
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   const [health, qdrantAlias, conversationSources] = await Promise.allSettled([
     readHealth(),
     readQdrantAlias(),

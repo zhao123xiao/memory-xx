@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 embedding upstream model manager
+Description=memory-xx embedding upstream model manager
 After=network-online.target
 Wants=network-online.target
 

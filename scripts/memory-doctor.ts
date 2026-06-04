@@ -115,9 +115,9 @@ function scanDriftFiles(blockers: string[], warnings: string[]): Record<string, 
   const findings: Array<{ file: string; pattern: string }> = [];
   const patterns = [
     { name: "legacy_wrapper_port_4001", regex: /4001/ },
-    { name: "legacy_env_DATABASE_URL", regex: /(?<!MEMORY_V2_)DATABASE_URL/ },
-    { name: "legacy_env_REDIS_URL", regex: /(?<!MEMORY_V2_)REDIS_URL/ },
-    { name: "legacy_env_QDRANT_URL", regex: /(?<!MEMORY_V2_)QDRANT_URL/ },
+    { name: "legacy_env_DATABASE_URL", regex: /(?<!MEMORY_XX_)DATABASE_URL/ },
+    { name: "legacy_env_REDIS_URL", regex: /(?<!MEMORY_XX_)REDIS_URL/ },
+    { name: "legacy_env_QDRANT_URL", regex: /(?<!MEMORY_XX_)QDRANT_URL/ },
     { name: "legacy_env_VECTOR_BACKEND", regex: /\bVECTOR_BACKEND\b/ },
     { name: "legacy_env_RUNTIME_MODE", regex: /\bRUNTIME_MODE\b/ },
   ];
@@ -134,7 +134,7 @@ function scanDriftFiles(blockers: string[], warnings: string[]): Record<string, 
     findings,
     expected: {
       wrapper_port: 5100,
-      env_prefix: "MEMORY_V2_*",
+      env_prefix: "MEMORY_XX_*",
       redis_default: "redis://127.0.0.1:6381/0",
     },
   };
@@ -213,10 +213,10 @@ function inspectRuntimeProfileConsistency(
   blockers: string[]
 ): Record<string, unknown> {
   const wrapperHealth = (checks.services as any)?.wrapper?.body;
-  const explicitProfile = process.env.MEMORY_V2_RUNTIME_PROFILE?.trim() || null;
+  const explicitProfile = process.env.MEMORY_XX_RUNTIME_PROFILE?.trim() || null;
   const parsedEnvProfile = explicitProfile ? parseMemoryRuntimeProfile(explicitProfile) : null;
-  const wrapperMode = process.env.MEMORY_V2_WRAPPER_MODE?.trim() || wrapperHealth?.wrapper_mode || "recall-only";
-  const recallPrimary = process.env.MEMORY_V2_RECALL_PRIMARY?.trim() || process.env.RECALL_PRIMARY?.trim() || "node";
+  const wrapperMode = process.env.MEMORY_XX_WRAPPER_MODE?.trim() || wrapperHealth?.wrapper_mode || "recall-only";
+  const recallPrimary = process.env.MEMORY_XX_RECALL_PRIMARY?.trim() || process.env.RECALL_PRIMARY?.trim() || "node";
   const healthProfile = wrapperHealth?.runtime_profile ?? null;
   const fullIntent = wrapperMode === "full" || recallPrimary === "fastpath" || mode === "full";
   const ok =
@@ -233,7 +233,7 @@ function inspectRuntimeProfileConsistency(
     wrapper_mode: wrapperMode,
     recall_primary: recallPrimary,
     full_intent: fullIntent,
-    remediation: fullIntent ? "Set MEMORY_V2_RUNTIME_PROFILE=full in .env/systemd env and restart wrapper." : "Set MEMORY_V2_RUNTIME_PROFILE to the intended profile.",
+    remediation: fullIntent ? "Set MEMORY_XX_RUNTIME_PROFILE=full in .env/systemd env and restart wrapper." : "Set MEMORY_XX_RUNTIME_PROFILE to the intended profile.",
   };
 }
 
@@ -264,13 +264,13 @@ function detectWrapperProcessCount(): number | null {
 }
 
 function inspectMultiInstanceBoundary(blockers: string[], warnings: string[]): Record<string, unknown> {
-  const configuredCount = Number.parseInt(process.env.MEMORY_V2_INSTANCE_COUNT?.trim() || "1", 10);
+  const configuredCount = Number.parseInt(process.env.MEMORY_XX_INSTANCE_COUNT?.trim() || "1", 10);
   const detectedCount = detectWrapperProcessCount();
   const effectiveCount = Math.max(
     Number.isFinite(configuredCount) && configuredCount > 0 ? configuredCount : 1,
     detectedCount ?? 1
   );
-  const lockBackend = process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND?.trim() || "local";
+  const lockBackend = process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND?.trim() || "local";
   const ok = effectiveCount <= 1 || lockBackend === "redis";
   if (!ok) addUnique(blockers, "multi_instance_local_lock_blocker");
   if (effectiveCount <= 1 && lockBackend === "local") addUnique(warnings, "single_instance_local_semantic_lock");
@@ -281,7 +281,7 @@ function inspectMultiInstanceBoundary(blockers: string[], warnings: string[]): R
     effective_instance_count: effectiveCount,
     semantic_lock_backend: lockBackend,
     supported_now: effectiveCount <= 1 || lockBackend === "redis",
-    remediation: "Keep a single wrapper instance or implement MEMORY_V2_SEMANTIC_LOCK_BACKEND=redis before horizontal scaling.",
+    remediation: "Keep a single wrapper instance or implement MEMORY_XX_SEMANTIC_LOCK_BACKEND=redis before horizontal scaling.",
   };
 }
 
@@ -474,11 +474,11 @@ async function inspectDatabaseMaintenance(blockers: string[], warnings: string[]
   const pool = new Pool({ connectionString: config.dbUrl });
   const schema = quoteIdent(config.dbSchema);
   try {
-    const deadTupleWarningPct = Number.parseFloat(process.env.MEMORY_V2_SMALL_TABLE_DEAD_TUPLE_WARNING_PCT?.trim() || "50");
-    const deadTupleWarningMin = Number.parseInt(process.env.MEMORY_V2_SMALL_TABLE_DEAD_TUPLE_WARNING_MIN?.trim() || "10", 10);
-    const largeDeadTupleBlockerMin = Number.parseInt(process.env.MEMORY_V2_LARGE_TABLE_DEAD_TUPLE_BLOCKER_MIN?.trim() || "100000", 10);
-    const largeDeadTupleBlockerPct = Number.parseFloat(process.env.MEMORY_V2_LARGE_TABLE_DEAD_TUPLE_BLOCKER_PCT?.trim() || "20");
-    const walWarningRatio = Number.parseFloat(process.env.MEMORY_V2_WAL_WARNING_RATIO?.trim() || "0.7");
+    const deadTupleWarningPct = Number.parseFloat(process.env.MEMORY_XX_SMALL_TABLE_DEAD_TUPLE_WARNING_PCT?.trim() || "50");
+    const deadTupleWarningMin = Number.parseInt(process.env.MEMORY_XX_SMALL_TABLE_DEAD_TUPLE_WARNING_MIN?.trim() || "10", 10);
+    const largeDeadTupleBlockerMin = Number.parseInt(process.env.MEMORY_XX_LARGE_TABLE_DEAD_TUPLE_BLOCKER_MIN?.trim() || "100000", 10);
+    const largeDeadTupleBlockerPct = Number.parseFloat(process.env.MEMORY_XX_LARGE_TABLE_DEAD_TUPLE_BLOCKER_PCT?.trim() || "20");
+    const walWarningRatio = Number.parseFloat(process.env.MEMORY_XX_WAL_WARNING_RATIO?.trim() || "0.7");
     const [deadTuples, smallTableOptions, settings] = await Promise.all([
       pool.query<{
         relname: string;
@@ -595,12 +595,12 @@ async function inspectDatabaseMaintenance(blockers: string[], warnings: string[]
 async function inspectEventLifecycle(blockers: string[], warnings: string[]): Promise<Record<string, unknown>> {
   const pool = new Pool({ connectionString: config.dbUrl });
   const schema = quoteIdent(config.dbSchema);
-  const outboxPendingThreshold = Number.parseInt(process.env.MEMORY_V2_EVENT_OUTBOX_PENDING_BLOCKER_THRESHOLD?.trim() || "1000", 10);
-  const outboxDeadLetterThreshold = Number.parseInt(process.env.MEMORY_V2_EVENT_OUTBOX_DEAD_LETTER_BLOCKER_THRESHOLD?.trim() || "0", 10);
-  const eventRowsWarningThreshold = Number.parseInt(process.env.MEMORY_V2_EVENT_ROWS_WARNING_THRESHOLD?.trim() || "100000", 10);
-  const outboxRetentionDays = Number.parseInt(process.env.MEMORY_V2_OUTBOX_EVENT_RETENTION_DAYS?.trim() || "90", 10);
-  const memoryRetentionDays = Number.parseInt(process.env.MEMORY_V2_MEMORY_EVENT_RETENTION_DAYS?.trim() || "180", 10);
-  const maxAttempts = Number.parseInt(process.env.MEMORY_V2_QDRANT_PROJECTOR_MAX_ATTEMPTS?.trim() || "5", 10);
+  const outboxPendingThreshold = Number.parseInt(process.env.MEMORY_XX_EVENT_OUTBOX_PENDING_BLOCKER_THRESHOLD?.trim() || "1000", 10);
+  const outboxDeadLetterThreshold = Number.parseInt(process.env.MEMORY_XX_EVENT_OUTBOX_DEAD_LETTER_BLOCKER_THRESHOLD?.trim() || "0", 10);
+  const eventRowsWarningThreshold = Number.parseInt(process.env.MEMORY_XX_EVENT_ROWS_WARNING_THRESHOLD?.trim() || "100000", 10);
+  const outboxRetentionDays = Number.parseInt(process.env.MEMORY_XX_OUTBOX_EVENT_RETENTION_DAYS?.trim() || "90", 10);
+  const memoryRetentionDays = Number.parseInt(process.env.MEMORY_XX_MEMORY_EVENT_RETENTION_DAYS?.trim() || "180", 10);
+  const maxAttempts = Number.parseInt(process.env.MEMORY_XX_QDRANT_PROJECTOR_MAX_ATTEMPTS?.trim() || "5", 10);
   try {
     const [row] = await pool.query<{
       outbox_total: number | string;
@@ -712,7 +712,7 @@ async function inspectRouting(blockers: string[], warnings: string[]): Promise<R
   const probeId = `doctor-routing-${randomUUID()}`;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-    const response = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const response = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: "memory-xx Reranker集成完成",
       scopeType: "project",
       scopeId: "local-default",
@@ -774,22 +774,22 @@ function remediationPlan(blockers: readonly string[]): string[] {
     actions.push("Fix critical runtime config issues reported under checks.config_validation, restart wrapper/projector if env changed, then rerun TMPDIR=/tmp npm run memory:doctor -- --target release-ready --mode full --plan.");
   }
   if (blockers.includes("runtime_profile_mismatch")) {
-    actions.push("Set MEMORY_V2_RUNTIME_PROFILE=full in <project-root>/.env, restart wrapper, then rerun TMPDIR=/tmp npm run memory:doctor -- --target ops-ready --mode full --plan.");
+    actions.push("Set MEMORY_XX_RUNTIME_PROFILE=full in <project-root>/.env, restart wrapper, then rerun TMPDIR=/tmp npm run memory:doctor -- --target ops-ready --mode full --plan.");
   }
   if (blockers.includes("multi_instance_local_lock_blocker")) {
-    actions.push("Keep one wrapper instance or implement MEMORY_V2_SEMANTIC_LOCK_BACKEND=redis before running multiple wrapper instances.");
+    actions.push("Keep one wrapper instance or implement MEMORY_XX_SEMANTIC_LOCK_BACKEND=redis before running multiple wrapper instances.");
   }
   if (blockers.includes("outbox_pending_over_threshold") || blockers.includes("outbox_dead_letter_present")) {
     actions.push("Run TMPDIR=/tmp npm run memory:event-lifecycle -- --json and TMPDIR=/tmp npm run memory:outbox-recovery -- scan --limit 20, then replay with TMPDIR=/tmp npm run memory:outbox-recovery -- replay --status failed --limit 20 --apply only after reviewing the dry-run plan.");
   }
   if (blockers.includes("api_admin_token_overlap")) {
-    actions.push("Set MEMORY_V2_API_TOKEN and MEMORY_V2_ADMIN_TOKEN to different non-empty values, restart wrapper, then rerun TMPDIR=/tmp npm run memory:doctor -- --target strict-ready --plan.");
+    actions.push("Set MEMORY_XX_API_TOKEN and MEMORY_XX_ADMIN_TOKEN to different non-empty values, restart wrapper, then rerun TMPDIR=/tmp npm run memory:doctor -- --target strict-ready --plan.");
   }
   if (blockers.includes("0020_not_applied") || blockers.includes("trusted_agent_scope_grants_missing")) {
     actions.push("Run shadow migration for 0020, then TMPDIR=/tmp npm run migrate, then rerun check:db-invariants.");
   }
   if (blockers.includes("gateway_probe_port_drift")) {
-    actions.push("Set MEMORY_V2_GATEWAY_URL or OPENCLAW_GATEWAY_URL to the live gateway URL and rerun check:observation.");
+    actions.push("Set MEMORY_XX_GATEWAY_URL or OPENCLAW_GATEWAY_URL to the live gateway URL and rerun check:observation.");
   }
   if (blockers.includes("l3_fastpath_vector_zero")) {
     actions.push("Check embedding proxy/429 logs and fastpath Qdrant path; vector_hits must be greater than zero.");
@@ -810,13 +810,13 @@ function remediationPlan(blockers: readonly string[]): string[] {
     actions.push("Run TMPDIR=/tmp npm run memory:embedding-manifest status, then validate/activate the intended generation or rollback to the last known good generation.");
   }
   if (blockers.includes("qdrant_alias_missing_or_wrong")) {
-    actions.push("Run TMPDIR=/tmp npm run memory:qdrant-alias -- switch --alias=memory-xx-active --collection=<validated-collection>, then set MEMORY_V2_QDRANT_COLLECTION=memory-xx-active and restart wrapper/projector.");
+    actions.push("Run TMPDIR=/tmp npm run memory:qdrant-alias -- switch --alias=memory-xx-active --collection=<validated-collection>, then set MEMORY_XX_QDRANT_COLLECTION=memory-xx-active and restart wrapper/projector.");
   }
   if (blockers.includes("qdrant_projection_drift_blocked")) {
     actions.push("Run TMPDIR=/tmp npm run memory:auto-repair -- --json, inspect issues[].evidence.policy_blockers, then split or manually approve reconcile before applying.");
   }
   if (blockers.includes("qdrant_projection_reconcile_failed")) {
-    actions.push("Check PostgreSQL/Qdrant connectivity, MEMORY_V2_QDRANT_COLLECTION alias, then rerun TMPDIR=/tmp npm run memory:qdrant-reconcile.");
+    actions.push("Check PostgreSQL/Qdrant connectivity, MEMORY_XX_QDRANT_COLLECTION alias, then rerun TMPDIR=/tmp npm run memory:qdrant-reconcile.");
   }
   if (blockers.includes("quality_report_missing_or_stale") || blockers.includes("quality_threshold_failed") || blockers.includes("quality_report_not_suite_all")) {
     actions.push("Run TMPDIR=/tmp npm run memory:quality -- --suite all, inspect migration_artifacts/quality-report.json, then rerun Doctor.");
@@ -1170,8 +1170,8 @@ async function inspectGraphBenchmark(blockers: string[], warnings: string[]): Pr
 
 async function inspectStrictReadiness(blockers: string[], warnings: string[]): Promise<Record<string, unknown>> {
   const legacyChecker = createPermissionChecker({
-    MEMORY_V2_API_TOKEN: "legacy-token",
-    MEMORY_V2_SCOPE_POLICY_MODE: "strict",
+    MEMORY_XX_API_TOKEN: "legacy-token",
+    MEMORY_XX_SCOPE_POLICY_MODE: "strict",
   });
   let legacyStrictDenial = false;
   try {
@@ -1193,7 +1193,7 @@ async function inspectStrictReadiness(blockers: string[], warnings: string[]): P
       ["--import", "tsx", "--test", "tests/permissions.test.ts", "tests/strict-scope-http.test.ts"],
       {
         encoding: "utf8",
-        env: { ...process.env, MEMORY_V2_SCOPE_POLICY_MODE: "strict", TMPDIR: "/tmp" },
+        env: { ...process.env, MEMORY_XX_SCOPE_POLICY_MODE: "strict", TMPDIR: "/tmp" },
         timeout: 120000,
       }
     );
@@ -1209,18 +1209,18 @@ async function inspectStrictReadiness(blockers: string[], warnings: string[]): P
   if (!strictHttpTests.ok) addUnique(blockers, "strict_http_tests_failed");
 
   return {
-    mode_default: process.env.MEMORY_V2_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict",
-    strict_enabled_now: process.env.MEMORY_V2_SCOPE_POLICY_MODE !== "single_user",
+    mode_default: process.env.MEMORY_XX_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict",
+    strict_enabled_now: process.env.MEMORY_XX_SCOPE_POLICY_MODE !== "single_user",
     legacy_strict_denial: legacyStrictDenial,
     strict_http_tests: strictHttpTests,
-    note: "strict-ready expects strict mode by default; set MEMORY_V2_SCOPE_POLICY_MODE=single_user only as rollback.",
+    note: "strict-ready expects strict mode by default; set MEMORY_XX_SCOPE_POLICY_MODE=single_user only as rollback.",
   };
 }
 
 async function inspectStrictDefault(blockers: string[]): Promise<Record<string, unknown>> {
   const defaultChecker = createPermissionChecker({
-    MEMORY_V2_API_TOKEN: "legacy-token",
-    MEMORY_V2_ADMIN_TOKEN: "admin-token",
+    MEMORY_XX_API_TOKEN: "legacy-token",
+    MEMORY_XX_ADMIN_TOKEN: "admin-token",
   });
   try {
     const legacy = await defaultChecker.authorizeScope({
@@ -1246,7 +1246,7 @@ async function inspectStrictDefault(blockers: string[]): Promise<Record<string, 
       legacy_denied: legacy.allowed === false,
       legacy_reason: legacy.reason,
       admin_bypass: admin.allowed === true && admin.reason === "admin_bypass",
-      rollback: "Set MEMORY_V2_SCOPE_POLICY_MODE=single_user to restore legacy compatibility.",
+      rollback: "Set MEMORY_XX_SCOPE_POLICY_MODE=single_user to restore legacy compatibility.",
     };
   } finally {
     await defaultChecker.close();
@@ -1255,7 +1255,7 @@ async function inspectStrictDefault(blockers: string[]): Promise<Record<string, 
 
 async function inspectGraphReadiness(blockers: string[], warnings: string[]): Promise<Record<string, unknown>> {
   try {
-    const response = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const response = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: "0020 migration strict scope trusted agent grants",
       scopeType: "project",
       scopeId: "local-default",
@@ -1302,7 +1302,7 @@ async function sendDoctorAlertIfConfigured(report: {
   readonly blockers: readonly string[];
   readonly warnings: readonly string[];
 }): Promise<Record<string, unknown>> {
-  const webhookUrl = process.env.MEMORY_V2_ALERT_WEBHOOK_URL?.trim() || process.env.CAPACITY_ALERT_WEBHOOK_URL?.trim() || "";
+  const webhookUrl = process.env.MEMORY_XX_ALERT_WEBHOOK_URL?.trim() || process.env.CAPACITY_ALERT_WEBHOOK_URL?.trim() || "";
   if (!webhookUrl || report.status === "ready") return { notification_status: webhookUrl ? "suppressed" : "not_configured" };
   try {
     const response = await fetch(webhookUrl, {
@@ -1425,9 +1425,9 @@ async function main(): Promise<void> {
     addUnique(blockers, "embedding_proxy_recent_429");
   }
   checks.strict_scope = {
-    mode: process.env.MEMORY_V2_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict",
+    mode: process.env.MEMORY_XX_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict",
     grants_table_ready: db.trusted_agent_scope_grants_table,
-    enabled: process.env.MEMORY_V2_SCOPE_POLICY_MODE !== "single_user"
+    enabled: process.env.MEMORY_XX_SCOPE_POLICY_MODE !== "single_user"
   };
   checks.token_separation = inspectTokenSeparation(process.env);
   if ((checks.token_separation as { ok?: boolean }).ok === false) {
@@ -1463,11 +1463,11 @@ async function main(): Promise<void> {
   if (qualityGateCoverage !== null && qualityGateCoverage < 0.10) addUnique(warnings, "quality_gate_metadata_coverage_low");
   checks.query_embedding_cache = {
     configured: Boolean(config.redisUrl),
-    prefix: process.env.MEMORY_V2_REDIS_PREFIX?.trim() || "memory-xx",
+    prefix: process.env.MEMORY_XX_REDIS_PREFIX?.trim() || "memory-xx",
     wrapper_health_snapshot: (checks.services as any)?.wrapper?.body?.query_embedding_cache ?? null,
     summary: summarizeQueryEmbeddingCache((checks.services as any)?.wrapper?.body?.query_embedding_cache, warnings),
   };
-  if (!process.env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || !process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION?.trim()) {
+  if (!process.env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || !process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION?.trim()) {
     addUnique(warnings, "query_cache_generation_context_missing");
   }
   const reportRoot = config.reportDir;

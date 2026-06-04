@@ -25,15 +25,15 @@ export interface RuntimeProfilePlan {
 }
 
 const PROFILE_ORDER: readonly MemoryRuntimeProfile[] = ["core", "enhanced", "full"];
-const DEFAULT_WRAPPER_HEALTH_URL = process.env.MEMORY_V2_WRAPPER_HEALTH_URL?.trim() || "http://127.0.0.1:5100/health";
-const DEFAULT_EMBEDDING_PROXY_HEALTH_URL = process.env.MEMORY_V2_EMBEDDING_PROXY_HEALTH_URL?.trim() || "http://127.0.0.1:5221/health";
-const DEFAULT_OVMS_UPSTREAM_URL = process.env.MEMORY_V2_OVMS_UPSTREAM_URL?.trim() || "http://127.0.0.1:8082/v3";
-const DEFAULT_FASTPATH_HEALTH_URL = process.env.MEMORY_V2_FASTPATH_HEALTH_URL?.trim() || "http://127.0.0.1:5200/health";
-const DEFAULT_LEXICAL_HEALTH_URL = process.env.MEMORY_V2_LEXICAL_HEALTH_URL?.trim() || "http://127.0.0.1:5210/health";
-const DEFAULT_RERANKER_HEALTH_URL = process.env.MEMORY_V2_RERANKER_HEALTH_URL?.trim() || "http://127.0.0.1:8085/health";
+const DEFAULT_WRAPPER_HEALTH_URL = process.env.MEMORY_XX_WRAPPER_HEALTH_URL?.trim() || "http://127.0.0.1:5100/health";
+const DEFAULT_EMBEDDING_PROXY_HEALTH_URL = process.env.MEMORY_XX_EMBEDDING_PROXY_HEALTH_URL?.trim() || "http://127.0.0.1:5221/health";
+const DEFAULT_OVMS_UPSTREAM_URL = process.env.MEMORY_XX_OVMS_UPSTREAM_URL?.trim() || "http://127.0.0.1:8082/v3";
+const DEFAULT_FASTPATH_HEALTH_URL = process.env.MEMORY_XX_FASTPATH_HEALTH_URL?.trim() || "http://127.0.0.1:5200/health";
+const DEFAULT_LEXICAL_HEALTH_URL = process.env.MEMORY_XX_LEXICAL_HEALTH_URL?.trim() || "http://127.0.0.1:5210/health";
+const DEFAULT_RERANKER_HEALTH_URL = process.env.MEMORY_XX_RERANKER_HEALTH_URL?.trim() || "http://127.0.0.1:8085/health";
 
 export function parseMemoryRuntimeProfile(raw?: string): MemoryRuntimeProfile {
-  const normalized = (raw ?? process.env.MEMORY_V2_RUNTIME_PROFILE ?? "core").trim().toLowerCase();
+  const normalized = (raw ?? process.env.MEMORY_XX_RUNTIME_PROFILE ?? "core").trim().toLowerCase();
   return normalized === "enhanced" || normalized === "full" ? normalized : "core";
 }
 

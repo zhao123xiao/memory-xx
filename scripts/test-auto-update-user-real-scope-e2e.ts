@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import {
   autoApprovalRuntimeControlsPath,
   readAutoApprovalRuntimeControlsSync,
@@ -154,7 +154,7 @@ async function seedUserPair(client: import("pg").PoolClient, schema: string, run
 
 async function main(): Promise<void> {
   const runId = `user-update-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();

@@ -7,7 +7,7 @@ export interface AuthChecker {
 }
 
 export function createAuthChecker(env: NodeJS.ProcessEnv): AuthChecker {
-  const expectedToken = (env.MEMORY_V2_API_TOKEN ?? "").trim();
+  const expectedToken = (env.MEMORY_XX_API_TOKEN ?? "").trim();
   const enabled = expectedToken.length > 0;
 
   function extractToken(req: IncomingMessage): string {

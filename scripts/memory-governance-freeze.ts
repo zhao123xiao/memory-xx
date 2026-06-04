@@ -1,5 +1,5 @@
 import "./test-harness/config.js";
-import { GovernanceRepository, PostgresWriteDatabase, loadMemoryV2PostgresConfig, withWriteTransaction } from "../app";
+import { GovernanceRepository, PostgresWriteDatabase, loadMemoryXXPostgresConfig, withWriteTransaction } from "../app";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function readArg(name: string): string {
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   if (!reason) throw new Error("--reason is required");
   const actorId = readArg("actor") || "memory-governance";
   const expiresAt = new Date(Date.now() + parseTtl(readArg("ttl") || "24h")).toISOString();
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   try {
     const freeze = await withWriteTransaction(database, (tx) => new GovernanceRepository().createFreeze(tx, {
       scopeType: scope.scopeType,

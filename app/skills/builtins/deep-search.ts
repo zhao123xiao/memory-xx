@@ -39,7 +39,7 @@ export function createDeepSearchExecutor(deps: {
       max_items: Number(params.max_items ?? 5),
     };
 
-    const res = await fetch(`${base}/api/memory/v2/orchestrator/summarize-memory`, {
+    const res = await fetch(`${base}/api/memory/xx/orchestrator/summarize-memory`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),

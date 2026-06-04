@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 
 function readEnvFile(filePath: string): Record<string, string> {
   if (!existsSync(filePath)) return {};
@@ -17,7 +17,7 @@ function readEnvFile(filePath: string): Record<string, string> {
 }
 
 function loadScriptEnv(): NodeJS.ProcessEnv {
-  const fileEnv = readEnvFile(process.env.MEMORY_V2_ENV_PATH || join(process.cwd(), ".env"));
+  const fileEnv = readEnvFile(process.env.MEMORY_XX_ENV_PATH || join(process.cwd(), ".env"));
   return { ...fileEnv, ...process.env };
 }
 
@@ -590,7 +590,7 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
 }
 
 async function main(): Promise<void> {
-  const config = loadMemoryV2PostgresConfig(loadScriptEnv());
+  const config = loadMemoryXXPostgresConfig(loadScriptEnv());
   const schema = quoteIdent(config.schema);
   const apply = parseFlag("--apply");
   const applyConservative = parseFlag("--apply-conservative");

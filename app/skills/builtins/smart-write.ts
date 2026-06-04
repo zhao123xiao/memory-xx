@@ -34,7 +34,7 @@ export function createSmartWriteExecutor(deps: {
     const userId = String(params.user_id ?? "current-instance-owner");
     const scopeType = String(params.scope_type ?? "user");
     const scopeId = String(params.scope_id ?? userId);
-    const res = await fetch(base + "/api/memory/v2/intelligence/smart-write", {
+    const res = await fetch(base + "/api/memory/xx/intelligence/smart-write", {
       method: "POST",
       headers,
       body: JSON.stringify({

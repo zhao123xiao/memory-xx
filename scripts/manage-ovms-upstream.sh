@@ -4,28 +4,28 @@ set -euo pipefail
 kind="${1:-}"
 mode="${2:-run}"
 
-OVMS_DIR="${MEMORY_V2_OVMS_DIR:-/mnt/d/ovms}"
-POLL_SECONDS="${MEMORY_V2_OVMS_MANAGER_POLL_SECONDS:-15}"
-READY_TIMEOUT_SECONDS="${MEMORY_V2_OVMS_MANAGER_READY_TIMEOUT_SECONDS:-300}"
-UNHEALTHY_THRESHOLD="${MEMORY_V2_OVMS_MANAGER_UNHEALTHY_THRESHOLD:-3}"
+OVMS_DIR="${MEMORY_XX_OVMS_DIR:-/mnt/d/ovms}"
+POLL_SECONDS="${MEMORY_XX_OVMS_MANAGER_POLL_SECONDS:-15}"
+READY_TIMEOUT_SECONDS="${MEMORY_XX_OVMS_MANAGER_READY_TIMEOUT_SECONDS:-300}"
+UNHEALTHY_THRESHOLD="${MEMORY_XX_OVMS_MANAGER_UNHEALTHY_THRESHOLD:-3}"
 
-CMD_EXE="${MEMORY_V2_WINDOWS_CMD_EXE:-/mnt/c/Windows/System32/cmd.exe}"
-POWERSHELL_EXE="${MEMORY_V2_WINDOWS_POWERSHELL_EXE:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
+CMD_EXE="${MEMORY_XX_WINDOWS_CMD_EXE:-/mnt/c/Windows/System32/cmd.exe}"
+POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
 
 case "$kind" in
   embedding)
     label="Qwen3 embedding upstream"
-    port="${MEMORY_V2_EMBEDDING_UPSTREAM_PORT:-8082}"
-    bat_path="${MEMORY_V2_EMBEDDING_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-embedding.bat}"
-    model="${MEMORY_V2_EMBEDDING_UPSTREAM_MODEL:-qwen3-embedding}"
-    api_key_file="${MEMORY_V2_EMBEDDING_UPSTREAM_API_KEY_FILE:-/mnt/d/ovms/api_key.txt}"
+    port="${MEMORY_XX_EMBEDDING_UPSTREAM_PORT:-8082}"
+    bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-embedding.bat}"
+    model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-qwen3-embedding}"
+    api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-/mnt/d/ovms/api_key.txt}"
     process_match="--rest_port ${port}"
     ;;
   reranker)
     label="Qwen3 reranker upstream"
-    port="${MEMORY_V2_RERANKER_UPSTREAM_PORT:-8084}"
-    bat_path="${MEMORY_V2_RERANKER_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-reranker.bat}"
-    model="${MEMORY_V2_RERANKER_UPSTREAM_MODEL:-qwen3-reranker}"
+    port="${MEMORY_XX_RERANKER_UPSTREAM_PORT:-8084}"
+    bat_path="${MEMORY_XX_RERANKER_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-reranker.bat}"
+    model="${MEMORY_XX_RERANKER_UPSTREAM_MODEL:-qwen3-reranker}"
     api_key_file=""
     process_match="serve-reranker-8b.py"
     ;;

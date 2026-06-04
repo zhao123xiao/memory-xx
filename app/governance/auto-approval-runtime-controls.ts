@@ -40,7 +40,7 @@ export interface AutoApprovalRuntimeControls {
 export const AUTO_APPROVAL_RUNTIME_CONTROLS_FILE = "auto-approval-runtime-controls.json";
 
 export function autoApprovalRuntimeControlsPath(): string {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   return join(runtimeDir, AUTO_APPROVAL_RUNTIME_CONTROLS_FILE);
 }
 

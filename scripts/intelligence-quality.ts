@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { buildPolicyCompareObservations, type PolicyCorpusSample } from "../app/governance/policy-corpus";
 
 interface Args {
@@ -43,7 +43,7 @@ async function loadNormalizedPolicyCorpus(limit: number): Promise<PolicyCorpusSa
 
 async function main(): Promise<void> {
   const args = parseArgs();
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
     const schema = config.schema;

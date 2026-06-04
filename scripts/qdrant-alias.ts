@@ -1,7 +1,7 @@
 import "./test-harness/config";
 
-const qdrantBase = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
-const qdrantApiKey = process.env.MEMORY_V2_QDRANT_API_KEY?.trim();
+const qdrantBase = process.env.MEMORY_XX_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
+const qdrantApiKey = process.env.MEMORY_XX_QDRANT_API_KEY?.trim();
 
 function argValue(name: string): string | undefined {
   const prefix = `${name}=`;
@@ -59,7 +59,7 @@ async function deleteAlias(aliasName: string): Promise<void> {
 
 async function main(): Promise<void> {
   const command = process.argv[2] || "status";
-  const aliasName = argValue("--alias") || process.env.MEMORY_V2_QDRANT_ALIAS || "memory-xx-active";
+  const aliasName = argValue("--alias") || process.env.MEMORY_XX_QDRANT_ALIAS || "memory-xx-active";
   const collectionName = argValue("--collection");
 
   if (command === "status") {

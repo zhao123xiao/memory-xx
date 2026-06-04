@@ -10,7 +10,7 @@ import {
   validateLocalAgentId,
   type LocalAgentScopeGrant
 } from "../app/local-agent-profile.js";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { hashToken, requireCliPermission, type MemoryPermission } from "../app/server/permissions.js";
 
 function argValue(name: string): string | undefined {
@@ -143,7 +143,7 @@ async function audit(pool: Pool, schema: string): Promise<void> {
 async function main(): Promise<void> {
   await requireCliPermission("memory:admin");
   const command = process.argv[2] ?? "audit";
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
@@ -195,16 +195,16 @@ async function main(): Promise<void> {
           createdBy: "memory:agent",
         }));
       }
-      const wrapperUrl = process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "") ||
-        `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+      const wrapperUrl = process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "") ||
+        `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
       const envSnippet = [
-        `MEMORY_V2_WRAPPER_URL=${wrapperUrl}`,
-        `MEMORY_V2_API_TOKEN=${token}`,
-        `MEMORY_V2_AGENT_ID=${profile.env.MEMORY_V2_AGENT_ID}`,
-        `MEMORY_V2_DEFAULT_USER_SCOPE=${profile.env.MEMORY_V2_DEFAULT_USER_SCOPE}`,
-        `MEMORY_V2_DEFAULT_WORKSPACE_SCOPE=${profile.env.MEMORY_V2_DEFAULT_WORKSPACE_SCOPE}`,
-        ...(profile.env.MEMORY_V2_DEFAULT_PROJECT_SCOPE ? [`MEMORY_V2_DEFAULT_PROJECT_SCOPE=${profile.env.MEMORY_V2_DEFAULT_PROJECT_SCOPE}`] : []),
-        `MEMORY_V2_DEFAULT_GLOBAL_SCOPE=${profile.env.MEMORY_V2_DEFAULT_GLOBAL_SCOPE}`,
+        `MEMORY_XX_WRAPPER_URL=${wrapperUrl}`,
+        `MEMORY_XX_API_TOKEN=${token}`,
+        `MEMORY_XX_AGENT_ID=${profile.env.MEMORY_XX_AGENT_ID}`,
+        `MEMORY_XX_DEFAULT_USER_SCOPE=${profile.env.MEMORY_XX_DEFAULT_USER_SCOPE}`,
+        `MEMORY_XX_DEFAULT_WORKSPACE_SCOPE=${profile.env.MEMORY_XX_DEFAULT_WORKSPACE_SCOPE}`,
+        ...(profile.env.MEMORY_XX_DEFAULT_PROJECT_SCOPE ? [`MEMORY_XX_DEFAULT_PROJECT_SCOPE=${profile.env.MEMORY_XX_DEFAULT_PROJECT_SCOPE}`] : []),
+        `MEMORY_XX_DEFAULT_GLOBAL_SCOPE=${profile.env.MEMORY_XX_DEFAULT_GLOBAL_SCOPE}`,
       ].join("\n");
       const envFile = argValue("--env-file");
       if (envFile?.trim()) {
@@ -221,9 +221,9 @@ async function main(): Promise<void> {
         env_file: envFile?.trim() || null,
         env_snippet: envSnippet,
         examples: {
-          recall: "POST /api/memory/v2/recall/query with Authorization: Bearer <token>",
-          write: "POST /api/memory/v2/write with explicit scopeType/scopeId",
-          feedback: "POST /api/memory/v2/unified/feedback",
+          recall: "POST /api/memory/xx/recall/query with Authorization: Bearer <token>",
+          write: "POST /api/memory/xx/write with explicit scopeType/scopeId",
+          feedback: "POST /api/memory/xx/unified/feedback",
         },
       }, null, 2) + "\n");
       return;

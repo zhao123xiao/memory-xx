@@ -119,7 +119,7 @@ async function withBudget<T>(
 }
 
 function fastpathBaseUrl(): string {
-  return (process.env.MEMORY_V2_FASTPATH_URL ?? "http://127.0.0.1:5200").replace(/\/+$/, "");
+  return (process.env.MEMORY_XX_FASTPATH_URL ?? "http://127.0.0.1:5200").replace(/\/+$/, "");
 }
 
 function isDefaultFilter(request: RecallRequest): boolean {
@@ -193,7 +193,7 @@ export function planFastpathScopeBatches(
     1,
     Math.min(
       ordered.length,
-      options.max_scope_count ?? readPositiveInt("MEMORY_V2_FASTPATH_MAX_SCOPE_COUNT", 5)
+      options.max_scope_count ?? readPositiveInt("MEMORY_XX_FASTPATH_MAX_SCOPE_COUNT", 5)
     )
   );
   const selected = ordered.slice(0, maxScopeCount);
@@ -201,7 +201,7 @@ export function planFastpathScopeBatches(
     1,
     Math.min(
       selected.length,
-      options.initial_scope_count ?? readPositiveInt("MEMORY_V2_FASTPATH_INITIAL_SCOPE_COUNT", 5)
+      options.initial_scope_count ?? readPositiveInt("MEMORY_XX_FASTPATH_INITIAL_SCOPE_COUNT", 5)
     )
   );
   const batches: RecallScopeRef[][] = [selected.slice(0, initialScopeCount)];
@@ -356,9 +356,9 @@ async function supplementVectorCandidates(
   }
   try {
     const timeoutMs = readCappedPositiveInt(
-      "MEMORY_V2_NODE_VECTOR_SUPPLEMENT_TIMEOUT_MS",
+      "MEMORY_XX_NODE_VECTOR_SUPPLEMENT_TIMEOUT_MS",
       1200,
-      "MEMORY_V2_NODE_VECTOR_SUPPLEMENT_TIMEOUT_CAP_MS",
+      "MEMORY_XX_NODE_VECTOR_SUPPLEMENT_TIMEOUT_CAP_MS",
       1500
     );
     const vectorCandidates = await withBudget<RetrieverCandidate[] | null>(
@@ -391,9 +391,9 @@ async function supplementGraphCandidates(
   }
   try {
     const timeoutMs = readCappedPositiveInt(
-      "MEMORY_V2_NODE_GRAPH_SUPPLEMENT_TIMEOUT_MS",
+      "MEMORY_XX_NODE_GRAPH_SUPPLEMENT_TIMEOUT_MS",
       800,
-      "MEMORY_V2_NODE_GRAPH_SUPPLEMENT_TIMEOUT_CAP_MS",
+      "MEMORY_XX_NODE_GRAPH_SUPPLEMENT_TIMEOUT_CAP_MS",
       1200
     );
     const graphCandidates = await withBudget<RetrieverCandidate[] | null>(
@@ -482,8 +482,8 @@ async function callFastpathScope(
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(process.env.MEMORY_V2_API_TOKEN?.trim()
-          ? { authorization: `Bearer ${process.env.MEMORY_V2_API_TOKEN.trim()}` }
+        ...(process.env.MEMORY_XX_API_TOKEN?.trim()
+          ? { authorization: `Bearer ${process.env.MEMORY_XX_API_TOKEN.trim()}` }
           : {})
       },
       body: JSON.stringify({
@@ -623,7 +623,7 @@ function buildFastpathResponse(input: {
 }
 
 export async function tryExecuteFastpathRecall(request: RecallRequest): Promise<FastpathRecallAttempt> {
-  if (!envFlag("MEMORY_V2_RECALL_PRIMARY", "fastpath")) {
+  if (!envFlag("MEMORY_XX_RECALL_PRIMARY", "fastpath")) {
     return { attempted: false, used: false, reason: "fastpath_not_primary" };
   }
   if (!isDefaultFilter(request)) {
@@ -651,12 +651,12 @@ export async function tryExecuteFastpathRecall(request: RecallRequest): Promise<
   }
 
   const limit = Math.max(1, Math.min(50, request.limit ?? classification.top_k));
-  const perScopeTopK = Math.max(limit, Math.min(50, readPositiveInt("MEMORY_V2_FASTPATH_SCOPE_TOPK", 10)));
+  const perScopeTopK = Math.max(limit, Math.min(50, readPositiveInt("MEMORY_XX_FASTPATH_SCOPE_TOPK", 10)));
   const timeoutMs = Math.min(
-    readRuntimePositiveInt("recall.fastpath.primary_timeout_ms", "MEMORY_V2_FASTPATH_PRIMARY_TIMEOUT_MS", 2500),
-    readPositiveInt("MEMORY_V2_FASTPATH_PRIMARY_TIMEOUT_CAP_MS", 3000)
+    readRuntimePositiveInt("recall.fastpath.primary_timeout_ms", "MEMORY_XX_FASTPATH_PRIMARY_TIMEOUT_MS", 2500),
+    readPositiveInt("MEMORY_XX_FASTPATH_PRIMARY_TIMEOUT_CAP_MS", 3000)
   );
-  const stopAtCandidates = Math.max(1, readPositiveInt("MEMORY_V2_FASTPATH_STOP_AT_CANDIDATES", limit));
+  const stopAtCandidates = Math.max(1, readPositiveInt("MEMORY_XX_FASTPATH_STOP_AT_CANDIDATES", limit));
   const scopeResults: FastpathScopeResult[] = [];
   for (const batch of planFastpathScopeBatches(scopes)) {
     scopeResults.push(
@@ -701,14 +701,14 @@ export async function tryExecuteFastpathRecall(request: RecallRequest): Promise<
           }
         }
       : undefined,
-    schema: process.env.MEMORY_V2_DATABASE_SCHEMA,
+    schema: process.env.MEMORY_XX_DATABASE_SCHEMA,
     constraints: queryConstraints
   }).catch((error) => ({
     candidates: [],
     audit: {
-      enabled: process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK !== "false",
-      window_ms: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
-      candidate_cap: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
+      enabled: process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK !== "false",
+      window_ms: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
+      candidate_cap: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
       candidate_count: 0,
       reason: error instanceof Error ? `error:${error.message}` : "error"
     }
@@ -723,7 +723,7 @@ export async function tryExecuteFastpathRecall(request: RecallRequest): Promise<
     errors.push(graphSupplemented.error);
   }
   const fused = fuseFastpathCandidates(effectiveCandidates, queryConstraints);
-  const shouldFallbackOnEmpty = envFlag("MEMORY_V2_FASTPATH_FALLBACK_ON_EMPTY", "true");
+  const shouldFallbackOnEmpty = envFlag("MEMORY_XX_FASTPATH_FALLBACK_ON_EMPTY", "true");
   if (fused.candidates.length === 0 && shouldFallbackOnEmpty) {
     return {
       attempted: true,

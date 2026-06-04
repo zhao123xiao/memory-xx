@@ -4,7 +4,7 @@ import { Pool } from "pg";
 
 import {
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   PostgresWriteDatabase,
 } from "../app/db";
 import { ReviewDecisionService } from "../app/review";
@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   const source = argValue("--source") || "conversation_ingest";
   const testScopesOnly = hasArg("--test-scopes-only") || !apply;
   const limit = Math.max(1, Number.parseInt(argValue("--limit") || "100", 10) || 100);
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const pool = new Pool(createPostgresPoolConfig(config));
   const rows = await pool.query<{
     id: string;

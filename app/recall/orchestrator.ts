@@ -269,7 +269,7 @@ let graphGuardCache: {
 } | null = null;
 
 function configuredGraphWeightCap(): number {
-  const parsed = Number.parseFloat(process.env.MEMORY_V2_GRAPH_WEIGHT_CAP ?? "0.85");
+  const parsed = Number.parseFloat(process.env.MEMORY_XX_GRAPH_WEIGHT_CAP ?? "0.85");
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.85;
 }
 
@@ -278,12 +278,12 @@ export function normalizeGraphHealthCacheTtlMs(ttlMs: number): number {
 }
 
 async function loadRuntimeGraphGuard(capWeight: number): Promise<GraphGuardDecision | undefined> {
-  if (process.env.MEMORY_V2_GRAPH_GUARD_DISABLED === "true") {
+  if (process.env.MEMORY_XX_GRAPH_GUARD_DISABLED === "true") {
     return undefined;
   }
 
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
-  const envTtlMs = Number.parseInt(process.env.MEMORY_V2_GRAPH_HEALTH_TTL_MS ?? "86400000", 10);
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const envTtlMs = Number.parseInt(process.env.MEMORY_XX_GRAPH_HEALTH_TTL_MS ?? "86400000", 10);
   const ttlMs = readRuntimeControlNumberSync("recall.graph_health_ttl_ms", envTtlMs);
   const cacheTtlMs = normalizeGraphHealthCacheTtlMs(ttlMs);
   if (graphGuardCache && graphGuardCache.runtimeDir === runtimeDir && Date.now() - graphGuardCache.loadedAt < cacheTtlMs) {
@@ -318,7 +318,7 @@ async function loadRuntimeGraphGuard(capWeight: number): Promise<GraphGuardDecis
     graphGuardCache = { runtimeDir, loadedAt: Date.now(), decision };
     return decision;
   } catch {
-    if (process.env.MEMORY_V2_GRAPH_GUARD_REQUIRE_HEALTH === "true") {
+    if (process.env.MEMORY_XX_GRAPH_GUARD_REQUIRE_HEALTH === "true") {
       const decision = { cap_weight: capWeight, reason: "graph_health_missing" };
       graphGuardCache = { runtimeDir, loadedAt: Date.now(), decision };
       return decision;
@@ -495,9 +495,9 @@ export class RecallOrchestrator {
     }).catch((error) => ({
       candidates: [],
       audit: {
-        enabled: process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK !== "false",
-        window_ms: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
-        candidate_cap: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
+        enabled: process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK !== "false",
+        window_ms: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
+        candidate_cap: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
         candidate_count: 0,
         reason: error instanceof Error ? `error:${error.message}` : "error"
       }
@@ -567,7 +567,7 @@ export class RecallOrchestrator {
         QueryType.DebugRecall,
         QueryType.DebugAuditQuery
       ].includes(classification.query_type);
-      const minCandidates = Number.parseInt(process.env.MEMORY_V2_GRAPH_MIN_QUERY_CANDIDATES ?? "2", 10);
+      const minCandidates = Number.parseInt(process.env.MEMORY_XX_GRAPH_MIN_QUERY_CANDIDATES ?? "2", 10);
       const configuredCap = configuredGraphWeightCap();
       const runtimeGraphGuard = await loadRuntimeGraphGuard(configuredCap);
       if (runtimeGraphGuard) return runtimeGraphGuard;

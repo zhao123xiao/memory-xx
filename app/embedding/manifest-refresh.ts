@@ -11,7 +11,7 @@ export interface EmbeddingManifestDirtyState {
 }
 
 export function manifestRefreshStatePath(env: NodeJS.ProcessEnv = process.env): string {
-  const runtimeDir = env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   return path.join(runtimeDir, "embedding-manifest-refresh.json");
 }
 

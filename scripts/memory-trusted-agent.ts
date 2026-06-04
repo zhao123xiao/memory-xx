@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { hashToken, requireCliPermission } from "../app/server/permissions.js";
 
 function readArg(name: string): string {
@@ -16,7 +16,7 @@ function quoteIdent(value: string): string {
 
 async function main(): Promise<void> {
   await requireCliPermission("memory:admin");
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   try {

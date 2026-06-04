@@ -4,7 +4,7 @@ import "./test-harness/config.js";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { readAutoApprovalRuntimeControlsSync, isTestAutoUpdateApplyScope } from "../app/governance/auto-approval-runtime-controls";
 import { evaluateAutoUpdatePolicy, isAutoUpdateApplyScopeEnabled } from "../app/governance/auto-update-policy";
 import { requireCliPermission } from "../app/server/permissions.js";
@@ -440,7 +440,7 @@ async function rollbackUpdate(client: import("pg").PoolClient, schema: string): 
 async function main(): Promise<void> {
   const cmd = command();
   await requireCliPermission(cmd === "apply" || cmd === "rollback" ? "memory:governance_apply" : "memory:governance_read");
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

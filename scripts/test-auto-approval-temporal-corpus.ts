@@ -36,8 +36,8 @@ function base(scopeType: string, scopeId: string, metadata: Record<string, unkno
 }
 
 async function main(): Promise<void> {
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   const runId = `temporal-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`;
   const workspaceScope = `workspace-${runId}`;
   const cases = [
@@ -51,11 +51,11 @@ async function main(): Promise<void> {
   const results = cases.map((item) => {
     try {
       if (item.envScopes) {
-        process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-        process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = item.envScopes;
+        process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+        process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = item.envScopes;
       } else {
-        delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-        delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+        delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+        delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
       }
       const actual = evaluateAutoApprovalPolicy(item.input);
       if (actual.decision !== item.expected) failures.push({ name: item.name, expected: item.expected, actual: actual.decision, blocked_reasons: actual.blocked_reasons });
@@ -64,10 +64,10 @@ async function main(): Promise<void> {
       }
       return { name: item.name, expected: item.expected, actual: actual.decision, blocked_reasons: actual.blocked_reasons, temporal: actual.temporal };
     } finally {
-      if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-      else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-      if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-      else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+      if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+      else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+      if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+      else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
     }
   });
   const report = { ok: failures.length === 0, run_id: runId, failures, results };

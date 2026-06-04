@@ -1,7 +1,7 @@
 import {
   CacheInvalidationRequestRepository,
   PostgresWriteDatabase,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   withWriteTransaction
 } from "../app/db";
 import { RecallRuntimeCacheInvalidator, RedisRecallCache, loadMemoryRedisConfig } from "../app/cache";
@@ -28,7 +28,7 @@ function argValue(name: string): string | undefined {
 }
 
 function readPositiveInt(name: string, fallback: number): number {
-  const raw = argValue(`--${name}`) ?? process.env[`MEMORY_V2_CACHE_INVALIDATION_${name.toUpperCase()}`];
+  const raw = argValue(`--${name}`) ?? process.env[`MEMORY_XX_CACHE_INVALIDATION_${name.toUpperCase()}`];
   const parsed = Number.parseInt(raw ?? "", 10);
   const envValue = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   const runtimeKey = `worker.cache_invalidation.${name}`;
@@ -43,7 +43,7 @@ function retryDelaySeconds(attempts: number): number {
 }
 
 function statusFilePath(): string {
-  return process.env.MEMORY_V2_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
+  return process.env.MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
     `${process.cwd()}/.runtime/cache-invalidation-worker.status.json`;
 }
 
@@ -55,12 +55,12 @@ async function writeStatus(payload: Record<string, unknown>): Promise<void> {
 
 async function main(): Promise<void> {
   const startedAt = Date.now();
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig() });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig() });
   const redisConfig = loadMemoryRedisConfig();
   const cache = new RedisRecallCache({ config: redisConfig });
   await cache.connect();
   const repo = new CacheInvalidationRequestRepository();
-  const workerId = process.env.MEMORY_V2_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
+  const workerId = process.env.MEMORY_XX_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
   const dryRun = hasArg("--dry-run");
   const limit = readPositiveInt("batch_size", Number.parseInt(argValue("--limit") ?? "50", 10) || 50);
   const maxAttempts = readPositiveInt("max_attempts", 10);

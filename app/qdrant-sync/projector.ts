@@ -311,12 +311,12 @@ function buildPayload(
     relation_count: relations.length,
     sources: mapSources(sources),
     relations: mapRelations(relations),
-    embedding_provider: process.env.MEMORY_V2_EMBEDDING_PROVIDER?.trim() || undefined,
+    embedding_provider: process.env.MEMORY_XX_EMBEDDING_PROVIDER?.trim() || undefined,
     embedding_model: process.env.EMBEDDING_MODEL?.trim() || undefined,
-    embedding_precision: process.env.MEMORY_V2_EMBEDDING_PRECISION?.trim() || undefined,
+    embedding_precision: process.env.MEMORY_XX_EMBEDDING_PRECISION?.trim() || undefined,
     embedding_dimension: Number.parseInt(process.env.EMBEDDING_DIMS?.trim() || String(EXPECTED_VECTOR_DIMENSION), 10),
-    embedding_generation: memory.embeddingGeneration ?? (process.env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || undefined),
-    embedding_text_strategy: process.env.MEMORY_V2_EMBEDDING_TEXT_STRATEGY?.trim() || undefined
+    embedding_generation: memory.embeddingGeneration ?? (process.env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || undefined),
+    embedding_text_strategy: process.env.MEMORY_XX_EMBEDDING_TEXT_STRATEGY?.trim() || undefined
   };
 }
 
@@ -407,9 +407,9 @@ export class QdrantProjectionSyncService {
     this.database = options.database;
     this.pointWriter = options.pointWriter;
     this.embeddingResolver = options.embeddingResolver;
-    this.verifyTimeoutMs = readPositiveIntEnv("MEMORY_V2_QDRANT_VERIFY_TIMEOUT_MS", 1200);
-    this.verifyRetries = readPositiveIntEnv("MEMORY_V2_QDRANT_VERIFY_RETRIES", 2);
-    this.verifyReadbackEnabled = process.env.MEMORY_V2_QDRANT_VERIFY_READBACK === "true";
+    this.verifyTimeoutMs = readPositiveIntEnv("MEMORY_XX_QDRANT_VERIFY_TIMEOUT_MS", 1200);
+    this.verifyRetries = readPositiveIntEnv("MEMORY_XX_QDRANT_VERIFY_RETRIES", 2);
+    this.verifyReadbackEnabled = process.env.MEMORY_XX_QDRANT_VERIFY_READBACK === "true";
   }
 
   async syncWriteResult(result: StoredWriteResult): Promise<QdrantProjectionSyncResult> {

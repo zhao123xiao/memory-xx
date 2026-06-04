@@ -9,17 +9,17 @@ function argValue(name: string): string | undefined {
 }
 
 async function loadMetrics(): Promise<readonly CutoverGateMetricInput[] | undefined> {
-  const inline = argValue("--metrics-json") ?? process.env.MEMORY_V2_CUTOVER_METRICS_JSON;
+  const inline = argValue("--metrics-json") ?? process.env.MEMORY_XX_CUTOVER_METRICS_JSON;
   if (inline?.trim()) return JSON.parse(inline) as CutoverGateMetricInput[];
-  const file = argValue("--metrics-file") ?? process.env.MEMORY_V2_CUTOVER_METRICS_FILE;
+  const file = argValue("--metrics-file") ?? process.env.MEMORY_XX_CUTOVER_METRICS_FILE;
   if (file?.trim()) return JSON.parse(await readFile(file, "utf8")) as CutoverGateMetricInput[];
   return undefined;
 }
 
-const stage = argValue("--stage") ?? process.env.MEMORY_V2_CUTOVER_STAGE ?? "m4";
+const stage = argValue("--stage") ?? process.env.MEMORY_XX_CUTOVER_STAGE ?? "m4";
 const result = evaluateCutoverGate(stage, {
   metrics: await loadMetrics(),
-  allowDegraded: process.argv.includes("--allow-degraded") || process.env.MEMORY_V2_CUTOVER_ALLOW_DEGRADED === "true"
+  allowDegraded: process.argv.includes("--allow-degraded") || process.env.MEMORY_XX_CUTOVER_ALLOW_DEGRADED === "true"
 });
 
 console.log(JSON.stringify(result, null, 2));

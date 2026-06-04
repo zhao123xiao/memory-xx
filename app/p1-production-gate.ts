@@ -56,32 +56,32 @@ export function evaluateP1ProductionGate(env: NodeJS.ProcessEnv = process.env): 
   const p0 = evaluateP0ProductionGate(env);
   const warnings = [...p0.warnings];
   const blockers = [...p0.blockers];
-  if (env.MEMORY_V2_STRICT_SCOPE !== "true") warnings.push("strict_scope_disabled");
-  if (env.MEMORY_V2_FAST_ACK_INLINE_FALLBACK === "true") {
+  if (env.MEMORY_XX_STRICT_SCOPE !== "true") warnings.push("strict_scope_disabled");
+  if (env.MEMORY_XX_FAST_ACK_INLINE_FALLBACK === "true") {
     blockers.push("fast_ack_inline_fallback_enabled");
   }
   for (const [name, value] of [
-    ["accepted_expired_backlog", env.MEMORY_V2_ACCEPTED_EXPIRED_BACKLOG],
-    ["write_ticket_processing_backlog", env.MEMORY_V2_WRITE_TICKET_PROCESSING_BACKLOG],
-    ["cache_invalidation_backlog", env.MEMORY_V2_CACHE_INVALIDATION_BACKLOG],
+    ["accepted_expired_backlog", env.MEMORY_XX_ACCEPTED_EXPIRED_BACKLOG],
+    ["write_ticket_processing_backlog", env.MEMORY_XX_WRITE_TICKET_PROCESSING_BACKLOG],
+    ["cache_invalidation_backlog", env.MEMORY_XX_CACHE_INVALIDATION_BACKLOG],
   ] as const) {
     const parsed = Number.parseInt(value ?? "0", 10);
     if (Number.isFinite(parsed) && parsed > 0) blockers.push(`${name}:${parsed}`);
   }
-  const compareHighDiffRate = Number.parseFloat(env.MEMORY_V2_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE ?? "0");
+  const compareHighDiffRate = Number.parseFloat(env.MEMORY_XX_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE ?? "0");
   if (Number.isFinite(compareHighDiffRate) && compareHighDiffRate > 0.25) {
     const message = `intelligence_compare_high_diff_rate:${compareHighDiffRate}`;
-    if (env.MEMORY_V2_P1_GATE_ALLOW_DEGRADED === "true") warnings.push(message);
+    if (env.MEMORY_XX_P1_GATE_ALLOW_DEGRADED === "true") warnings.push(message);
     else blockers.push(message);
   }
-  const metrics = parseMetricJson(env.MEMORY_V2_P1_GATE_METRICS_JSON);
-  const cutover = evaluateCutoverGate(env.MEMORY_V2_P1_GATE_STAGE ?? "m4", {
+  const metrics = parseMetricJson(env.MEMORY_XX_P1_GATE_METRICS_JSON);
+  const cutover = evaluateCutoverGate(env.MEMORY_XX_P1_GATE_STAGE ?? "m4", {
     metrics: metrics ?? undefined,
-    allowDegraded: env.MEMORY_V2_P1_GATE_ALLOW_DEGRADED === "true"
+    allowDegraded: env.MEMORY_XX_P1_GATE_ALLOW_DEGRADED === "true"
   });
   blockers.push(...cutover.blockers);
   warnings.push(...cutover.warnings);
-  const training = loadPolicyTrainingSignals(env.MEMORY_V2_POLICY_TRAINING_SUMMARY_JSON);
+  const training = loadPolicyTrainingSignals(env.MEMORY_XX_POLICY_TRAINING_SUMMARY_JSON);
   blockers.push(...training.blockers);
   warnings.push(...training.warnings);
   return {
@@ -99,10 +99,10 @@ export async function evaluateP1ProductionGateWithDatabase(
   const compareSignals = await loadCompareObservationSignals(options);
   const nextEnv: NodeJS.ProcessEnv = { ...env };
   if (
-    nextEnv.MEMORY_V2_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE === undefined &&
+    nextEnv.MEMORY_XX_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE === undefined &&
     compareSignals.highDiffRate !== null
   ) {
-    nextEnv.MEMORY_V2_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE = String(compareSignals.highDiffRate);
+    nextEnv.MEMORY_XX_INTELLIGENCE_COMPARE_HIGH_DIFF_RATE = String(compareSignals.highDiffRate);
   }
 
   const base = evaluateP1ProductionGate(nextEnv);

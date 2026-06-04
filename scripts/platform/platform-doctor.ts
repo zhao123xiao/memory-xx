@@ -187,8 +187,8 @@ function releaseText(): string {
 }
 
 export function collectPlatformFacts(env: NodeJS.ProcessEnv = process.env): PlatformFacts {
-  const powerShell = env.MEMORY_V2_WINDOWS_POWERSHELL_EXE?.trim() || "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
-  const ovmsDir = env.MEMORY_V2_OVMS_DIR?.trim() || (process.platform === "win32" ? "<windows-drive>\\ovms" : "/mnt/d/ovms");
+  const powerShell = env.MEMORY_XX_WINDOWS_POWERSHELL_EXE?.trim() || "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
+  const ovmsDir = env.MEMORY_XX_OVMS_DIR?.trim() || (process.platform === "win32" ? "<windows-drive>\\ovms" : "/mnt/d/ovms");
   return {
     platform: process.platform,
     releaseText: releaseText(),
@@ -245,7 +245,7 @@ export async function collectPlatformDoctor(input: {
   const detection = detectPlatformProfile(collectPlatformFacts(input.env ?? process.env));
   const requested = input.profile ?? detection.recommended_profile;
   const systemd = await systemdProbe();
-  const wrapperOk = await httpOk((input.env ?? process.env).MEMORY_V2_WRAPPER_URL ?? "http://127.0.0.1:5100/health");
+  const wrapperOk = await httpOk((input.env ?? process.env).MEMORY_XX_WRAPPER_URL ?? "http://127.0.0.1:5100/health");
   const embeddingOk = await httpOk("http://127.0.0.1:8082/v3/models") || await httpOk("http://127.0.0.1:5221/health");
   const rerankerOk = await httpOk("http://127.0.0.1:8084/v3/models") || await httpOk("http://127.0.0.1:8085/health");
   const components = [

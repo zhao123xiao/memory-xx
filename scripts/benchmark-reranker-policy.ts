@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 import "./test-harness/config.js";
 
-import { loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { createConfiguredRecallRuntime } from "../app/recall/postgres-runtime";
-import { loadMemoryV2QdrantConfig } from "../app/recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../app/recall/qdrant-config";
 import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider";
 import type { RecallRequest } from "../app/recall/types";
 
@@ -25,11 +25,11 @@ function percentile(values: readonly number[], p: number): number {
 }
 
 async function runPolicy(policy: Policy, request: RecallRequest, iterations: number): Promise<Record<string, unknown>> {
-  const previous = process.env.MEMORY_V2_RERANKER_POLICY;
-  process.env.MEMORY_V2_RERANKER_POLICY = policy;
+  const previous = process.env.MEMORY_XX_RERANKER_POLICY;
+  process.env.MEMORY_XX_RERANKER_POLICY = policy;
   const runtime = createConfiguredRecallRuntime({
-    config: loadMemoryV2PostgresConfig(),
-    qdrant: loadMemoryV2QdrantConfig(),
+    config: loadMemoryXXPostgresConfig(),
+    qdrant: loadMemoryXXQdrantConfig(),
     query_embedding_provider: new QwenEmbeddingProviderWrapper(),
     vector_column_name: "content_embedding",
   }).runtime;
@@ -61,8 +61,8 @@ async function runPolicy(policy: Policy, request: RecallRequest, iterations: num
     };
   } finally {
     await runtime.close();
-    if (previous === undefined) delete process.env.MEMORY_V2_RERANKER_POLICY;
-    else process.env.MEMORY_V2_RERANKER_POLICY = previous;
+    if (previous === undefined) delete process.env.MEMORY_XX_RERANKER_POLICY;
+    else process.env.MEMORY_XX_RERANKER_POLICY = previous;
   }
 }
 

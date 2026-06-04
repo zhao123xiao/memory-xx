@@ -11,13 +11,13 @@
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 
-const QDRANT_BASE = process.env.MEMORY_V2_QDRANT_BASE_URL ?? "http://127.0.0.1:6333";
-const QDRANT_COLLECTION = process.env.MEMORY_V2_QDRANT_COLLECTION ?? "memory-xx";
-const DATABASE_URL = process.env.MEMORY_V2_DATABASE_URL!;
+const QDRANT_BASE = process.env.MEMORY_XX_QDRANT_BASE_URL ?? "http://127.0.0.1:6333";
+const QDRANT_COLLECTION = process.env.MEMORY_XX_QDRANT_COLLECTION ?? "memory-xx";
+const DATABASE_URL = process.env.MEMORY_XX_DATABASE_URL!;
 const BATCH_SIZE = 100;
 
 if (!DATABASE_URL) {
-  console.error("MEMORY_V2_DATABASE_URL is required");
+  console.error("MEMORY_XX_DATABASE_URL is required");
   process.exit(1);
 }
 

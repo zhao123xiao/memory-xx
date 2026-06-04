@@ -13,8 +13,8 @@ const apply = process.argv.includes("--apply");
 const dryRun = !apply;
 
 async function main(): Promise<void> {
-  if (apply && process.env.MEMORY_V2_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL !== "true") {
-    throw new Error("memory-consolidate apply is blocked: direct lifecycle SQL must be replaced by lifecycle mutation service or explicitly allowed with MEMORY_V2_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL=true");
+  if (apply && process.env.MEMORY_XX_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL !== "true") {
+    throw new Error("memory-consolidate apply is blocked: direct lifecycle SQL must be replaced by lifecycle mutation service or explicitly allowed with MEMORY_XX_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL=true");
   }
   const pool = createPool();
   const client = await pool.connect();

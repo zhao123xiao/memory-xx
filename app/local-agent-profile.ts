@@ -17,11 +17,11 @@ export interface LocalAgentProfile {
   readonly defaultRecallOrder: readonly string[];
   readonly grants: readonly LocalAgentScopeGrant[];
   readonly env: {
-    readonly MEMORY_V2_AGENT_ID: string;
-    readonly MEMORY_V2_DEFAULT_USER_SCOPE: string;
-    readonly MEMORY_V2_DEFAULT_WORKSPACE_SCOPE: string;
-    readonly MEMORY_V2_DEFAULT_PROJECT_SCOPE?: string;
-    readonly MEMORY_V2_DEFAULT_GLOBAL_SCOPE: string;
+    readonly MEMORY_XX_AGENT_ID: string;
+    readonly MEMORY_XX_DEFAULT_USER_SCOPE: string;
+    readonly MEMORY_XX_DEFAULT_WORKSPACE_SCOPE: string;
+    readonly MEMORY_XX_DEFAULT_PROJECT_SCOPE?: string;
+    readonly MEMORY_XX_DEFAULT_GLOBAL_SCOPE: string;
   };
 }
 
@@ -30,9 +30,9 @@ function readDefaultScope(envName: string, fallback: string): string {
 }
 
 export const LOCAL_AGENT_DEFAULTS = {
-  userScopeId: readDefaultScope("MEMORY_V2_DEFAULT_USER_SCOPE", "current-instance-owner"),
-  workspaceScopeId: readDefaultScope("MEMORY_V2_DEFAULT_WORKSPACE_SCOPE", "current-instance"),
-  globalScopeId: readDefaultScope("MEMORY_V2_DEFAULT_GLOBAL_SCOPE", "global"),
+  userScopeId: readDefaultScope("MEMORY_XX_DEFAULT_USER_SCOPE", "current-instance-owner"),
+  workspaceScopeId: readDefaultScope("MEMORY_XX_DEFAULT_WORKSPACE_SCOPE", "current-instance"),
+  globalScopeId: readDefaultScope("MEMORY_XX_DEFAULT_GLOBAL_SCOPE", "global"),
 } as const;
 
 const RW_FEEDBACK: readonly MemoryPermission[] = ["memory:read", "memory:write", "memory:feedback"];
@@ -111,11 +111,11 @@ export function buildLocalAgentProfile(input: {
     ],
     grants,
     env: {
-      MEMORY_V2_AGENT_ID: agentId,
-      MEMORY_V2_DEFAULT_USER_SCOPE: LOCAL_AGENT_DEFAULTS.userScopeId,
-      MEMORY_V2_DEFAULT_WORKSPACE_SCOPE: LOCAL_AGENT_DEFAULTS.workspaceScopeId,
-      ...(input.projectScopeId?.trim() ? { MEMORY_V2_DEFAULT_PROJECT_SCOPE: input.projectScopeId.trim() } : {}),
-      MEMORY_V2_DEFAULT_GLOBAL_SCOPE: LOCAL_AGENT_DEFAULTS.globalScopeId,
+      MEMORY_XX_AGENT_ID: agentId,
+      MEMORY_XX_DEFAULT_USER_SCOPE: LOCAL_AGENT_DEFAULTS.userScopeId,
+      MEMORY_XX_DEFAULT_WORKSPACE_SCOPE: LOCAL_AGENT_DEFAULTS.workspaceScopeId,
+      ...(input.projectScopeId?.trim() ? { MEMORY_XX_DEFAULT_PROJECT_SCOPE: input.projectScopeId.trim() } : {}),
+      MEMORY_XX_DEFAULT_GLOBAL_SCOPE: LOCAL_AGENT_DEFAULTS.globalScopeId,
     },
   };
 }

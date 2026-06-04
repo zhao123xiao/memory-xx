@@ -9,7 +9,7 @@
 #
 set -uo pipefail
 
-WRAPPER="${WRAPPER:-${MEMORY_V2_WRAPPER_URL:-http://127.0.0.1:5100}}"
+WRAPPER="${WRAPPER:-${MEMORY_XX_WRAPPER_URL:-http://127.0.0.1:5100}}"
 PG_DB="${PG_DB:-postgres://postgres:postgres@127.0.0.1:55432/memory_xx}"
 PG_SCHEMA="${PG_SCHEMA:-shadow_r3_20260414}"
 QDRANT_BASE="${QDRANT_BASE:-http://127.0.0.1:6333}"
@@ -84,7 +84,7 @@ print(json.dumps({
     }
 }))")"
 
-  local resp; resp="$(http_post "/api/memory/v2/orchestrator/write-memory" "$body")"
+  local resp; resp="$(http_post "/api/memory/xx/orchestrator/write-memory" "$body")"
   local mem_id; mem_id="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('write',{}).get('memoryId','') or d.get('error',''))" 2>/dev/null)"
   [[ -z "$mem_id" || "$mem_id" == *"error"* ]] && { fail "$label: 未返回 memory_id: $mem_id"; echo "RESP: $resp"; return 1; }
   pass "$label: write 成功 memory_id=$mem_id"
@@ -113,7 +113,7 @@ print(json.dumps({
     'scope_context': {'user_id': 'functional-test', 'workspace_id': 'functional-test', 'include_global': False},
     'limit': 5
 }))")"
-  local recall_resp; recall_resp="$(http_post "/api/memory/v2/recall/query" "$recall_body")"
+  local recall_resp; recall_resp="$(http_post "/api/memory/xx/recall/query" "$recall_body")"
   local hits; hits="$(echo "$recall_resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null)"
   local vec_hits; vec_hits="$(echo "$recall_resp" | python3 -c "import json,sys; print(d.get('audit',{}).get('vector_hits','?') if d.get('audit') else '?')" 2>/dev/null)"
   if [[ "$hits" -gt 0 ]]; then
@@ -136,7 +136,7 @@ test_m2() {
   local all_ok=true
   for q in "${queries[@]}"; do
     local body; body="$(python3 -c "import json; print(json.dumps({'query':'$q','scope_context':{'user_id':'current-instance-owner','workspace_id':'current-instance','include_global':True},'limit':3}))")"
-    local resp; resp="$(http_post "/api/memory/v2/recall/query" "$body")"
+    local resp; resp="$(http_post "/api/memory/xx/recall/query" "$body")"
     local hits; hits="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null)"
     local vec_hits; vec_hits="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); a=d.get('audit',{}); print(a.get('vector_hits','?') if a else '?')" 2>/dev/null)"
     local degraded; degraded="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); v=d.get('degraded'); print(str(v).lower() if v is not None else 'none')" 2>/dev/null)"
@@ -157,7 +157,7 @@ test_m3() {
   local label="M3: 生命周期一致性"
   info "=== $label ==="
   local body; body="$(python3 -c "import json; print(json.dumps({'include_records':True}))")"
-  local resp; resp="$(http_post "/api/memory/v2/orchestrator/audit-memory-consistency" "$body")"
+  local resp; resp="$(http_post "/api/memory/xx/orchestrator/audit-memory-consistency" "$body")"
   local ok; ok="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('ok', d.get('consistent','unknown')))" 2>/dev/null)"
   local counts; counts="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); c=d.get('counts',{}); print(f\"records={c.get('memory_records','?')} events={c.get('memory_events','?')} outbox={c.get('outbox_events','?')}\")" 2>/dev/null)"
   local findings_count; findings_count="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('findings',[])))" 2>/dev/null)"
@@ -183,7 +183,7 @@ test_m4() {
   local test_mem_id; test_mem_id="$(cat "$mem_id_file")"
   # 用中文关键词查询，匹配 M1 写的测试记录内容
   local body; body="$(python3 -c "import json; print(json.dumps({'query':'真实性测试记录','scope_context':{'user_id':'functional-test','workspace_id':'functional-test','include_global':False,'memory_ids':['${test_mem_id}']},'limit':5}))")"
-  local resp; resp="$(http_post "/api/memory/v2/recall/query" "$body")"
+  local resp; resp="$(http_post "/api/memory/xx/recall/query" "$body")"
   local hits; hits="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null)"
   if [[ "$hits" -gt 0 ]]; then
     pass "$label: memory_ids filter hits=$hits (query='这是一条真实性测试记录')"
@@ -206,7 +206,7 @@ test_m5() {
   local test_mem_id; test_mem_id="$(cat "$mem_id_file")"
   # forget-memory 需要 top-level requestId
   local body; body="$(python3 -c "import json; print(json.dumps({'memoryId':'${test_mem_id}','mode':'tombstone','actorId':'ftest','requestId':'ftest-forget-001'}))")"
-  local resp; resp="$(http_post "/api/memory/v2/orchestrator/forget-memory" "$body")"
+  local resp; resp="$(http_post "/api/memory/xx/orchestrator/forget-memory" "$body")"
   local success; success="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('forget',{}).get('success', d.get('forget',{}).get('tombstoned', 'unknown')))" 2>/dev/null)"
   if [[ "$success" == "True" || "$success" == "true" ]]; then
     pass "$label: forget 成功 memory_id=$test_mem_id"

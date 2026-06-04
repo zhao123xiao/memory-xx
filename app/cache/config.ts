@@ -21,15 +21,15 @@ function runtimePositiveInt(key: string, envValue: string | undefined, fallback:
 
 export function loadMemoryRedisConfig(env: NodeJS.ProcessEnv = process.env): MemoryRedisConfig {
   return {
-    url: env.MEMORY_V2_REDIS_URL?.trim() || undefined,
-    prefix: env.MEMORY_V2_REDIS_PREFIX?.trim() || "memory-xx",
-    connect_timeout_ms: runtimePositiveInt("cache.redis.connect_timeout_ms", env.MEMORY_V2_REDIS_CONNECT_TIMEOUT_MS, 2000, "MEMORY_V2_REDIS_CONNECT_TIMEOUT_MS"),
-    empty_recall_ttl_seconds: runtimePositiveInt("cache.redis.empty_recall_ttl_seconds", env.MEMORY_V2_EMPTY_RECALL_CACHE_TTL_SECONDS, 15, "MEMORY_V2_EMPTY_RECALL_CACHE_TTL_SECONDS"),
+    url: env.MEMORY_XX_REDIS_URL?.trim() || undefined,
+    prefix: env.MEMORY_XX_REDIS_PREFIX?.trim() || "memory-xx",
+    connect_timeout_ms: runtimePositiveInt("cache.redis.connect_timeout_ms", env.MEMORY_XX_REDIS_CONNECT_TIMEOUT_MS, 2000, "MEMORY_XX_REDIS_CONNECT_TIMEOUT_MS"),
+    empty_recall_ttl_seconds: runtimePositiveInt("cache.redis.empty_recall_ttl_seconds", env.MEMORY_XX_EMPTY_RECALL_CACHE_TTL_SECONDS, 15, "MEMORY_XX_EMPTY_RECALL_CACHE_TTL_SECONDS"),
     ttl_seconds: {
-      search: runtimePositiveInt("cache.redis.ttl.search_seconds", env.MEMORY_V2_REDIS_TTL_SEARCH_SECONDS, 300, "MEMORY_V2_REDIS_TTL_SEARCH_SECONDS"),
-      session: runtimePositiveInt("cache.redis.ttl.session_seconds", env.MEMORY_V2_REDIS_TTL_SESSION_SECONDS, 1800, "MEMORY_V2_REDIS_TTL_SESSION_SECONDS"),
-      recent: runtimePositiveInt("cache.redis.ttl.recent_seconds", env.MEMORY_V2_REDIS_TTL_RECENT_SECONDS, 900, "MEMORY_V2_REDIS_TTL_RECENT_SECONDS"),
-      startup_context: runtimePositiveInt("cache.redis.ttl.startup_context_seconds", env.MEMORY_V2_REDIS_TTL_STARTUP_CONTEXT_SECONDS, 600, "MEMORY_V2_REDIS_TTL_STARTUP_CONTEXT_SECONDS")
+      search: runtimePositiveInt("cache.redis.ttl.search_seconds", env.MEMORY_XX_REDIS_TTL_SEARCH_SECONDS, 300, "MEMORY_XX_REDIS_TTL_SEARCH_SECONDS"),
+      session: runtimePositiveInt("cache.redis.ttl.session_seconds", env.MEMORY_XX_REDIS_TTL_SESSION_SECONDS, 1800, "MEMORY_XX_REDIS_TTL_SESSION_SECONDS"),
+      recent: runtimePositiveInt("cache.redis.ttl.recent_seconds", env.MEMORY_XX_REDIS_TTL_RECENT_SECONDS, 900, "MEMORY_XX_REDIS_TTL_RECENT_SECONDS"),
+      startup_context: runtimePositiveInt("cache.redis.ttl.startup_context_seconds", env.MEMORY_XX_REDIS_TTL_STARTUP_CONTEXT_SECONDS, 600, "MEMORY_XX_REDIS_TTL_STARTUP_CONTEXT_SECONDS")
     }
   };
 }

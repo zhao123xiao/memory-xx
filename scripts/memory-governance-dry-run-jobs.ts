@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { evaluateAutoApprovalPolicy } from "../app/governance/auto-approval-policy";
 import { stableGovernanceSelectorHash } from "../app/governance/service";
 import { requireCliPermission } from "../app/server/permissions";
@@ -22,10 +22,10 @@ function readObject(value: unknown): Record<string, unknown> {
 }
 
 async function loadCandidateOnlyFlag(): Promise<{ enabled: boolean; reasons: string[] }> {
-  if (process.env.MEMORY_V2_INTELLIGENCE_CANDIDATE_ONLY === "true") {
+  if (process.env.MEMORY_XX_INTELLIGENCE_CANDIDATE_ONLY === "true") {
     return { enabled: true, reasons: ["env_candidate_only"] };
   }
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   try {
     const parsed = JSON.parse(await readFile(join(runtimeDir, "intelligence-candidate-only.json"), "utf8")) as { enabled?: unknown; reasons?: unknown };
     return {
@@ -106,7 +106,7 @@ async function main(): Promise<void> {
   const requested = argValue("--job");
   const jobs = requested ? JOBS.filter((job) => job === requested) : [...JOBS];
   if (jobs.length === 0) throw new Error(`unknown job: ${requested}`);
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const schema = quoteIdent(config.schema);
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

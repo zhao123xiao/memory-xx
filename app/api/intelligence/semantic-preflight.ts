@@ -4,7 +4,7 @@ import { cosineSimilarity } from "../../intelligence/semantic-write-lock";
 import { MemoryRecordRepository } from "../../db/repositories/memory-record-repository";
 import { withWriteTransaction } from "../../db/tx/write-transaction";
 import { LifecycleStatus, type JsonObject } from "../../shared";
-import { loadMemoryV2QdrantConfig } from "../../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../../recall/qdrant-config";
 import { readRuntimeControlNumberSync } from "../../runtime-control-settings";
 import * as runtime from "../../server/runtime";
 import { resolveScopeType } from "./request-parsing";
@@ -177,10 +177,10 @@ async function qdrantSemanticPreflight(
   readonly degraded_reason?: string;
 }> {
   if (!embedding || embedding.length === 0) return { action: "none", source: "qdrant" };
-  const config = loadMemoryV2QdrantConfig();
+  const config = loadMemoryXXQdrantConfig();
   if (!config.base_url || !config.collection_name) return { action: "none", source: "qdrant" };
   const controller = new AbortController();
-  const envTimeoutMs = Number.parseInt(process.env.MEMORY_V2_SMART_WRITE_QDRANT_PREFLIGHT_TIMEOUT_MS ?? "200", 10);
+  const envTimeoutMs = Number.parseInt(process.env.MEMORY_XX_SMART_WRITE_QDRANT_PREFLIGHT_TIMEOUT_MS ?? "200", 10);
   const timeoutMs = readRuntimeControlNumberSync("write.smart_write.qdrant_preflight_timeout_ms", envTimeoutMs);
   const timer = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 200);
   try {

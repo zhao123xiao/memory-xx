@@ -3,7 +3,7 @@ import path from "node:path";
 import { Pool } from "pg";
 
 import "./test-harness/config";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
 import { mapMemoryIdToQdrantPointId } from "../app/qdrant-sync/projector";
 import { defaultEmbeddingGenerationId, defaultEmbeddingTextStrategy, defaultQueryCacheVersion, hashEmbeddingBase } from "../app/embedding";
 
@@ -36,7 +36,7 @@ interface GeneratedPoint {
   readonly payload: Record<string, unknown>;
 }
 
-const reportRoot = process.env.MEMORY_V2_REPORT_DIR || path.join(process.cwd(), "reports/memory-xx-tests");
+const reportRoot = process.env.MEMORY_XX_REPORT_DIR || path.join(process.cwd(), "reports/memory-xx-tests");
 const runId = `local-memory-embedding-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 const outputDir = path.join(reportRoot, "local-memory-embedding", runId);
 
@@ -51,24 +51,24 @@ function argValue(name: string): string | undefined {
 const estimateOnly = process.argv.includes("--estimate-only");
 const limitArg = argValue("--limit");
 const limit = limitArg && limitArg !== "true" ? Math.max(1, Number.parseInt(limitArg, 10)) : undefined;
-const sourceCollection = argValue("--source-collection") || process.env.MEMORY_V2_QDRANT_COLLECTION || "memory-xx-active";
-const targetCollection = argValue("--target-collection") || process.env.MEMORY_V2_LOCAL_EMBEDDING_COLLECTION || "memory-xx-local-qwen8b-int4-v1";
-const qdrantAlias = argValue("--alias") || process.env.MEMORY_V2_QDRANT_ALIAS || "memory-xx-active";
-const redisPrefix = argValue("--redis-prefix") || process.env.MEMORY_V2_REDIS_PREFIX || "memory-xx-local-qwen8b-int4";
+const sourceCollection = argValue("--source-collection") || process.env.MEMORY_XX_QDRANT_COLLECTION || "memory-xx-active";
+const targetCollection = argValue("--target-collection") || process.env.MEMORY_XX_LOCAL_EMBEDDING_COLLECTION || "memory-xx-local-qwen8b-int4-v1";
+const qdrantAlias = argValue("--alias") || process.env.MEMORY_XX_QDRANT_ALIAS || "memory-xx-active";
+const redisPrefix = argValue("--redis-prefix") || process.env.MEMORY_XX_REDIS_PREFIX || "memory-xx-local-qwen8b-int4";
 const forceRecreate = process.argv.includes("--force-recreate");
-const maxConcurrency = Math.min(2, Math.max(1, Number.parseInt(argValue("--concurrency") || process.env.MEMORY_V2_LOCAL_EMBEDDING_CONCURRENCY || "2", 10)));
-const batchSize = Math.max(1, Number.parseInt(argValue("--batch-size") || process.env.MEMORY_V2_LOCAL_EMBEDDING_BATCH_SIZE || "32", 10));
+const maxConcurrency = Math.min(2, Math.max(1, Number.parseInt(argValue("--concurrency") || process.env.MEMORY_XX_LOCAL_EMBEDDING_CONCURRENCY || "2", 10)));
+const batchSize = Math.max(1, Number.parseInt(argValue("--batch-size") || process.env.MEMORY_XX_LOCAL_EMBEDDING_BATCH_SIZE || "32", 10));
 const dryRun = process.argv.includes("--dry-run") || estimateOnly;
 
-const qdrantBase = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
-const qdrantApiKey = process.env.MEMORY_V2_QDRANT_API_KEY?.trim();
+const qdrantBase = process.env.MEMORY_XX_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
+const qdrantApiKey = process.env.MEMORY_XX_QDRANT_API_KEY?.trim();
 const embeddingBase = (process.env.EMBEDDING_API_BASE || "http://127.0.0.1:5221/v1").replace(/\/+$/, "");
 const embeddingKey = process.env.EMBEDDING_API_KEY || process.env.OPENAI_API_KEY || "";
 const embeddingModel = process.env.EMBEDDING_MODEL || "Qwen3-Embedding-8B";
 const embeddingDims = Number.parseInt(process.env.EMBEDDING_DIMS || "4096", 10);
 const embeddingGeneration = argValue("--generation-id") || defaultEmbeddingGenerationId();
 const embeddingTextStrategy = argValue("--text-strategy") || defaultEmbeddingTextStrategy();
-const queryCacheVersion = argValue("--query-cache-version") || process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION || defaultQueryCacheVersion(embeddingGeneration);
+const queryCacheVersion = argValue("--query-cache-version") || process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION || defaultQueryCacheVersion(embeddingGeneration);
 
 function quoteIdent(value: string): string {
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) throw new Error(`Unsafe identifier: ${value}`);
@@ -126,7 +126,7 @@ async function upsertManifest(pool: Pool, status: "prepared" | "generated" | "va
   readonly payload_sample_verified?: boolean;
   readonly metadata?: Record<string, unknown>;
 }): Promise<void> {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   await pool.query(`
     INSERT INTO ${quoteIdent(pgConfig.schema)}.memory_embedding_generations (
       generation_id, provider, model, precision, dims, embedding_base_hash, text_strategy,
@@ -223,7 +223,7 @@ async function fetchJson(url: string, init?: RequestInit): Promise<any> {
 }
 
 async function loadRecords(pool: Pool): Promise<MemoryRecord[]> {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const sql = `
     SELECT
       id,
@@ -431,7 +431,7 @@ async function verifyPayloadSample(collection: string): Promise<{ checked: numbe
 
 async function main(): Promise<void> {
   await fs.mkdir(outputDir, { recursive: true });
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {
     const records = await loadRecords(pool);

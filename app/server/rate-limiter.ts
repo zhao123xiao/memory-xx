@@ -59,11 +59,11 @@ export class RateLimiter {
 }
 
 export function loadRateLimiterConfig(env: NodeJS.ProcessEnv): Partial<RateLimiterOptions> {
-  const envMax = env.MEMORY_V2_RATE_LIMIT_MAX
-    ? Number.parseInt(env.MEMORY_V2_RATE_LIMIT_MAX, 10)
+  const envMax = env.MEMORY_XX_RATE_LIMIT_MAX
+    ? Number.parseInt(env.MEMORY_XX_RATE_LIMIT_MAX, 10)
     : undefined;
-  const envWindow = env.MEMORY_V2_RATE_LIMIT_WINDOW_MS
-    ? Number.parseInt(env.MEMORY_V2_RATE_LIMIT_WINDOW_MS, 10)
+  const envWindow = env.MEMORY_XX_RATE_LIMIT_WINDOW_MS
+    ? Number.parseInt(env.MEMORY_XX_RATE_LIMIT_WINDOW_MS, 10)
     : undefined;
   const runtimeMax = readRuntimeControlValueSync("write.rate_limit.max_requests");
   const runtimeWindow = readRuntimeControlValueSync("write.rate_limit.window_ms");

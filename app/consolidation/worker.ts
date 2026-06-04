@@ -31,7 +31,7 @@ export interface ConsolidationResult {
 }
 
 function readEpisodeWindowHours(): number {
-  const raw = process.env.MEMORY_V2_EPISODE_WINDOW_HOURS?.trim();
+  const raw = process.env.MEMORY_XX_EPISODE_WINDOW_HOURS?.trim();
   if (!raw) return 24;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 24;

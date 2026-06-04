@@ -53,10 +53,10 @@ function jsonArray<T>(value: unknown): T[] {
 }
 
 function graphEvidenceLimit(): number {
-  const raw = process.env.MEMORY_V2_GRAPH_EVIDENCE_LIMIT?.trim();
+  const raw = process.env.MEMORY_XX_GRAPH_EVIDENCE_LIMIT?.trim();
   const parsed = raw ? Number.parseInt(raw, 10) : 20;
   if (!Number.isFinite(parsed) || parsed < 1 || parsed > 100) {
-    throw new Error("MEMORY_V2_GRAPH_EVIDENCE_LIMIT（图谱证据数量限制）必须在 1 到 100 之间。");
+    throw new Error("MEMORY_XX_GRAPH_EVIDENCE_LIMIT（图谱证据数量限制）必须在 1 到 100 之间。");
   }
   return parsed;
 }

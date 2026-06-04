@@ -13,10 +13,10 @@ function normalizeScopes(scopes: readonly RecallScopeRef[]): string[] {
 
 function embeddingCacheContext(): Record<string, string> {
   return {
-    generation_id: process.env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || "unknown-generation",
-    query_cache_version: process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "unknown-query-cache-version",
-    model: process.env.MEMORY_V2_EMBEDDING_MODEL?.trim() || process.env.EMBEDDING_MODEL?.trim() || "unknown-model",
-    dims: process.env.MEMORY_V2_EMBEDDING_DIMS?.trim() || process.env.EMBEDDING_DIMS?.trim() || "unknown-dims"
+    generation_id: process.env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "unknown-generation",
+    query_cache_version: process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "unknown-query-cache-version",
+    model: process.env.MEMORY_XX_EMBEDDING_MODEL?.trim() || process.env.EMBEDDING_MODEL?.trim() || "unknown-model",
+    dims: process.env.MEMORY_XX_EMBEDDING_DIMS?.trim() || process.env.EMBEDDING_DIMS?.trim() || "unknown-dims"
   };
 }
 
@@ -35,9 +35,9 @@ export function buildSearchCacheKey(prefix: string, request: RecallRequest): str
     hybrid_mode: request.hybrid_mode ?? null,
     strategy_version: "recall-v3-rrf-k20",
     reranker_config_version: [
-      process.env.MEMORY_V2_RERANKER_MODEL_WEIGHT ?? "0.25",
-      process.env.MEMORY_V2_RERANKER_MIN_CANDIDATES ?? "4",
-      process.env.MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD ?? "0.20"
+      process.env.MEMORY_XX_RERANKER_MODEL_WEIGHT ?? "0.25",
+      process.env.MEMORY_XX_RERANKER_MIN_CANDIDATES ?? "4",
+      process.env.MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD ?? "0.20"
     ].join(":"),
     limit: request.limit ?? 0,
     offset: request.offset ?? 0

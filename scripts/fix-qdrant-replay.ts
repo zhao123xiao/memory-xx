@@ -6,10 +6,10 @@
  *
  * 用法：
  *   cd <project-root>
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
- *   MEMORY_V2_QDRANT_BASE_URL=http://127.0.0.1:6333 \
- *   MEMORY_V2_QDRANT_COLLECTION=memory-xx \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333 \
+ *   MEMORY_XX_QDRANT_COLLECTION=memory-xx \
  *   node --import tsx scripts/fix-qdrant-replay.ts
  */
 
@@ -17,11 +17,11 @@ import { PostgresWriteDatabase } from "../app/db/adapters/postgres-write-databas
 import { DatabaseQdrantSyncOutboxRepository } from "../app/qdrant-sync/outbox-worker";
 import { HttpQdrantPointWriter } from "../app/qdrant-sync/qdrant-point-writer";
 import { QdrantProjectionSyncService, EXPECTED_VECTOR_DIMENSION } from "../app/qdrant-sync/projector";
-import { loadMemoryV2PostgresConfig, loadMemoryV2QdrantConfig } from "../app";
+import { loadMemoryXXPostgresConfig, loadMemoryXXQdrantConfig } from "../app";
 
 async function main() {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
 
   console.log("Qdrant config:", JSON.stringify(qdrantConfig));
   console.log("Expected vector dimension:", EXPECTED_VECTOR_DIMENSION);

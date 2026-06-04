@@ -115,7 +115,7 @@ export function applyRecallConfidenceGate(
   rerankOutcome: RerankOutcomeLike,
   env: NodeJS.ProcessEnv = process.env
 ): RecallConfidenceGateResult {
-  if (envFlagDisabled(env, "MEMORY_V2_RECALL_LOW_CONFIDENCE_GUARD")) {
+  if (envFlagDisabled(env, "MEMORY_XX_RECALL_LOW_CONFIDENCE_GUARD")) {
     return {
       candidates: [...candidates],
       audit: { applied: false, reason: "disabled" }
@@ -143,7 +143,7 @@ export function applyRecallConfidenceGate(
   const topScore = topModelScore(candidates);
   const threshold = readFraction(
     env,
-    "MEMORY_V2_RECALL_ABSOLUTE_MIN_SCORE",
+    "MEMORY_XX_RECALL_ABSOLUTE_MIN_SCORE",
     0.20
   );
 

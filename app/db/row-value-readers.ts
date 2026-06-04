@@ -1,5 +1,5 @@
 export function readPgBoolean(value: unknown, fieldName = "boolean"): boolean {
-  if (process.env.MEMORY_V2_LEGACY_BOOLEAN_COERCION === "true") {
+  if (process.env.MEMORY_XX_LEGACY_BOOLEAN_COERCION === "true") {
     return Boolean(value);
   }
   if (typeof value === "boolean") return value;

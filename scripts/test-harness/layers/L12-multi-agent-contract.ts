@@ -7,7 +7,7 @@ import { createLogger } from "../../../app/shared/logger";
 const log = createLogger("L12");
 const runId = generateRunId();
 const report = createEmptyReport("L12", runId);
-const BASE_URL = process.env.MEMORY_V2_TEST_URL || config.wrapperUrl;
+const BASE_URL = process.env.MEMORY_XX_TEST_URL || config.wrapperUrl;
 const headers = { "Content-Type": "application/json", "Authorization": "Bearer " + config.wrapperToken };
 const createdMemoryIds: string[] = [];
 
@@ -27,7 +27,7 @@ function check(name: string, passed: boolean, detail: string, severity: CheckRes
 }
 
 async function remember(agentId: string, userId: string, scopeId: string, content: string) {
-  const { status, data } = await post("/api/memory/v2/unified/remember", {
+  const { status, data } = await post("/api/memory/xx/unified/remember", {
     user_id: userId,
     agent_id: agentId,
     scope_id: scopeId,
@@ -39,7 +39,7 @@ async function remember(agentId: string, userId: string, scopeId: string, conten
 }
 
 async function approve(memoryId: string, actorId: string) {
-  return await post(`/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/approve`, {
+  return await post(`/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/approve`, {
     requestId: `${runId}:approve:${memoryId}`,
     actorId,
   });
@@ -49,7 +49,7 @@ async function cleanup() {
   report.cleanup.performed = true;
   for (const memoryId of createdMemoryIds) {
     try {
-      const { status } = await post("/api/memory/v2/unified/forget", { memory_id: memoryId, agent_id: "l12-multi-agent-contract", mode: "tombstone" });
+      const { status } = await post("/api/memory/xx/unified/forget", { memory_id: memoryId, agent_id: "l12-multi-agent-contract", mode: "tombstone" });
       if (status >= 200 && status < 300) report.cleanup.resources_cleaned.push(memoryId);
       else report.cleanup.failed.push(`${memoryId}: status=${status}`);
     } catch (err) {
@@ -86,12 +86,12 @@ async function main() {
   } catch (err) { check("agent-b:remember", false, (err as Error).message); }
 
   try {
-    const { status } = await post("/api/memory/v2/unified/forget", { agent_id: "test" });
+    const { status } = await post("/api/memory/xx/unified/forget", { agent_id: "test" });
     check("unified:forget-required-memory-id", status === 400, `status=${status}`);
   } catch (err) { check("unified:forget-required-memory-id", false, (err as Error).message); }
 
   try {
-    const { status, data } = await post("/api/memory/v2/unified/audit", {});
+    const { status, data } = await post("/api/memory/xx/unified/audit", {});
     check("unified:audit", status === 200 && data.ok !== undefined, `status=${status}, ok=${data.ok}`);
   } catch (err) { check("unified:audit", false, (err as Error).message); }
 
@@ -100,7 +100,7 @@ async function main() {
     let finalData: any = {};
     let finalMemoryIds: string[] = [];
     for (let attempt = 1; attempt <= 5; attempt += 1) {
-      const { status, data } = await post("/api/memory/v2/unified/reflect", {
+      const { status, data } = await post("/api/memory/xx/unified/reflect", {
         agent_id: "l12-agent",
         run_id: runId,
         query: `Agent A L12 test ${runId}`,

@@ -259,7 +259,7 @@ export class QdrantVectorRetriever implements VectorRetriever {
     this.searchExecutor = options.search_executor ?? defaultSearchExecutor;
     this.recordMapper = options.record_mapper ?? defaultRecordMapper;
     this.circuitBreaker = options.circuit_breaker ?? new CircuitBreaker();
-    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_V2_QDRANT_QUERY_TIMEOUT_MS", 1200);
+    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_XX_QDRANT_QUERY_TIMEOUT_MS", 1200);
   }
 
   async get_backend_status(): Promise<BackendStatus> {

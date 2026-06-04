@@ -11,10 +11,10 @@ import {
 } from "../cache";
 import type { PostgresRecallRuntime } from "../recall/postgres-runtime";
 import {
-  loadMemoryV2QdrantConfig,
+  loadMemoryXXQdrantConfig,
   resolveVectorRuntimeMode
 } from "../recall/qdrant-config";
-import { loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
 import { createLogger } from "../shared/logger";
 import { QwenEmbeddingProviderWrapper, loadEmbeddingProviderRequestConfig } from "./embedding-provider";
@@ -54,8 +54,8 @@ export async function initRuntime(): Promise<void> {
     "health.qdrant_pg_diff_blocker_threshold",
     "database.connection.idle_timeout_ms",
   ]);
-  const config = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const config = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const redisConfig = loadMemoryRedisConfig();
   const runtimeSelection = resolveVectorRuntimeMode(qdrantConfig);
   const embeddingRequestConfig = loadEmbeddingProviderRequestConfig();
@@ -68,8 +68,8 @@ export async function initRuntime(): Promise<void> {
   const embeddingProvider = new ResilientQueryEmbeddingProvider(
     new QwenEmbeddingProviderWrapper(),
     {
-      max_retries: readPositiveInt("MEMORY_V2_QUERY_EMBEDDING_MAX_RETRIES", 0),
-      retry_delay_ms: readPositiveInt("MEMORY_V2_QUERY_EMBEDDING_RETRY_DELAY_MS", 250),
+      max_retries: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_MAX_RETRIES", 0),
+      retry_delay_ms: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_RETRY_DELAY_MS", 250),
       retry_backoff_multiplier: 2,
       cache_ttl_ms: readRuntimeControlNumberSync("cache.query_embedding.ttl_ms", 30 * 60 * 1000),
       allow_stale_on_error: true,
@@ -79,7 +79,7 @@ export async function initRuntime(): Promise<void> {
         model: embeddingRequestConfig.model,
         dims: embeddingRequestConfig.dims,
         api_base: embeddingRequestConfig.api_base,
-        version: process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "query-embedding-v1",
+        version: process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "query-embedding-v1",
       }
     }
   );
@@ -105,7 +105,7 @@ export async function initRuntime(): Promise<void> {
     });
   }
 
-  const wrapperMode = process.env.MEMORY_V2_WRAPPER_MODE ?? "recall-only";
+  const wrapperMode = process.env.MEMORY_XX_WRAPPER_MODE ?? "recall-only";
   log.info("Runtime initialised", { mode: wrapperMode, vector: runtimeSelection, redis: redisConfig.url ? "external" : "disabled", projection_sync: projectionSyncService !== null });
 }
 

@@ -73,21 +73,21 @@ export function defaultConversationSourceConfigs(env: NodeJS.ProcessEnv = proces
   return [
     {
       adapter: "codex_session",
-      roots: splitRoots(env.MEMORY_V2_CODEX_SESSION_ROOTS, [
+      roots: splitRoots(env.MEMORY_XX_CODEX_SESSION_ROOTS, [
         "<windows-user-home>/.codex/sessions",
         "<linux-user-home>/.codex/sessions",
       ]),
     },
     {
       adapter: "claude_code_session",
-      roots: splitRoots(env.MEMORY_V2_CLAUDE_SESSION_ROOTS, [
+      roots: splitRoots(env.MEMORY_XX_CLAUDE_SESSION_ROOTS, [
         "<windows-user-home>/.claude/projects",
         "<linux-user-home>/.claude/projects",
       ]),
     },
     {
       adapter: "openclaw_session",
-      roots: splitRoots(env.MEMORY_V2_OPENCLAW_SESSION_ROOTS, [
+      roots: splitRoots(env.MEMORY_XX_OPENCLAW_SESSION_ROOTS, [
         "<linux-user-home>/.openclaw/agents/main/sessions",
       ]),
     },

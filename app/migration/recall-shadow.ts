@@ -212,7 +212,7 @@ export class RecallShadowCompareHarness {
         batchId: shadowCase.caseId,
         stage: MigrationStage.M3,
         jobType: MigrationJobType.ShadowCompare,
-        sourceSystem: MigrationSourceSystem.MemoryV2,
+        sourceSystem: MigrationSourceSystem.MemoryXX,
         sourceLocator: `recall:${shadowCase.caseId}`,
         targetTableOrAsset: "recall.shadow_compare",
         targetRecordId: shadowCase.caseId,

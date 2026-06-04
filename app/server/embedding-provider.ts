@@ -31,7 +31,7 @@ export function loadEmbeddingProviderRequestConfig(
   return {
     model: env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B",
     dims: readPositiveInt(env, "EMBEDDING_DIMS", 4096),
-    generation_id: env.MEMORY_V2_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1",
+    generation_id: env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1",
     api_base: apiBase,
   };
 }
@@ -53,7 +53,7 @@ export class QwenEmbeddingProviderWrapper {
     this.generationId = requestConfig.generation_id;
     this.timeoutMs = readPositiveInt(
       process.env,
-      "MEMORY_V2_QUERY_EMBEDDING_TIMEOUT_MS",
+      "MEMORY_XX_QUERY_EMBEDDING_TIMEOUT_MS",
       readPositiveInt(process.env, "EMBEDDING_TIMEOUT_MS", 5000)
     );
     const isLocalProxy = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(this.apiBase);

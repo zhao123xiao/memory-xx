@@ -1,4 +1,4 @@
-export interface MemoryV2QdrantConfig {
+export interface MemoryXXQdrantConfig {
   readonly enabled: boolean;
   readonly base_url?: string;
   readonly api_key?: string;
@@ -21,13 +21,13 @@ function readNumberEnv(name: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function loadMemoryV2QdrantConfig(
+export function loadMemoryXXQdrantConfig(
   env: NodeJS.ProcessEnv = process.env
-): MemoryV2QdrantConfig {
-  const baseUrl = env.MEMORY_V2_QDRANT_BASE_URL?.trim();
-  const collectionName = env.MEMORY_V2_QDRANT_COLLECTION?.trim();
-  const apiKey = env.MEMORY_V2_QDRANT_API_KEY?.trim();
-  const minimumScoreRaw = env.MEMORY_V2_QDRANT_MINIMUM_SCORE?.trim();
+): MemoryXXQdrantConfig {
+  const baseUrl = env.MEMORY_XX_QDRANT_BASE_URL?.trim();
+  const collectionName = env.MEMORY_XX_QDRANT_COLLECTION?.trim();
+  const apiKey = env.MEMORY_XX_QDRANT_API_KEY?.trim();
+  const minimumScoreRaw = env.MEMORY_XX_QDRANT_MINIMUM_SCORE?.trim();
   const minimumScore = minimumScoreRaw ? Number(minimumScoreRaw) : undefined;
 
   return {
@@ -40,13 +40,13 @@ export function loadMemoryV2QdrantConfig(
 }
 
 export function resolveVectorRuntimeMode(
-  config: MemoryV2QdrantConfig
+  config: MemoryXXQdrantConfig
 ): "postgres-primary" | "qdrant-primary" {
   return config.enabled ? "qdrant-primary" : "postgres-primary";
 }
 
 export function buildQdrantDockerConfigHint(
-  config: MemoryV2QdrantConfig
+  config: MemoryXXQdrantConfig
 ): {
   readonly docker_managed: boolean;
   readonly base_url?: string;

@@ -26,7 +26,7 @@ import {
   mapWriteTicketRow
 } from "./postgres-row-mappers";
 import {
-  type MemoryV2PostgresConfig,
+  type MemoryXXPostgresConfig,
   createPostgresPoolConfig
 } from "./postgres-config";
 import {
@@ -38,7 +38,7 @@ import {
 } from "../tx/write-transaction";
 
 export interface PostgresWriteDatabaseOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly pool?: Pool;
   readonly clock?: () => string;
   readonly idFactory?: (sequenceName: SequenceName) => string;

@@ -3,7 +3,7 @@ import "./test-harness/config.js";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function quoteIdent(value: string): string {
@@ -22,16 +22,16 @@ function hasFlag(name: string): boolean {
 }
 
 function wrapperUrl(): string {
-  return (process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "")) ||
-    `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+  return (process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "")) ||
+    `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
 }
 
 function authToken(): string {
-  return process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_CLI_TOKEN?.trim() || "";
+  return process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_CLI_TOKEN?.trim() || "";
 }
 
 async function rejectMemory(memoryId: string): Promise<unknown> {
-  const response = await fetch(`${wrapperUrl()}/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/reject`, {
+  const response = await fetch(`${wrapperUrl()}/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/reject`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   await requireCliPermission("memory:governance_apply");
   const apply = hasFlag("--apply");
   const limit = Math.max(1, Math.min(200, Number.parseInt(argValue("--limit") ?? "100", 10) || 100));
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   try {

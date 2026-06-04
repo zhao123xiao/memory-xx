@@ -1,7 +1,7 @@
-import { IngestRequestRepository, PostgresWriteDatabase, loadMemoryV2PostgresConfig, withWriteTransaction } from "../app/db";
+import { IngestRequestRepository, PostgresWriteDatabase, loadMemoryXXPostgresConfig, withWriteTransaction } from "../app/db";
 
 async function main(): Promise<void> {
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig() });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig() });
   try {
     const repo = new IngestRequestRepository();
     const failed = await withWriteTransaction(db, (tx) => repo.recoverExpiredAccepted(tx));

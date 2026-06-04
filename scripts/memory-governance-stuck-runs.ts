@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions";
 import { argValue, hasArg, loadDotenvIfPresent, printJson, quoteIdent } from "./lib/runtime-env";
 
@@ -19,8 +19,8 @@ type StuckRun = {
 async function main(): Promise<void> {
   const apply = hasArg("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
-  const timeoutMinutes = Number.parseInt(argValue("--timeout-minutes") ?? process.env.MEMORY_V2_GOVERNANCE_STUCK_TIMEOUT_MINUTES ?? "30", 10);
-  const config = loadMemoryV2PostgresConfig();
+  const timeoutMinutes = Number.parseInt(argValue("--timeout-minutes") ?? process.env.MEMORY_XX_GOVERNANCE_STUCK_TIMEOUT_MINUTES ?? "30", 10);
+  const config = loadMemoryXXPostgresConfig();
   const schema = quoteIdent(config.schema);
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

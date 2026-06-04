@@ -32,7 +32,7 @@ function runText(command: string, args: readonly string[]): string {
 }
 
 async function queryPg(databaseUrl: string, schema: string): Promise<Record<string, unknown>> {
-  if (!databaseUrl) return { available: false, error: "MEMORY_V2_DATABASE_URL not configured" };
+  if (!databaseUrl) return { available: false, error: "MEMORY_XX_DATABASE_URL not configured" };
   const pool = new Pool({ connectionString: databaseUrl, max: 2 });
   try {
     await pool.query(`SET search_path TO ${quoteIdent(schema)}, public`);
@@ -78,7 +78,7 @@ async function queryQdrant(baseUrl: string, collection: string, apiKey?: string)
 }
 
 async function queryRedis(url: string): Promise<Record<string, unknown>> {
-  if (!url) return { available: false, error: "MEMORY_V2_REDIS_URL not configured" };
+  if (!url) return { available: false, error: "MEMORY_XX_REDIS_URL not configured" };
   const client = createClient({ url });
   try {
     await client.connect();
@@ -102,15 +102,15 @@ async function main(): Promise<void> {
   const outputDir = join(process.cwd(), "artifacts", "m0-freeze", date);
   mkdirSync(outputDir, { recursive: true, mode: 0o700 });
 
-  const envPath = process.env.MEMORY_V2_ENV_PATH || join(process.cwd(), ".env");
+  const envPath = process.env.MEMORY_XX_ENV_PATH || join(process.cwd(), ".env");
   const fileEnv = readEnvFile(envPath);
   const mergedEnv = { ...fileEnv, ...process.env } as Record<string, string>;
-  const schema = mergedEnv.MEMORY_V2_DATABASE_SCHEMA || "memory_xx";
-  const databaseUrl = mergedEnv.MEMORY_V2_DATABASE_URL || "";
+  const schema = mergedEnv.MEMORY_XX_DATABASE_SCHEMA || "memory_xx";
+  const databaseUrl = mergedEnv.MEMORY_XX_DATABASE_URL || "";
 
   const redactedEnv = Object.fromEntries(
     Object.entries(mergedEnv)
-      .filter(([key]) => key.startsWith("MEMORY_V2_") || key.startsWith("OPENCLAW_") || key === "OPENAI_API_KEY")
+      .filter(([key]) => key.startsWith("MEMORY_XX_") || key.startsWith("OPENCLAW_") || key === "OPENAI_API_KEY")
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, value]) => [key, redact(String(value ?? ""), key)])
   );
@@ -138,17 +138,17 @@ async function main(): Promise<void> {
 
   const schemaDump = databaseUrl
     ? runText("pg_dump", ["--schema-only", "--no-owner", "--no-privileges", `--schema=${schema}`, databaseUrl])
-    : "-- MEMORY_V2_DATABASE_URL not configured\n";
+    : "-- MEMORY_XX_DATABASE_URL not configured\n";
   writeFileSync(join(outputDir, "schema.sql"), schemaDump, { mode: 0o600 });
 
   const [pgInfo, qdrantInfo, redisInfo] = await Promise.all([
     queryPg(databaseUrl, schema),
     queryQdrant(
-      mergedEnv.MEMORY_V2_QDRANT_BASE_URL || "",
-      mergedEnv.MEMORY_V2_QDRANT_COLLECTION || mergedEnv.MEMORY_V2_QDRANT_COLLECTION_NAME || "",
-      mergedEnv.MEMORY_V2_QDRANT_API_KEY
+      mergedEnv.MEMORY_XX_QDRANT_BASE_URL || "",
+      mergedEnv.MEMORY_XX_QDRANT_COLLECTION || mergedEnv.MEMORY_XX_QDRANT_COLLECTION_NAME || "",
+      mergedEnv.MEMORY_XX_QDRANT_API_KEY
     ),
-    queryRedis(mergedEnv.MEMORY_V2_REDIS_URL || ""),
+    queryRedis(mergedEnv.MEMORY_XX_REDIS_URL || ""),
   ]);
   writeFileSync(join(outputDir, "data-manifest.json"), JSON.stringify({ postgres: pgInfo }, null, 2) + "\n", { mode: 0o600 });
   writeFileSync(join(outputDir, "qdrant-info.json"), JSON.stringify(qdrantInfo, null, 2) + "\n", { mode: 0o600 });

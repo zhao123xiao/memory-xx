@@ -34,7 +34,7 @@ async function qdrantMemoryProjectionStatus(memoryId: string): Promise<Record<st
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(process.env.MEMORY_V2_QDRANT_API_KEY?.trim() ? { "api-key": process.env.MEMORY_V2_QDRANT_API_KEY.trim() } : {}),
+        ...(process.env.MEMORY_XX_QDRANT_API_KEY?.trim() ? { "api-key": process.env.MEMORY_XX_QDRANT_API_KEY.trim() } : {}),
       },
       body: JSON.stringify({
         limit: 1,
@@ -64,7 +64,7 @@ async function qdrantMemoryProjectionStatus(memoryId: string): Promise<Record<st
 }
 
 async function readRuntimeJson(filename: string): Promise<Record<string, unknown> | null> {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   try {
     return JSON.parse(await readFile(path.join(runtimeDir, filename), "utf8")) as Record<string, unknown>;
   } catch {

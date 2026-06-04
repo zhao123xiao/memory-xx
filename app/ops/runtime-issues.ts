@@ -193,7 +193,7 @@ export function buildHealthRuntimeIssues(input: {
       root_cause: "接口令牌（API token）与管理令牌（admin token）未隔离",
       evidence: { token_separation_ok: false },
       repairability: "blocked",
-      recommended_action: "手动设置不同的 MEMORY_V2_API_TOKEN 与 MEMORY_V2_ADMIN_TOKEN 后重启服务。",
+      recommended_action: "手动设置不同的 MEMORY_XX_API_TOKEN 与 MEMORY_XX_ADMIN_TOKEN 后重启服务。",
       last_checked_at: checkedAt,
     });
   }
@@ -229,7 +229,7 @@ export function deriveMemoryServiceStatus(input: {
   return "ok";
 }
 
-export function readLatestRepairRunSummary(runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || `${process.cwd()}/.runtime`): RepairRunSummary | null {
+export function readLatestRepairRunSummary(runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || `${process.cwd()}/.runtime`): RepairRunSummary | null {
   const dir = path.join(runtimeDir, "repair-runs");
   const latestPath = path.join(dir, "latest.json");
   const candidate = existsSync(latestPath)

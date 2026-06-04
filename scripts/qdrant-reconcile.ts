@@ -4,7 +4,7 @@ import {
   PostgresWriteDatabase,
   QdrantProjectionReconcileService,
   QdrantProjectionSyncService,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
 } from "../app";
 import { ProjectorEmbeddingResolver } from "../app/qdrant-sync/projector-embedding-resolver.js";
 import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider.js";
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
 
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const pointWriter = new HttpQdrantPointWriter();
   const projectionSyncService = new QdrantProjectionSyncService({
     database,

@@ -45,7 +45,7 @@ function percentile(sorted: number[], p: number): number {
 async function sendWrite(): Promise<LoadResult> {
   const start = Date.now();
   try {
-    const resp = await fetch(apiUrl("/api/memory/v2/write"), {
+    const resp = await fetch(apiUrl("/api/memory/xx/write"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +72,7 @@ async function sendWrite(): Promise<LoadResult> {
 async function sendRecall(): Promise<LoadResult> {
   const start = Date.now();
   try {
-    const resp = await fetch(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await fetch(apiUrl("/api/memory/xx/recall/query"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -231,7 +231,7 @@ async function main() {
       let cleaned = 0, failed = 0;
       for (const memId of ids) {
         try {
-          const resp = await httpPost(apiUrl("/api/memory/v2/orchestrator/forget-memory"), {
+          const resp = await httpPost(apiUrl("/api/memory/xx/orchestrator/forget-memory"), {
             memoryId: memId, mode: "tombstone", actorId: `load-test-cleanup-${runId}`, requestId: randomUUID(),
           }, { token: config.wrapperToken, timeout: 10000 });
           if (resp.status === 200) cleaned++;

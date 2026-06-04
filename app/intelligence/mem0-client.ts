@@ -80,7 +80,7 @@ export class Mem0ExtractionClient {
             mode: request.mode,
             strategy_version: this.config.mem0StrategyVersion,
             session_context: request.session_context,
-            memory_xx_policy: memoryV2PolicyInstructions(),
+            memory_xx_policy: memoryXXPolicyInstructions(),
           },
         }),
         signal: AbortSignal.timeout(this.config.primaryTimeoutMs),
@@ -106,7 +106,7 @@ export class Mem0ExtractionClient {
           existing_memories: request.existing_memories ?? [],
           mode: request.mode,
           strategy_version: this.config.mem0StrategyVersion,
-          memory_xx_policy: memoryV2PolicyInstructions(),
+          memory_xx_policy: memoryXXPolicyInstructions(),
         }),
         signal: AbortSignal.timeout(this.config.primaryTimeoutMs),
       });
@@ -275,7 +275,7 @@ function normalizeOfficialMem0Response(parsed: unknown): unknown {
   };
 }
 
-export function memoryV2PolicyInstructions(): Record<string, unknown> {
+export function memoryXXPolicyInstructions(): Record<string, unknown> {
   return {
     policy_version: "memory-policy-v1",
     extraction_role: "candidate_extraction_only_policy_engine_decides_storage",

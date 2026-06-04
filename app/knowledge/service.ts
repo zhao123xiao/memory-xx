@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Pool } from "pg";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../db/adapters/postgres-config";
 import { mapMemoryIdToQdrantPointId } from "../qdrant-sync/projector";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
 import { QwenEmbeddingProviderWrapper } from "../server/embedding-provider";
@@ -37,8 +37,8 @@ export interface KnowledgeSearchResponse {
   readonly failure_reason?: string;
 }
 
-const KNOWLEDGE_COLLECTION = process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
-const KNOWLEDGE_SCHEMA = process.env.MEMORY_V2_KNOWLEDGE_SCHEMA?.trim() || "knowledge_v1";
+const KNOWLEDGE_COLLECTION = process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
+const KNOWLEDGE_SCHEMA = process.env.MEMORY_XX_KNOWLEDGE_SCHEMA?.trim() || "knowledge_v1";
 const DEFAULT_LIMIT = 8;
 const knowledgeEmbeddingProvider = new ResilientQueryEmbeddingProvider(
   new QwenEmbeddingProviderWrapper(),
@@ -58,13 +58,13 @@ function clampLimit(value: number | undefined): number {
 }
 
 function readQdrantBaseUrl(): string {
-  const base = process.env.MEMORY_V2_QDRANT_BASE_URL?.trim();
-  if (!base) throw new Error("尚未配置 MEMORY_V2_QDRANT_BASE_URL。");
+  const base = process.env.MEMORY_XX_QDRANT_BASE_URL?.trim();
+  if (!base) throw new Error("尚未配置 MEMORY_XX_QDRANT_BASE_URL。");
   return base.replace(/\/+$/, "");
 }
 
 function readQdrantApiKey(): string | undefined {
-  return process.env.MEMORY_V2_QDRANT_API_KEY?.trim() || undefined;
+  return process.env.MEMORY_XX_QDRANT_API_KEY?.trim() || undefined;
 }
 
 function normalizeStringArray(value: readonly string[] | undefined): string[] {
@@ -135,10 +135,10 @@ export async function searchKnowledge(request: KnowledgeSearchRequest): Promise<
   }
   const collections = normalizeStringArray(request.knowledge_collections);
   const repos = normalizeStringArray(request.repos);
-  if (!validateAllowed(collections, readAllowlist("MEMORY_V2_KNOWLEDGE_ALLOWED_COLLECTIONS"))) {
+  if (!validateAllowed(collections, readAllowlist("MEMORY_XX_KNOWLEDGE_ALLOWED_COLLECTIONS"))) {
     return { ok: false, collection: KNOWLEDGE_COLLECTION, results: [], degraded: true, failure_reason: "knowledge_collection_not_allowed" };
   }
-  if (!validateAllowed(repos, readAllowlist("MEMORY_V2_KNOWLEDGE_ALLOWED_REPOS"))) {
+  if (!validateAllowed(repos, readAllowlist("MEMORY_XX_KNOWLEDGE_ALLOWED_REPOS"))) {
     return { ok: false, collection: KNOWLEDGE_COLLECTION, results: [], degraded: true, failure_reason: "knowledge_repo_not_allowed" };
   }
 
@@ -163,7 +163,7 @@ export async function searchKnowledge(request: KnowledgeSearchRequest): Promise<
   const filter = qdrantFilter(collections, repos);
   if (filter) body.filter = filter;
 
-  const timeoutMs = Number.parseInt(process.env.MEMORY_V2_KNOWLEDGE_QDRANT_TIMEOUT_MS ?? "800", 10);
+  const timeoutMs = Number.parseInt(process.env.MEMORY_XX_KNOWLEDGE_QDRANT_TIMEOUT_MS ?? "800", 10);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 800);
   let response: Response;
@@ -209,12 +209,12 @@ async function searchKnowledgePostgres(
   collections: readonly string[],
   repos: readonly string[]
 ): Promise<KnowledgeSearchResult[]> {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
     const params: unknown[] = [`%${query}%`, limit];
     const clauses = ["content ILIKE $1"];
-    const tenantId = process.env.MEMORY_V2_KNOWLEDGE_TENANT_ID?.trim();
+    const tenantId = process.env.MEMORY_XX_KNOWLEDGE_TENANT_ID?.trim();
     if (tenantId) {
       params.push(tenantId);
       clauses.push(`tenant_id = $${params.length}`);
@@ -263,7 +263,7 @@ async function searchKnowledgePostgres(
 }
 
 export async function getKnowledgeStatus(): Promise<Record<string, unknown>> {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
     const chunks = await pool.query(`

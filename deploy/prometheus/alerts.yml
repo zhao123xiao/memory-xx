@@ -1,42 +1,42 @@
 groups:
   - name: memory-xx-core
     rules:
-      - alert: MemoryV2OutboxOldestPendingCritical
+      - alert: MemoryXXOutboxOldestPendingCritical
         expr: memory_projector_oldest_pending_age_seconds > 900
         for: 5m
         labels:
           severity: critical
         annotations:
           summary: memory-xx outbox pending age exceeded 15 minutes
-      - alert: MemoryV2OutboxOldestPendingWarning
+      - alert: MemoryXXOutboxOldestPendingWarning
         expr: memory_projector_oldest_pending_age_seconds > 300
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: memory-xx outbox pending age exceeded 5 minutes
-      - alert: MemoryV2DeadLetterPresent
+      - alert: MemoryXXDeadLetterPresent
         expr: memory_projector_dead_letter_total > 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: memory-xx projector dead-letter events present
-      - alert: MemoryV2RecallP99Slow
+      - alert: MemoryXXRecallP99Slow
         expr: memory_recall_latency_p99_ms > 3000
         for: 10m
         labels:
           severity: warning
         annotations:
           summary: memory-xx recall p99 exceeded 3000ms
-      - alert: MemoryV2EmbeddingFallbackHigh
+      - alert: MemoryXXEmbeddingFallbackHigh
         expr: memory_embedding_fallback_ratio > 0.25
         for: 15m
         labels:
           severity: warning
         annotations:
           summary: memory-xx embedding fallback ratio is high
-      - alert: MemoryV2ForbiddenHit
+      - alert: MemoryXXForbiddenHit
         expr: memory_recall_forbidden_hit_total > 0
         for: 1m
         labels:

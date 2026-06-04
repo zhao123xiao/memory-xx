@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions";
 import { OutboxEventType } from "../app/shared";
 import { argValue, hasArg, loadDotenvIfPresent, printJson, quoteIdent } from "./lib/runtime-env";
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   const apply = hasArg("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
   const sampleLimit = Number.parseInt(argValue("--sample-limit") ?? "20", 10);
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const schema = quoteIdent(config.schema);
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

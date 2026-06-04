@@ -51,7 +51,7 @@ function readEnvFile(filePath: string): EnvMap {
   }
 }
 
-const envFile = readEnvFile(process.env.MEMORY_V2_ENV_PATH || path.join(process.cwd(), ".env"));
+const envFile = readEnvFile(process.env.MEMORY_XX_ENV_PATH || path.join(process.cwd(), ".env"));
 function env(name: string, fallback = ""): string {
   return process.env[name]?.trim() || envFile[name]?.trim() || fallback;
 }
@@ -271,7 +271,7 @@ async function main(): Promise<void> {
   const dims = intEnv("EMBEDDING_DIMS", 4096);
   const timeoutMs = intEnv("EMBEDDING_CALIBRATION_TIMEOUT_MS", 7000);
   const cooldownMs = intEnv("EMBEDDING_CALIBRATION_COOLDOWN_MS", 15000);
-  const reportRoot = env("MEMORY_V2_REPORT_DIR", path.join(process.cwd(), "reports/memory-xx-tests"));
+  const reportRoot = env("MEMORY_XX_REPORT_DIR", path.join(process.cwd(), "reports/memory-xx-tests"));
   const runId = `embedding-calibration-${new Date().toISOString().replace(/[:.]/g, "-")}`;
   const outputDir = path.join(reportRoot, "embedding-calibration", runId);
   await fs.mkdir(outputDir, { recursive: true });

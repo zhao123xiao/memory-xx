@@ -143,9 +143,9 @@ export async function fetchRecentApprovedPgFallback(input: {
   readonly env?: NodeJS.ProcessEnv;
 }): Promise<RecentApprovedPgFallbackResult> {
   const env = input.env ?? process.env;
-  const enabled = input.enabled ?? env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK !== "false";
-  const windowMs = readPositiveInt(env, "MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS", 30_000);
-  const candidateCap = readPositiveInt(env, "MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_LIMIT", 20);
+  const enabled = input.enabled ?? env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK !== "false";
+  const windowMs = readPositiveInt(env, "MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS", 30_000);
+  const candidateCap = readPositiveInt(env, "MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_LIMIT", 20);
   const baseAudit = {
     enabled,
     window_ms: windowMs,
@@ -168,7 +168,7 @@ export async function fetchRecentApprovedPgFallback(input: {
     params.push(scope.type, scope.id);
     return `(mr.scope_type = $${params.length - 1} AND mr.scope_id = $${params.length})`;
   });
-  const schema = input.schema?.trim() || process.env.MEMORY_V2_DATABASE_SCHEMA?.trim() || "public";
+  const schema = input.schema?.trim() || process.env.MEMORY_XX_DATABASE_SCHEMA?.trim() || "public";
   const rows = await input.queryable.query<RecentApprovedRow>(
     `
       SELECT

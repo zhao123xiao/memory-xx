@@ -12,12 +12,12 @@ export interface RuntimeControlSettings {
 
 export const RUNTIME_CONTROL_SETTINGS_FILE = "runtime-control-settings.json";
 
-export function memoryV2RuntimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+export function memoryXXRuntimeDir(): string {
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
 }
 
 export function runtimeControlSettingsPath(): string {
-  return join(memoryV2RuntimeDir(), RUNTIME_CONTROL_SETTINGS_FILE);
+  return join(memoryXXRuntimeDir(), RUNTIME_CONTROL_SETTINGS_FILE);
 }
 
 export function defaultRuntimeControlSettings(): RuntimeControlSettings {

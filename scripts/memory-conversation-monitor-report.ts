@@ -114,7 +114,7 @@ async function loadFacts(limit: number) {
 
 async function main(): Promise<void> {
   const json = hasFlag("--json");
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   const limit = Math.max(1, Math.min(10_000, Number.parseInt(argValue("--limit") ?? "5000", 10) || 5000));
   const heartbeat = await readConversationSourceRuntimeStatus(runtimeDir);
   let facts = { events: [], batches: [], memoryRecords: [], policyDecisions: [] } as Awaited<ReturnType<typeof loadFacts>>;

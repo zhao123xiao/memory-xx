@@ -5,10 +5,10 @@
  * 触发 Qdrant sync（使用修复后的 projector）。
  *
  * 用法：
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
- *   MEMORY_V2_QDRANT_BASE_URL=http://127.0.0.1:6333 \
- *   MEMORY_V2_QDRANT_COLLECTION=memory-xx \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333 \
+ *   MEMORY_XX_QDRANT_COLLECTION=memory-xx \
  *   node --import tsx scripts/bulk-repair-approved-qdrant.ts
  */
 
@@ -16,13 +16,13 @@ import "./test-harness/config.js";
 import { PostgresWriteDatabase } from "../app/db/adapters/postgres-write-database";
 import { HttpQdrantPointWriter } from "../app/qdrant-sync/qdrant-point-writer";
 import { QdrantProjectionSyncService } from "../app/qdrant-sync/projector";
-import { loadMemoryV2PostgresConfig, loadMemoryV2QdrantConfig } from "../app";
+import { loadMemoryXXPostgresConfig, loadMemoryXXQdrantConfig } from "../app";
 
 const BATCH_SIZE = 50;
 
 async function main() {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
 
   const database = new PostgresWriteDatabase({ config: pgConfig });
   const pointWriter = new HttpQdrantPointWriter({ config: qdrantConfig });

@@ -3,10 +3,10 @@ import { createClient } from "redis";
 
 import { loadMemoryRedisConfig } from "../../app/cache/config";
 import { GovernanceRepository } from "../../app/db/repositories/governance-repository";
-import { loadMemoryV2PostgresConfig } from "../../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../../app/db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../../app/db/adapters/postgres-write-database";
 import { isPostgresTransactionContext, withWriteTransaction, type WriteTransactionContext } from "../../app/db/tx/write-transaction";
-import { loadMemoryV2QdrantConfig } from "../../app/recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../../app/recall/qdrant-config";
 import type { JsonObject, JsonValue } from "../../app/shared/types";
 
 export interface CapacityThresholds {
@@ -88,17 +88,17 @@ const DEFAULT_THRESHOLDS: CapacityThresholds = {
 
 export function loadCapacityThresholds(env: NodeJS.ProcessEnv = process.env): CapacityThresholds {
   return {
-    memoryRecordsRows: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_MEMORY_RECORDS_THRESHOLD", DEFAULT_THRESHOLDS.memoryRecordsRows),
-    outboxPendingEvents: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_OUTBOX_PENDING_THRESHOLD", DEFAULT_THRESHOLDS.outboxPendingEvents),
-    writeTicketsActive: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_WRITE_TICKETS_ACTIVE_THRESHOLD", DEFAULT_THRESHOLDS.writeTicketsActive),
-    qdrantCollectionPoints: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_QDRANT_POINTS_THRESHOLD", DEFAULT_THRESHOLDS.qdrantCollectionPoints),
-    redisUsedMemoryRatio: readRatioEnv(env, "MEMORY_V2_CAPACITY_REDIS_USED_MEMORY_RATIO_THRESHOLD", DEFAULT_THRESHOLDS.redisUsedMemoryRatio),
-    redisCacheKeys: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_REDIS_CACHE_KEYS_THRESHOLD", DEFAULT_THRESHOLDS.redisCacheKeys),
-    outboxDeadLetterEvents: readPositiveNumberEnv(env, "MEMORY_V2_CAPACITY_OUTBOX_DEAD_LETTER_THRESHOLD", DEFAULT_THRESHOLDS.outboxDeadLetterEvents),
+    memoryRecordsRows: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_MEMORY_RECORDS_THRESHOLD", DEFAULT_THRESHOLDS.memoryRecordsRows),
+    outboxPendingEvents: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_OUTBOX_PENDING_THRESHOLD", DEFAULT_THRESHOLDS.outboxPendingEvents),
+    writeTicketsActive: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_WRITE_TICKETS_ACTIVE_THRESHOLD", DEFAULT_THRESHOLDS.writeTicketsActive),
+    qdrantCollectionPoints: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_QDRANT_POINTS_THRESHOLD", DEFAULT_THRESHOLDS.qdrantCollectionPoints),
+    redisUsedMemoryRatio: readRatioEnv(env, "MEMORY_XX_CAPACITY_REDIS_USED_MEMORY_RATIO_THRESHOLD", DEFAULT_THRESHOLDS.redisUsedMemoryRatio),
+    redisCacheKeys: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_REDIS_CACHE_KEYS_THRESHOLD", DEFAULT_THRESHOLDS.redisCacheKeys),
+    outboxDeadLetterEvents: readPositiveNumberEnv(env, "MEMORY_XX_CAPACITY_OUTBOX_DEAD_LETTER_THRESHOLD", DEFAULT_THRESHOLDS.outboxDeadLetterEvents),
     outboxDeadLetterMaxAttempts: readPositiveNumberEnv(
       env,
-      "MEMORY_V2_CAPACITY_OUTBOX_DEAD_LETTER_MAX_ATTEMPTS",
-      readPositiveNumberEnv(env, "MEMORY_V2_QDRANT_PROJECTOR_MAX_ATTEMPTS", DEFAULT_THRESHOLDS.outboxDeadLetterMaxAttempts)
+      "MEMORY_XX_CAPACITY_OUTBOX_DEAD_LETTER_MAX_ATTEMPTS",
+      readPositiveNumberEnv(env, "MEMORY_XX_QDRANT_PROJECTOR_MAX_ATTEMPTS", DEFAULT_THRESHOLDS.outboxDeadLetterMaxAttempts)
     ),
   };
 }
@@ -108,7 +108,7 @@ export async function runCapacityAudit(options: RunCapacityAuditOptions = {}): P
   const clock = options.clock ?? (() => new Date().toISOString());
   const checkedAt = clock();
   const thresholds = loadCapacityThresholds(env);
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(env), clock });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(env), clock });
   const governance = new GovernanceRepository();
   let governanceRunId: string | null = null;
 
@@ -303,7 +303,7 @@ async function collectQdrantPointCheck(
   env: NodeJS.ProcessEnv,
   thresholds: CapacityThresholds
 ): Promise<CapacityAuditCheck> {
-  const config = loadMemoryV2QdrantConfig(env);
+  const config = loadMemoryXXQdrantConfig(env);
   if (!config.enabled || !config.base_url || !config.collection_name) {
     return skippedCheck({
       id: "qdrant_collection_points",
@@ -362,7 +362,7 @@ async function collectRedisChecks(
   const baseConfig = loadMemoryRedisConfig(env);
   const config = {
     ...baseConfig,
-    prefix: env.MEMORY_V2_REDIS_PREFIX?.trim() || env.MEMORY_V2_CACHE_KEY_PREFIX?.trim() || baseConfig.prefix,
+    prefix: env.MEMORY_XX_REDIS_PREFIX?.trim() || env.MEMORY_XX_CACHE_KEY_PREFIX?.trim() || baseConfig.prefix,
   };
 
   if (!config.url) {
@@ -562,7 +562,7 @@ async function syncCapacityAlerts(
   env: NodeJS.ProcessEnv
 ): Promise<readonly CapacityAlertEvent[]> {
   if (!isPostgresTransactionContext(tx)) return [];
-  const webhookUrl = env.MEMORY_V2_ALERT_WEBHOOK_URL?.trim() || env.CAPACITY_ALERT_WEBHOOK_URL?.trim() || "";
+  const webhookUrl = env.MEMORY_XX_ALERT_WEBHOOK_URL?.trim() || env.CAPACITY_ALERT_WEBHOOK_URL?.trim() || "";
   const activeKeys = new Set(activeChecks.map(alertKeyForCheck));
   const events: CapacityAlertEvent[] = [];
 

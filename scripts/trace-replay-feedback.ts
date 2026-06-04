@@ -4,7 +4,7 @@ import "./test-harness/config.js";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { quoteIdent } from "./lib/runtime-env.js";
 
 type Mode = "candidates" | "apply" | "auto-top1";
@@ -181,7 +181,7 @@ async function autoTop1(pool: Pool, schema: string): Promise<Record<string, unkn
 }
 
 async function main(): Promise<void> {
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {

@@ -2,10 +2,10 @@ import { Pool } from "pg";
 
 import {
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
-  type MemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
+  type MemoryXXPostgresConfig,
 } from "../db/adapters/postgres-config";
-import { loadMemoryV2QdrantConfig, type MemoryV2QdrantConfig } from "../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig, type MemoryXXQdrantConfig } from "../recall/qdrant-config";
 import { readPgBoolean } from "../db/row-value-readers";
 import { isEffectiveRecallable } from "../shared/predicates";
 import { LifecycleStatus, ReviewState } from "../shared/types";
@@ -69,8 +69,8 @@ export interface QdrantProjectionReconcileResult {
 }
 
 export interface QdrantProjectionReconcileServiceOptions {
-  readonly postgresConfig?: MemoryV2PostgresConfig;
-  readonly qdrantConfig?: MemoryV2QdrantConfig;
+  readonly postgresConfig?: MemoryXXPostgresConfig;
+  readonly qdrantConfig?: MemoryXXQdrantConfig;
   readonly projectionSyncService: {
     syncMemoryIds(memoryIds: readonly string[]): Promise<QdrantProjectionSyncResult>;
   };
@@ -86,13 +86,13 @@ const REPAIR_BATCH_SIZE = 50;
 const DEFAULT_RECONCILE_PAGE_SIZE = 1000;
 
 export class QdrantProjectionReconcileService {
-  private readonly postgresConfig: MemoryV2PostgresConfig;
-  private readonly qdrantConfig: MemoryV2QdrantConfig;
+  private readonly postgresConfig: MemoryXXPostgresConfig;
+  private readonly qdrantConfig: MemoryXXQdrantConfig;
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly options: QdrantProjectionReconcileServiceOptions) {
-    this.postgresConfig = options.postgresConfig ?? loadMemoryV2PostgresConfig();
-    this.qdrantConfig = options.qdrantConfig ?? loadMemoryV2QdrantConfig();
+    this.postgresConfig = options.postgresConfig ?? loadMemoryXXPostgresConfig();
+    this.qdrantConfig = options.qdrantConfig ?? loadMemoryXXQdrantConfig();
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
@@ -205,7 +205,7 @@ export class QdrantProjectionReconcileService {
 
   private async *scrollQdrantPointPages(pageSize: number): AsyncGenerator<readonly QdrantProjectionPointSnapshot[]> {
     if (!this.qdrantConfig.base_url || !this.qdrantConfig.collection_name) {
-      throw new Error("Qdrant 对账需要配置 MEMORY_V2_QDRANT_BASE_URL 和 MEMORY_V2_QDRANT_COLLECTION。");
+      throw new Error("Qdrant 对账需要配置 MEMORY_XX_QDRANT_BASE_URL 和 MEMORY_XX_QDRANT_COLLECTION。");
     }
 
     let offset: unknown = null;
@@ -348,7 +348,7 @@ export class QdrantProjectionReconcileService {
 
   private async retrieveQdrantPoints(pointIds: readonly string[]): Promise<ReadonlyMap<string, { readonly payload?: Record<string, unknown> }>> {
     if (!this.qdrantConfig.base_url || !this.qdrantConfig.collection_name) {
-      throw new Error("Qdrant 对账需要配置 MEMORY_V2_QDRANT_BASE_URL 和 MEMORY_V2_QDRANT_COLLECTION。");
+      throw new Error("Qdrant 对账需要配置 MEMORY_XX_QDRANT_BASE_URL 和 MEMORY_XX_QDRANT_COLLECTION。");
     }
     const response = await this.fetchImpl(
       `${this.qdrantConfig.base_url.replace(/\/$/, "")}/collections/${encodeURIComponent(this.qdrantConfig.collection_name)}/points?consistency=all`,

@@ -39,8 +39,8 @@ const DEFAULT_SERVER_INFO: McpServerInfo = {
 };
 
 function defaultCodexProjectId(): string {
-  return process.env.MEMORY_V2_CODEX_PROJECT_ID?.trim() ||
-    process.env.MEMORY_V2_PROJECT_ID?.trim() ||
+  return process.env.MEMORY_XX_CODEX_PROJECT_ID?.trim() ||
+    process.env.MEMORY_XX_PROJECT_ID?.trim() ||
     "memory-xx";
 }
 
@@ -249,7 +249,7 @@ export function registerMemoryTools(
       body.scope_context = Object.keys(scopeContext).length > 0
         ? { ...scopeContext, include_global: true }
         : defaultRecallScopeContext(args);
-      return post("/api/memory/v2/recall/query", body);
+      return post("/api/memory/xx/recall/query", body);
     }
   );
 
@@ -283,7 +283,7 @@ export function registerMemoryTools(
       };
       if (typeof args.title === "string") body.title = args.title;
       if (Array.isArray(args.tags)) body.metadata = { tags: args.tags };
-      return post("/api/memory/v2/write", body);
+      return post("/api/memory/xx/write", body);
     }
   );
 
@@ -328,7 +328,7 @@ export function registerMemoryTools(
       if (memoryIds.length > 0) {
         body.memory_ids = memoryIds;
       }
-      return post("/api/memory/v2/unified/recall", body);
+      return post("/api/memory/xx/unified/recall", body);
     }
   );
 
@@ -355,7 +355,7 @@ export function registerMemoryTools(
     },
     async (args) => {
       const defaultedScope = defaultSmartWriteScope(args);
-      return post("/api/memory/v2/mcp/smart-write", {
+      return post("/api/memory/xx/mcp/smart-write", {
         text: args.text,
         scope_type: defaultedScope.scope_type,
         scope_id: defaultedScope.scope_id,
@@ -387,7 +387,7 @@ export function registerMemoryTools(
       },
     },
     async (args) => {
-      return post("/api/memory/v2/mcp/list-pending", {
+      return post("/api/memory/xx/mcp/list-pending", {
         scope_type: args.scope_type,
         scope_id: args.scope_id,
         agent_id: args.agent_id,
@@ -415,7 +415,7 @@ export function registerMemoryTools(
       required: ["memory_id"],
     },
     async (args) => {
-      return post("/api/memory/v2/mcp/approve", {
+      return post("/api/memory/xx/mcp/approve", {
         memory_id: args.memory_id,
         reviewer_id: (args.reviewer_id as string) || "mcp-reviewer",
         reason: args.reason,
@@ -437,7 +437,7 @@ export function registerMemoryTools(
       required: ["memory_id"],
     },
     async (args) => {
-      return post("/api/memory/v2/mcp/reject", {
+      return post("/api/memory/xx/mcp/reject", {
         memory_id: args.memory_id,
         reviewer_id: (args.reviewer_id as string) || "mcp-reviewer",
         reason: (args.reason as string) || "rejected via MCP",
@@ -459,7 +459,7 @@ export function registerMemoryTools(
       required: ["query"],
     },
     async (args) => {
-      return post("/api/memory/v2/orchestrator/summarize-memory", {
+      return post("/api/memory/xx/orchestrator/summarize-memory", {
         request: {
           query: args.query,
           scope_context: {
@@ -486,7 +486,7 @@ export function registerMemoryTools(
       required: ["memory_id"],
     },
     async (args) => {
-      return post("/api/memory/v2/orchestrator/forget-memory", {
+      return post("/api/memory/xx/orchestrator/forget-memory", {
         requestId: randomUUID(),
         actorId: "klee",
         memoryId: args.memory_id,
@@ -509,7 +509,7 @@ export function registerMemoryTools(
       required: ["query"],
     },
     async (args) => {
-      return post("/api/memory/v2/orchestrator/resolve-scope-plan", {
+      return post("/api/memory/xx/orchestrator/resolve-scope-plan", {
         recall_request: {
           query: args.query,
           scope_context: {
@@ -536,7 +536,7 @@ export function registerMemoryTools(
       },
     },
     async (args) => {
-      return post("/api/memory/v2/orchestrator/audit-memory-consistency", {
+      return post("/api/memory/xx/orchestrator/audit-memory-consistency", {
         include_records: args.include_records === true,
       });
     }
@@ -556,7 +556,7 @@ export function registerMemoryTools(
       },
     },
     async (args) => {
-      return post("/api/memory/v2/orchestrator/repair-memory-consistency", {
+      return post("/api/memory/xx/orchestrator/repair-memory-consistency", {
         dry_run: args.dry_run !== false,
       });
     }

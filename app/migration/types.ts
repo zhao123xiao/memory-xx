@@ -23,7 +23,7 @@ export enum MigrationSourceSystem {
   Qdrant = "qdrant",
   EmbeddingCache = "embedding_cache",
   Mem0 = "mem0",
-  MemoryV2 = "memory_xx"
+  MemoryXX = "memory_xx"
 }
 
 export enum MigrationAuditStatus {

@@ -26,7 +26,7 @@ async function main() {
   console.log(`${"=".repeat(50)}\n`);
 
   try {
-    const { status, data } = await post("/api/memory/v2/knowledge/ingest", {});
+    const { status, data } = await post("/api/memory/xx/knowledge/ingest", {});
     const collections = Array.isArray(data.collections) ? data.collections : [];
     const chunks = collections.reduce((sum: number, row: any) => sum + (Number(row.chunks) || 0), 0);
     check("knowledge:status", status === 200 && data.ok === true && chunks >= 12_000,
@@ -37,7 +37,7 @@ async function main() {
   }
 
   try {
-    const { status, data } = await post("/api/memory/v2/knowledge/search", {
+    const { status, data } = await post("/api/memory/xx/knowledge/search", {
       query: "OpenAI Codex sandbox permissions",
       limit: 3,
       knowledge_collections: ["openai_codex_source_qwen8b_api"],
@@ -50,7 +50,7 @@ async function main() {
   }
 
   try {
-    const { status, data } = await post("/api/memory/v2/unified/recall", {
+    const { status, data } = await post("/api/memory/xx/unified/recall", {
       query: "OpenAI Codex sandbox permissions",
       scope_type: "project",
       scope_id: "memory-xx",

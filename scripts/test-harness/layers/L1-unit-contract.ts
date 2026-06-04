@@ -249,7 +249,7 @@ async function contractTests() {
 
   // Auth required on write
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/write"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/write"), {
       requestId: "contract-test-no-auth", content: "test",
     }, { token: "" });
     const noAuth = resp.status === 401;

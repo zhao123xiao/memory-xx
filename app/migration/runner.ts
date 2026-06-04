@@ -5,7 +5,7 @@ import path from "node:path";
 import { Pool, type PoolClient } from "pg";
 
 import {
-  type MemoryV2PostgresConfig,
+  type MemoryXXPostgresConfig,
   createPostgresPoolConfig
 } from "../db/adapters/postgres-config";
 import {
@@ -22,7 +22,7 @@ export interface SqlMigration {
 }
 
 export interface RunMigrationsOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly migrationsDirectory?: string;
 }
 

@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 
 export type MemoryPermission =
   | "memory:read"
@@ -89,7 +89,7 @@ function normalizePermission(value: string): MemoryPermission | null {
 }
 
 function parseLegacyPermissions(env: NodeJS.ProcessEnv): readonly MemoryPermission[] {
-  const raw = env.MEMORY_V2_LEGACY_TOKEN_PERMISSIONS?.trim();
+  const raw = env.MEMORY_XX_LEGACY_TOKEN_PERMISSIONS?.trim();
   if (!raw) return LEGACY_DEFAULT_PERMISSIONS;
   const requested = raw.split(",").map((item) => normalizePermission(item.trim())).filter((item): item is MemoryPermission => Boolean(item));
   return requested.filter((permission) => LEGACY_DEFAULT_PERMISSIONS.includes(permission));
@@ -109,9 +109,9 @@ function decision(required: MemoryPermission, identity: AuthIdentity | null): Pe
 }
 
 export function createPermissionChecker(env: NodeJS.ProcessEnv = process.env): PermissionChecker {
-  const legacyToken = env.MEMORY_V2_API_TOKEN?.trim() ?? "";
+  const legacyToken = env.MEMORY_XX_API_TOKEN?.trim() ?? "";
   const legacyPermissions = parseLegacyPermissions(env);
-  const adminToken = env.MEMORY_V2_ADMIN_TOKEN?.trim() ?? "";
+  const adminToken = env.MEMORY_XX_ADMIN_TOKEN?.trim() ?? "";
   let pool: Pool | null = null;
 
   function resolveEnvIdentity(token: string): AuthIdentity | null {
@@ -127,7 +127,7 @@ export function createPermissionChecker(env: NodeJS.ProcessEnv = process.env): P
   async function getPool(): Promise<Pool | null> {
     if (pool) return pool;
     try {
-      const config = loadMemoryV2PostgresConfig(env);
+      const config = loadMemoryXXPostgresConfig(env);
       pool = new Pool(createPostgresPoolConfig(config));
       return pool;
     } catch {
@@ -138,7 +138,7 @@ export function createPermissionChecker(env: NodeJS.ProcessEnv = process.env): P
   async function resolveTrustedAgentIdentity(token: string): Promise<AuthIdentity | null> {
     const db = await getPool();
     if (!db) return null;
-    const config = loadMemoryV2PostgresConfig(env);
+    const config = loadMemoryXXPostgresConfig(env);
     const schema = quoteIdent(config.schema ?? "memory_xx");
     try {
       const result = await db.query<{
@@ -231,7 +231,7 @@ export function createPermissionChecker(env: NodeJS.ProcessEnv = process.env): P
   ): Promise<boolean> {
     const db = await getPool();
     if (!db) return false;
-    const config = loadMemoryV2PostgresConfig(env);
+    const config = loadMemoryXXPostgresConfig(env);
     const schema = quoteIdent(config.schema ?? "memory_xx");
     try {
       const result = await db.query<{ ok: boolean }>(
@@ -273,8 +273,8 @@ export function inspectTokenSeparation(env: NodeJS.ProcessEnv = process.env): {
   readonly admin_configured: boolean;
   readonly overlap: boolean;
 } {
-  const legacyToken = env.MEMORY_V2_API_TOKEN?.trim() ?? "";
-  const adminToken = env.MEMORY_V2_ADMIN_TOKEN?.trim() ?? "";
+  const legacyToken = env.MEMORY_XX_API_TOKEN?.trim() ?? "";
+  const adminToken = env.MEMORY_XX_ADMIN_TOKEN?.trim() ?? "";
   const overlap = legacyToken.length > 0 && adminToken.length > 0 && constantTimeEqual(legacyToken, adminToken);
   return {
     ok: !overlap,
@@ -285,11 +285,11 @@ export function inspectTokenSeparation(env: NodeJS.ProcessEnv = process.env): {
 }
 
 export function loadScopePolicyMode(env: NodeJS.ProcessEnv = process.env): "single_user" | "strict" {
-  return env.MEMORY_V2_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict";
+  return env.MEMORY_XX_SCOPE_POLICY_MODE === "single_user" ? "single_user" : "strict";
 }
 
 export async function requireCliPermission(permission: MemoryPermission, env: NodeJS.ProcessEnv = process.env): Promise<AuthIdentity> {
-  const token = env.MEMORY_V2_CLI_TOKEN?.trim() || env.MEMORY_V2_ADMIN_TOKEN?.trim() || env.MEMORY_V2_API_TOKEN?.trim() || "";
+  const token = env.MEMORY_XX_CLI_TOKEN?.trim() || env.MEMORY_XX_ADMIN_TOKEN?.trim() || env.MEMORY_XX_API_TOKEN?.trim() || "";
   const checker = createPermissionChecker(env);
   try {
     const result = await checker.authorizeToken(token, permission);

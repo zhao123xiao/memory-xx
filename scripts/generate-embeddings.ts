@@ -9,13 +9,13 @@
  *   EMBEDDING_API_KEY=sk-xxx \
  *   EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1 \
  *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/generate-embeddings.ts
  */
 
 import { Pool } from "pg";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
 
 // ── Embedding API helpers ──────────────────────────────────────────────────
 
@@ -84,7 +84,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function main() {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const embedConfig = loadEmbeddingConfig();
 
   console.log("=== Generate Embeddings ===");

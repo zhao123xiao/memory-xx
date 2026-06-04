@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 mem0 extraction sidecar
+Description=memory-xx mem0 extraction sidecar
 After=network-online.target
 Wants=network-online.target
 

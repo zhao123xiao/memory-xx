@@ -11,7 +11,7 @@ import {
   scanConversationSources,
   type ConversationSourceAdapterSummary,
 } from "../app/conversation/session-source-adapters";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../app/runtime-control-settings";
 
 interface RuntimeFlags {
@@ -35,16 +35,16 @@ function quoteIdent(value: string): string {
   return `"${value}"`;
 }
 
-const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
 activatePendingRuntimeControlsSync(["worker.conversation.poll_interval_ms"]);
 const controlsPath = path.join(runtimeDir, "conversation-monitor.json");
 const cursorPath = path.join(runtimeDir, "conversation-events", ".cursor.json");
 const sourceCursorPath = path.join(runtimeDir, "conversation-sources.cursor.json");
 const heartbeatPath = path.join(runtimeDir, "conversation-monitor-heartbeat.json");
-const wrapperUrl = (process.env.MEMORY_V2_WRAPPER_URL?.trim() || "http://127.0.0.1:5100").replace(/\/+$/, "");
-const wrapperToken = process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_API_TOKEN?.trim() || "";
-const pollIntervalMs = readPositiveInt("MEMORY_V2_CONVERSATION_POLL_INTERVAL_MS", 10_000);
-const spoolPattern = process.env.MEMORY_V2_CONVERSATION_SPOOL_PATH?.trim() || ".runtime/conversation-events/*.jsonl";
+const wrapperUrl = (process.env.MEMORY_XX_WRAPPER_URL?.trim() || "http://127.0.0.1:5100").replace(/\/+$/, "");
+const wrapperToken = process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_API_TOKEN?.trim() || "";
+const pollIntervalMs = readPositiveInt("MEMORY_XX_CONVERSATION_POLL_INTERVAL_MS", 10_000);
+const spoolPattern = process.env.MEMORY_XX_CONVERSATION_SPOOL_PATH?.trim() || ".runtime/conversation-events/*.jsonl";
 const once = process.argv.includes("--once");
 
 let stopping = false;
@@ -55,7 +55,7 @@ process.on("SIGTERM", () => { stopping = true; });
 function readPositiveInt(name: string, fallback: number): number {
   const parsed = Number.parseInt(process.env[name] ?? "", 10);
   const envValue = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  if (name === "MEMORY_V2_CONVERSATION_POLL_INTERVAL_MS") {
+  if (name === "MEMORY_XX_CONVERSATION_POLL_INTERVAL_MS") {
     const runtimeValue = readRuntimeControlNumberSync("worker.conversation.poll_interval_ms", envValue);
     return Number.isFinite(runtimeValue) && runtimeValue > 0 ? runtimeValue : envValue;
   }
@@ -75,8 +75,8 @@ function hashContent(value: string): string {
 
 async function loadFlags(): Promise<RuntimeFlags> {
   const base = {
-    conversation_monitor: boolEnv("MEMORY_V2_CONVERSATION_MONITOR", false),
-    conversation_auto_extract: boolEnv("MEMORY_V2_CONVERSATION_AUTO_EXTRACT", false),
+    conversation_monitor: boolEnv("MEMORY_XX_CONVERSATION_MONITOR", false),
+    conversation_auto_extract: boolEnv("MEMORY_XX_CONVERSATION_AUTO_EXTRACT", false),
   };
   try {
     const parsed = JSON.parse(await readFile(controlsPath, "utf8")) as Partial<RuntimeFlags>;
@@ -257,7 +257,7 @@ async function flushSessions(sessions: readonly SessionKey[]): Promise<number> {
       force: false,
     };
     try {
-      const result = await postJson("/api/memory/v2/conversation/flush", body);
+      const result = await postJson("/api/memory/xx/conversation/flush", body);
       console.log(JSON.stringify({ level: "info", msg: "conversation_flush", session, result }));
       flushed += 1;
     } catch (error) {
@@ -269,7 +269,7 @@ async function flushSessions(sessions: readonly SessionKey[]): Promise<number> {
 }
 
 async function loop(): Promise<void> {
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {
     while (!stopping) {
@@ -288,12 +288,12 @@ async function loop(): Promise<void> {
         cursor: undefined as SpoolCursor | undefined,
       };
       if (flags.conversation_monitor) {
-        const sourceScanEnabled = boolEnv("MEMORY_V2_CONVERSATION_SOURCE_TAIL", true);
+        const sourceScanEnabled = boolEnv("MEMORY_XX_CONVERSATION_SOURCE_TAIL", true);
         const sourceScan = sourceScanEnabled
           ? await scanConversationSources({
             adapters: defaultConversationSourceConfigs(process.env),
             cursorPath: sourceCursorPath,
-            readExisting: boolEnv("MEMORY_V2_CONVERSATION_SOURCE_BACKFILL", false),
+            readExisting: boolEnv("MEMORY_XX_CONVERSATION_SOURCE_BACKFILL", false),
           })
           : null;
         const { events, sessions, files, cursor } = await readSpoolEvents();
@@ -313,7 +313,7 @@ async function loop(): Promise<void> {
         };
         if (allEvents.length > 0) {
           try {
-            await postJson("/api/memory/v2/conversation/events", { events: allEvents });
+            await postJson("/api/memory/xx/conversation/events", { events: allEvents });
             heartbeat = { ...heartbeat, postedEvents: allEvents.length };
             lastError = null;
             console.log(JSON.stringify({ level: "info", msg: "conversation_events_posted", count: allEvents.length, source_count: sourceEvents.length, spool_count: events.length }));

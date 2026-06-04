@@ -5,16 +5,16 @@
  * with relevance annotations so we can judge recall quality manually.
  *
  * Usage:
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/live-recall-smoke.ts
  */
 
 import {
   createConfiguredRecallRuntime,
-  loadMemoryV2PostgresConfig,
-  loadMemoryV2QdrantConfig,
-  type MemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
+  loadMemoryXXQdrantConfig,
+  type MemoryXXPostgresConfig,
   ScopeType,
   FilterMode,
   type RecallRequest,
@@ -275,7 +275,7 @@ function checkKeywordHit(content: string, keywords: string[]): { hit: boolean; m
 }
 
 // Load all project scope IDs from the database so we can include them in queries
-async function loadAllProjectScopeIds(config: MemoryV2PostgresConfig): Promise<string[]> {
+async function loadAllProjectScopeIds(config: MemoryXXPostgresConfig): Promise<string[]> {
   const { Pool } = await import("pg");
   const pool = new Pool({
     connectionString: config.databaseUrl,
@@ -295,7 +295,7 @@ async function loadAllProjectScopeIds(config: MemoryV2PostgresConfig): Promise<s
 // ── Main ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
 
   console.log("=== Live Recall Smoke Test ===");
   console.log(`Schema: ${config.schema}`);
@@ -342,7 +342,7 @@ async function main() {
       config,
       query_embedding_provider: embeddingProvider,
       vector_column_name: "content_embedding",
-      qdrant: loadMemoryV2QdrantConfig()
+      qdrant: loadMemoryXXQdrantConfig()
     });
     runtime = configuredRuntime.runtime;
     console.log(`Vector runtime: ${configuredRuntime.vector_runtime_mode}`);

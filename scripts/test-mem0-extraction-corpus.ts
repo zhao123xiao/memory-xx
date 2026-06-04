@@ -19,7 +19,7 @@ interface CorpusCase {
 }
 
 function fixturePath(): string {
-  return process.env.MEMORY_V2_MEM0_CORPUS_PATH?.trim() ||
+  return process.env.MEMORY_XX_MEM0_CORPUS_PATH?.trim() ||
     path.join(process.cwd(), "scripts/test-harness/fixtures/mem0-extraction-corpus.jsonl");
 }
 
@@ -44,7 +44,7 @@ function includesCanonical(response: SmartExtractionResponse, term: string): boo
 async function main(): Promise<void> {
   const corpus = await loadCorpus();
   const service = new IntelligenceService();
-  const requireOfficialSuccess = process.env.MEMORY_V2_MEM0_REQUIRE_OFFICIAL_SUCCESS === "1";
+  const requireOfficialSuccess = process.env.MEMORY_XX_MEM0_REQUIRE_OFFICIAL_SUCCESS === "1";
   const results = [];
   let failed = 0;
   for (const item of corpus) {

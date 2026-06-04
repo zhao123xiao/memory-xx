@@ -6,7 +6,7 @@ import {
   QdrantProjectionSyncService,
   RepairByMemoryIdService,
   defaultRecallRepairSuggestedAction,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   normalizeRecallRepairRootCauseType,
   resolveRecallRepairRootCauseType,
   withWriteTransaction,
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
   const limit = readLimit();
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const repairByMemoryId = new RepairByMemoryIdService({
     projectionSyncService: new QdrantProjectionSyncService({
       database,

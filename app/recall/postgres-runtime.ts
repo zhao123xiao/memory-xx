@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import type { RecallCacheRuntime } from "../cache";
 import {
   createPostgresPoolConfig,
-  type MemoryV2PostgresConfig
+  type MemoryXXPostgresConfig
 } from "../db/adapters/postgres-config";
 import { RecallOrchestrator } from "./orchestrator";
 import {
@@ -18,7 +18,7 @@ import {
 } from "./retrievers/vector-retriever";
 import { QdrantVectorRetriever } from "./retrievers/qdrant-retriever";
 import {
-  type MemoryV2QdrantConfig,
+  type MemoryXXQdrantConfig,
   resolveVectorRuntimeMode
 } from "./qdrant-config";
 import {
@@ -27,7 +27,7 @@ import {
 } from "./scope-resolver";
 
 export interface PostgresRecallRuntimeOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly recall_cache?: RecallCacheRuntime;
   readonly runtime_scope_adapter?: RuntimeScopeContextAdapter;
   readonly scope_access_policy?: ScopeAccessPolicy;
@@ -144,7 +144,7 @@ export function createQdrantPrimaryRecallRuntime(
 
 export function createConfiguredRecallRuntime(
   options: PostgresRecallRuntimeOptions & {
-    readonly qdrant?: MemoryV2QdrantConfig;
+    readonly qdrant?: MemoryXXQdrantConfig;
   }
 ): ConfiguredRecallRuntime {
   const runtimeMode = resolveVectorRuntimeMode(options.qdrant ?? { enabled: false });

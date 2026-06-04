@@ -1,7 +1,7 @@
 import "./test-harness/config.js";
 import { readdirSync } from "node:fs";
 import { Pool } from "pg";
-import { loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
 
 interface CheckResult {
@@ -62,7 +62,7 @@ async function missingValues(
 }
 
 async function main(): Promise<void> {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
   const schema = quoteIdent(config.schema);
   try {

@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 Qdrant collection proxy
+Description=memory-xx Qdrant collection proxy
 After=network-online.target
 Wants=network-online.target
 

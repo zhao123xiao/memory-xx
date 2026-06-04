@@ -164,7 +164,7 @@ function parseScopeKey(scope: string): { scopeType: string; scopeId: string } | 
 }
 
 function readRuntimeJsonFile(name: string): Record<string, unknown> | null {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   try {
     const parsed = JSON.parse(readFileSync(join(runtimeDir, name), "utf8")) as unknown;
     return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
@@ -236,15 +236,15 @@ function enabledRealScopeKeys(): readonly string[] {
 
 export function defaultAutoApprovalThresholds(override?: number | null, profile?: AutoApprovalScopeProfile): AutoApprovalThresholds {
   return {
-    qualityScore: readNumberEnv("MEMORY_V2_AUTO_APPROVAL_QUALITY_THRESHOLD", profile?.qualityScore ?? 0.88),
-    confidence: override ?? readNumberEnv("MEMORY_V2_AUTO_APPROVAL_CONFIDENCE_THRESHOLD", profile?.confidence ?? 0.92),
-    hourlyLimit: readIntEnv("MEMORY_V2_AUTO_APPROVAL_HOURLY_LIMIT", profile?.hourlyLimit ?? 20),
-    falsePositiveFreezeRate: readNumberEnv("MEMORY_V2_AUTO_APPROVAL_FALSE_POSITIVE_FREEZE_RATE", 0.05),
+    qualityScore: readNumberEnv("MEMORY_XX_AUTO_APPROVAL_QUALITY_THRESHOLD", profile?.qualityScore ?? 0.88),
+    confidence: override ?? readNumberEnv("MEMORY_XX_AUTO_APPROVAL_CONFIDENCE_THRESHOLD", profile?.confidence ?? 0.92),
+    hourlyLimit: readIntEnv("MEMORY_XX_AUTO_APPROVAL_HOURLY_LIMIT", profile?.hourlyLimit ?? 20),
+    falsePositiveFreezeRate: readNumberEnv("MEMORY_XX_AUTO_APPROVAL_FALSE_POSITIVE_FREEZE_RATE", 0.05),
   };
 }
 
 export function defaultEnabledAutoApprovalProjectIds(): readonly string[] {
-  const raw = process.env.MEMORY_V2_AUTO_APPROVAL_PROJECT_IDS;
+  const raw = process.env.MEMORY_XX_AUTO_APPROVAL_PROJECT_IDS;
   const values = raw?.split(",").map((item) => item.trim()).filter(Boolean);
   const configured = values && values.length > 0 ? values : DEFAULT_PROJECT_IDS;
   const canaryProjectIds = defaultCandidateOnlyBypassScopes()
@@ -257,7 +257,7 @@ export function defaultEnabledAutoApprovalProjectIds(): readonly string[] {
 }
 
 export function defaultCandidateOnlyBypassScopes(): readonly string[] {
-  const raw = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const raw = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   const envValues = raw?.split(",").map((item) => item.trim()).filter(Boolean) ?? [];
   const realScopeValues = enabledRealScopeKeys();
   try {
@@ -273,8 +273,8 @@ export function defaultCandidateOnlyBypassScopes(): readonly string[] {
 
 export function isAutoApprovalCandidateOnlyBypassScope(scopeType: string, scopeId: string): boolean {
   const scopes = defaultCandidateOnlyBypassScopes();
-  const canaryEnabled = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY === "1" ||
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY === "true" ||
+  const canaryEnabled = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY === "1" ||
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY === "true" ||
     scopes.length > 0;
   if (!canaryEnabled) return false;
   return scopes.includes(`${scopeType}:${scopeId}`);
@@ -292,7 +292,7 @@ export function resolveAutoApprovalScopeProfile(scopeType: string, scopeId: stri
       id: "self_improvement_project",
       scopeType,
       scopeId,
-      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || readCsvEnv("MEMORY_V2_AUTO_APPROVAL_SELF_IMPROVEMENT_PROJECT_IDS").includes(scopeId),
+      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || readCsvEnv("MEMORY_XX_AUTO_APPROVAL_SELF_IMPROVEMENT_PROJECT_IDS").includes(scopeId),
       dryRunOnly: false,
       qualityScore: 0.90,
       confidence: 0.93,
@@ -322,7 +322,7 @@ export function resolveAutoApprovalScopeProfile(scopeType: string, scopeId: stri
       id: "workspace",
       scopeType,
       scopeId,
-      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || readCsvEnv("MEMORY_V2_AUTO_APPROVAL_WORKSPACE_IDS").includes(scopeId),
+      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || readCsvEnv("MEMORY_XX_AUTO_APPROVAL_WORKSPACE_IDS").includes(scopeId),
       dryRunOnly: false,
       qualityScore: 0.92,
       confidence: 0.94,
@@ -341,7 +341,7 @@ export function resolveAutoApprovalScopeProfile(scopeType: string, scopeId: stri
       id: "user",
       scopeType,
       scopeId,
-      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || runtimeScopeEnabled || readCsvEnv("MEMORY_V2_AUTO_APPROVAL_USER_IDS").includes(scopeId),
+      autoApprovalAllowed: scopeEnabledByCanary(scopeType, scopeId) || runtimeScopeEnabled || readCsvEnv("MEMORY_XX_AUTO_APPROVAL_USER_IDS").includes(scopeId),
       dryRunOnly: false,
       qualityScore: 0.94,
       confidence: 0.95,
@@ -356,7 +356,7 @@ export function resolveAutoApprovalScopeProfile(scopeType: string, scopeId: stri
     const runtimeScopeEnabled = runtimeEnabled && defaultAutoApprovalScopeEnablements()
       .some((item) => item.scope_type === ScopeType.Global && item.scope_id === scopeId);
     const runtimeTypes = runtimeControlsGlobalMemoryTypes(runtimeControls);
-    const envGlobalEnabled = envEnabled("MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED", false);
+    const envGlobalEnabled = envEnabled("MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED", false);
     return {
       id: "global",
       scopeType,
@@ -539,7 +539,7 @@ export function evaluateAutoApprovalPolicy(input: AutoApprovalPolicyInput): Auto
   const reasons: string[] = [];
   const candidateOnlyBypassed = input.candidateOnly && canBypassCandidateOnly(input);
 
-  const projectAutoEnabled = process.env.MEMORY_V2_PROJECT_AUTO_APPROVAL !== "0";
+  const projectAutoEnabled = process.env.MEMORY_XX_PROJECT_AUTO_APPROVAL !== "0";
   const requested = input.mode === "auto_approve" ||
     (projectAutoEnabled && profile.autoApprovalAllowed && (
       candidate.scopeType !== ScopeType.Project ||
