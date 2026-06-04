@@ -73,6 +73,25 @@ test("runtime module env switches are documented in public env examples", () => 
   assert.deepEqual(missing.sort(), []);
 });
 
+test("runtime registry covers public worker entrypoints and control panel service references", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const runtimeServices = new Set(RUNTIME_MODULES.flatMap((module) => module.service ? [module.service] : []));
+  const runtimeSources = new Set(RUNTIME_MODULES.flatMap((module) => module.source_path ? [module.source_path] : []));
+  const workerEntrypoints = Object.entries(packageJson.scripts)
+    .filter(([name]) => /^run:.*worker$/u.test(name))
+    .map(([, command]) => command.match(/scripts\/[\w.-]+\.ts/u)?.[0])
+    .filter((script): script is string => Boolean(script));
+
+  const controlPanelSettings = readFileSync("scripts/control-panel/settings.ts", "utf8");
+  const controlPanelServices = [...controlPanelSettings.matchAll(/service: "([^"]+\.service)"/gu)]
+    .map((match) => match[1]);
+
+  assert.deepEqual(workerEntrypoints.filter((script) => !runtimeSources.has(script)).sort(), []);
+  assert.deepEqual(controlPanelServices.filter((service) => !runtimeServices.has(service)).sort(), []);
+});
+
 test("runtime module plan keeps core minimal and treats enhanced modules as pluggable", () => {
   const core = buildRuntimeModulePlan("core");
   const enhanced = buildRuntimeModulePlan("enhanced");

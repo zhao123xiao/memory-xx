@@ -148,6 +148,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     label: "Qdrant projector worker",
     kind: "worker",
     service: "memory-xx-qdrant-projector-worker.service",
+    source_path: "scripts/run-qdrant-projector-worker.ts",
     required_in: ["core", "enhanced", "full"],
     default_enabled: true,
     startable: true,
