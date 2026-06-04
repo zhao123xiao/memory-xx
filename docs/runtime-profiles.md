@@ -40,8 +40,12 @@ default and can be enabled per environment without affecting Core write/recall.
 Non-service full-stack capabilities are tracked in `app/full-stack-capabilities.ts`.
 This manifest covers feature packages such as Knowledge ingest, Memory/Code
 Graph, Temporal decay/consolidation, Memory dreaming, Policy evaluation, and
-Recall quality. The open-source release gate checks that their source files and
-CLI scripts are exported even when the capability is disabled by default.
+Recall quality. It also tracks production operations packages such as
+auto-approval/update operations, embedding generation manifest and calibration,
+local embedding generation, backup, platform doctor, trusted agent tooling, and
+Qdrant reconciliation. The open-source release gate checks that their source
+files and CLI scripts are exported even when the capability is disabled by
+default.
 
 ## Runtime Module States
 

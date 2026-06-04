@@ -25,6 +25,15 @@ test("full-stack capability manifest covers non-service modules declared in publ
     "memory_dreaming",
     "policy_evaluation",
     "recall_quality",
+    "auto_approval_ops",
+    "auto_update_ops",
+    "embedding_manifest",
+    "embedding_calibration",
+    "local_embedding_generation",
+    "backup_and_restore",
+    "platform_doctor",
+    "trusted_agent_tools",
+    "qdrant_reconciliation",
   ]) {
     assert.ok(byName.has(name), `missing capability ${name}`);
   }

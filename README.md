@@ -216,7 +216,7 @@ TMPDIR=/tmp npm run memory:control-panel
 - `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 的公开源码；这些模块可按环境开启、关闭或降级。
 - fastpath 和 lexical sidecar 当前提供 Node.js 开源实现，部署环境可替换为更高性能实现，但必须保持 HTTP 契约兼容；禁用它们不影响 core write/recall。
 - Markdown projection 是 full-stack 可插拔模块，可用 `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` 开启；导出的 Markdown 是 review/export 投影，不支持反向同步。
-- `app/full-stack-capabilities.ts` 记录非服务型 full-stack 能力包，例如 Knowledge ingest、Memory/Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation 和 Recall quality；这些能力默认不影响 Core，可按环境开启或只运行 CLI。
+- `app/full-stack-capabilities.ts` 记录非服务型 full-stack 能力包，例如 Knowledge ingest、Memory/Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation、Recall quality、auto-approval/update ops、embedding manifest/calibration、本地 embedding 生成、backup、platform doctor、trusted agent tooling 和 Qdrant reconciliation；这些能力默认不影响 Core，可按环境开启或只运行 CLI。
 - global 自动写入默认不建议开启。
 - real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
 - 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。
