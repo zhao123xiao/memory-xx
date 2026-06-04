@@ -159,6 +159,41 @@ test("public repository includes source entries for pluggable full-stack sidecar
   assert.deepEqual(missing, []);
 });
 
+test("public repository includes markdown projection as a pluggable full-stack module", async () => {
+  const files = [
+    "app/projection/index.ts",
+    "app/projection/runner.ts",
+    "app/projection/writer/diff-guard.ts",
+    "app/projection/writer/atomic-write.ts",
+    "app/source-mode.ts",
+    "scripts/source-mode.ts",
+    "scripts/run-projection-shadow-r3.ts",
+    "tests/projection-foundation.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2|loadMemoryV2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const runtimeModules = await readFile("app/runtime-modules.ts", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["memory:source-mode"], "node --import tsx scripts/source-mode.ts");
+  assert.equal(packageJson.scripts["shadow:projection"], "node --import tsx scripts/run-projection-shadow-r3.ts");
+  assert.match(runtimeModules, /name: "markdown_projection"/u);
+  assert.match(runtimeModules, /MEMORY_XX_MARKDOWN_PROJECTION_ENABLED/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

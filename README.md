@@ -26,6 +26,7 @@
 - **多 Agent 接入**：HTTP / MCP / trusted agent / scope grant 支持多 Agent 共享。
 - **知识库**：长文档进入 `knowledge_v1`，短事实进入 memory，避免长报告污染默认召回。
 - **图谱能力**：支持记忆知识图谱和项目级 Code Graph。
+- **Markdown 投影**：可选导出只读 Markdown review/export 视图，PostgreSQL 仍是事实源。
 - **控制面板**：本地 Web 控制台支持运行总览、热更新配置、审批治理、图谱和平台预检。
 - **生产门禁**：支持 landing scan、7 天 canary、P0/P1 gate、Qdrant reconcile、production guard。
 
@@ -184,6 +185,7 @@ TMPDIR=/tmp npm run check:secrets
 TMPDIR=/tmp npm run audit:prod
 TMPDIR=/tmp npm run memory:status -- --json
 TMPDIR=/tmp npm run memory:pending -- --json
+TMPDIR=/tmp npm run memory:source-mode
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
 TMPDIR=/tmp npm run memory:control-panel
 ```
@@ -213,6 +215,7 @@ TMPDIR=/tmp npm run memory:control-panel
 - Docker enhanced/full profile 需要同步设置 `MEMORY_XX_RUNTIME_PROFILE=enhanced/full`，否则 wrapper health、Doctor 和控制面板会按 Core 口径解释模块状态。
 - `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 的公开源码；这些模块可按环境开启、关闭或降级。
 - fastpath 和 lexical sidecar 当前提供 Node.js 开源实现，部署环境可替换为更高性能实现，但必须保持 HTTP 契约兼容；禁用它们不影响 core write/recall。
+- Markdown projection 是 full-stack 可插拔模块，可用 `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` 开启；导出的 Markdown 是 review/export 投影，不支持反向同步。
 - global 自动写入默认不建议开启。
 - real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
 - 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。

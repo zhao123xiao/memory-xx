@@ -14,6 +14,7 @@
 - **Code Graph**：扫描代码仓库，生成 repository / file / symbol / import / declaration / call reference 等节点和边。
 - **多 Agent / MCP 接入**：支持 scoped recall、write、pending review、feedback 和 orchestrator tools。
 - **Knowledge 层**：把长文档、教程、报告、runbook、项目知识和短事实 memory 分离。
+- **Markdown Projection**：把 PostgreSQL 事实账本导出为只读 Markdown review/export 视图。
 - **控制面板**：本地 Web 控制台，支持运行态总览、热更新设置、图谱、审批治理、安全和平台预检。
 - **Canary 与生产门禁**：支持 landing scan、7 天 canary report、P0/P1 gate、production guard 和 candidate-only exit 判断。
 
@@ -34,6 +35,7 @@
 | Code Graph | Beta | 支持扫描代码仓库并生成项目级代码图谱。 |
 | Conversation ingest | Beta | Codex / Claude Code / OpenClaw session tail 已实现，外部环境需要自行配置路径。 |
 | Knowledge ingest | Beta | 支持知识库导入和检索，文档整理策略仍在完善。 |
+| Markdown projection / source mode | Beta | 支持只读 Markdown 投影视图和 drift 检查；PostgreSQL 始终是事实源。 |
 | Control panel | Beta | 支持运行态总览、服务开关、热更新设置、审批控制、图谱、平台预检和安全审计。 |
 | Temporal governance | Beta | 支持 memory layer、fact status、memory strength、episodes、entities、relations、decay 和 consolidation。 |
 | 7d canary / production gate | Experimental | 适合受控试运行，不应作为默认生产开关。 |

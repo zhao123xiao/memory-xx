@@ -25,6 +25,11 @@ deployment as long as the contracts stay compatible. They can be disabled with
 Mem0 extraction depends on an external OpenAI-compatible LLM endpoint, modeled
 as `llm_upstream` in `/health`; set `MEMORY_XX_MEM0_BASE_URL` or
 `MEMORY_INTELLIGENCE_BASE_URL` for that dependency.
+Markdown projection is modeled as `markdown_projection`: PostgreSQL remains the
+source of truth, while generated Markdown files are read-only review/export
+views. Enable it with `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` and set
+`MEMORY_XX_PROJECTION_ROOT_DIR` when you want projections outside the default
+`memory_projection/` directory.
 
 ## Runtime Module States
 
@@ -53,6 +58,8 @@ TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
 TMPDIR=/tmp npm run memory:doctor -- --target ops-ready --mode core --plan
+TMPDIR=/tmp npm run memory:source-mode
+TMPDIR=/tmp npm run memory:source-mode -- --verify --limit 500
 ```
 
 `memory:mode` only manages known systemd user services. It probes Postgres,

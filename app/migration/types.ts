@@ -1,4 +1,5 @@
 import type { JsonObject } from "../shared";
+import type { ProjectionJob, ProjectionView } from "../projection";
 import type { RecallRequest, RecallResponse } from "../recall";
 
 export enum MigrationStage {
@@ -41,7 +42,8 @@ export enum ShadowDiffCategory {
   ScopeViolation = "scope_violation",
   ZeroHitRegression = "zero_hit_regression",
   DegradeRegression = "degrade_regression",
-  ResultMismatch = "result_mismatch"
+  ResultMismatch = "result_mismatch",
+  ProjectionMismatch = "projection_mismatch"
 }
 
 export enum ShadowDiffSeverity {
@@ -155,5 +157,36 @@ export interface RecallShadowCaseResult extends ShadowCaseResult {
 export interface RecallShadowCompareResult {
   readonly runId: string;
   readonly cases: readonly RecallShadowCaseResult[];
+  readonly scorecard: ShadowScorecard;
+}
+
+export interface ProjectionRuntime {
+  run(job: ProjectionJob): Promise<{
+    success: boolean;
+    docsWritten: number;
+    docsSkipped: number;
+    docsRemoved: number;
+  }>;
+}
+
+export interface ProjectionSnapshot {
+  readonly files: Readonly<Record<string, string>>;
+}
+
+export interface ProjectionShadowCase {
+  readonly caseId: string;
+  readonly job: ProjectionJob;
+  readonly expectedLegacy: ProjectionSnapshot;
+  readonly views?: readonly ProjectionView[];
+}
+
+export interface ProjectionShadowCaseResult extends ShadowCaseResult {
+  readonly candidate: ProjectionSnapshot;
+  readonly legacy: ProjectionSnapshot;
+}
+
+export interface ProjectionShadowCompareResult {
+  readonly runId: string;
+  readonly cases: readonly ProjectionShadowCaseResult[];
   readonly scorecard: ShadowScorecard;
 }
