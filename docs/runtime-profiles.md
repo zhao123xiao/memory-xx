@@ -68,6 +68,33 @@ Enable it with `MEMORY_XX_DREAMING_ENABLED=1`, then run
 full-profile service. It calls wrapper health, audit, and optional repair tasks;
 when disabled, Core write/recall is unaffected.
 
+## Wrapper Activation Switches
+
+Runtime module switches start or classify sidecars and external dependencies.
+They do not always make the wrapper route traffic to that module. Configure the
+wrapper-side activation switch after the sidecar is healthy:
+
+```bash
+# Fastpath recall sidecar: start the sidecar, then make it the primary recall path.
+MEMORY_XX_FASTPATH_ENABLED=1
+MEMORY_XX_RECALL_PRIMARY=fastpath
+
+# Model reranker: start the adapter/upstream, then let recall call the adapter.
+MEMORY_XX_RERANKER_ADAPTER_ENABLED=1
+MEMORY_XX_RERANKER_MODE=model
+MEMORY_XX_RERANKER_ENDPOINT=http://127.0.0.1:8085/rerank
+
+# Mem0-style extraction: start the extractor/LLM upstream, then select it.
+MEMORY_XX_MEM0_EXTRACTOR_ENABLED=1
+MEMORY_INTELLIGENCE_PROVIDER=mem0
+MEMORY_INTELLIGENCE_MEM0_URL=http://127.0.0.1:5220
+```
+
+Leaving these wrapper-side switches unset keeps Core behavior: Node recall path,
+local rerank fusion, and native intelligence extraction. That is the expected
+degraded behavior when an enhanced/full module is unavailable in a local
+environment.
+
 ## Runtime Module States
 
 `app/runtime-modules.ts` is the canonical module registry. Each module records:

@@ -55,3 +55,37 @@ Reranker 属于增强组件。它可以提升排序质量，但不应作为最�
 - 多个候选记忆相似时重新排序。
 - 混合 lexical / vector / graph recall 后合并排序。
 - enhanced/full profile 下提升复杂问题召回质量。
+
+启用 Reranker 需要两层开关：先启动 adapter/upstream，再让 wrapper 调用 model reranker。
+
+```bash
+MEMORY_XX_RERANKER_ADAPTER_ENABLED=1
+MEMORY_XX_RERANKER_UPSTREAM_ENABLED=1
+MEMORY_XX_RERANKER_MODE=model
+MEMORY_XX_RERANKER_ENDPOINT=http://127.0.0.1:8085/rerank
+MEMORY_XX_RERANKER_MODEL=qwen3-reranker
+```
+
+如果 `MEMORY_XX_RERANKER_MODE=model` 或 `MEMORY_XX_RERANKER_ENDPOINT` 未配置，
+wrapper 会继续使用本地排序融合；这属于正常降级，不应影响 Core write/recall。
+
+## Fastpath 与 Mem0 激活关系
+
+Enhanced/full sidecar 的 `MEMORY_XX_*_ENABLED=1` 只表示该模块进入运行计划或
+服务启动条件，不等于 wrapper 已经把流量切过去。需要额外设置 wrapper 侧激活变量：
+
+```bash
+# Fastpath recall
+MEMORY_XX_FASTPATH_ENABLED=1
+MEMORY_XX_RECALL_PRIMARY=fastpath
+
+# Mem0-style extraction
+MEMORY_XX_MEM0_EXTRACTOR_ENABLED=1
+MEMORY_XX_LLM_UPSTREAM_ENABLED=1
+MEMORY_INTELLIGENCE_PROVIDER=mem0
+MEMORY_INTELLIGENCE_MEM0_URL=http://127.0.0.1:5220
+```
+
+未设置 `MEMORY_XX_RECALL_PRIMARY=fastpath` 时，recall 仍走 Node wrapper 路径。
+未设置 `MEMORY_INTELLIGENCE_PROVIDER=mem0` 时，即使
+`MEMORY_INTELLIGENCE_MEM0_URL` 有默认值，intelligence 也仍使用 native provider。

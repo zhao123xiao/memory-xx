@@ -546,6 +546,19 @@ test("public docs expose runtime module state semantics", async () => {
   assert.match(runtimeProfiles, /enabled.*disabled.*degraded.*missing_dependency/us);
 });
 
+test("public docs explain wrapper activation switches for optional sidecars", async () => {
+  const runtimeProfiles = await readFile("docs/runtime-profiles.md", "utf8");
+  const vectorRuntime = await readFile("docs/vector-runtime.zh-CN.md", "utf8");
+
+  for (const content of [runtimeProfiles, vectorRuntime]) {
+    assert.match(content, /MEMORY_XX_RECALL_PRIMARY=fastpath/u);
+    assert.match(content, /MEMORY_XX_RERANKER_MODE=model/u);
+    assert.match(content, /MEMORY_XX_RERANKER_ENDPOINT/u);
+    assert.match(content, /MEMORY_INTELLIGENCE_PROVIDER=mem0/u);
+    assert.match(content, /MEMORY_INTELLIGENCE_MEM0_URL/u);
+  }
+});
+
 test("public module catalog documents every runtime module and full-stack capability", async () => {
   const catalog = await readFile("docs/module-catalog.md", "utf8");
   const missingRuntimeModules = RUNTIME_MODULES
