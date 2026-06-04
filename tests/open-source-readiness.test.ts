@@ -263,6 +263,22 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
 });
 
+test("docker compose full profile includes enhanced services required by full runtime", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const fullRequiredEnhancedServices = [
+    "memory-xx-fastpath",
+    "memory-xx-lexical-sidecar",
+    "memory-xx-qdrant-proxy",
+    "memory-xx-reranker-adapter",
+    "memory-xx-control-panel",
+  ];
+
+  for (const service of fullRequiredEnhancedServices) {
+    const block = composeServiceBlock(compose, service);
+    assert.match(block, /profiles:\s*\n\s+- enhanced\s*\n\s+- full/u, `${service} must run under full profile`);
+  }
+});
+
 test("docker compose pluggable profile services honor runtime module switches", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
   const modules = [
@@ -475,8 +491,11 @@ test("public docker profile docs set matching runtime profile", async () => {
     if (!/MEMORY_XX_RUNTIME_PROFILE=enhanced\s+docker-compose --profile enhanced up/u.test(content)) {
       missing.push(`${file}:enhanced`);
     }
-    if (!/MEMORY_XX_RUNTIME_PROFILE=full\s+docker-compose --profile enhanced --profile full up/u.test(content)) {
+    if (!/MEMORY_XX_RUNTIME_PROFILE=full\s+docker-compose --profile full up/u.test(content)) {
       missing.push(`${file}:full`);
+    }
+    if (!/full[` ]+(?:会包含|includes) (?:enhanced|the enhanced)/iu.test(content)) {
+      missing.push(`${file}:full_includes_enhanced`);
     }
   }
 

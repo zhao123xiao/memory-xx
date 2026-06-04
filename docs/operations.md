@@ -448,15 +448,15 @@ exposed through profiles:
 
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
-MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full up --build -d
+MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
 ```
 
 `enhanced` starts fastpath, lexical sidecar, Qdrant proxy, reranker adapter, and
-the local control panel. `full` also starts Mem0 extraction, the conversation
-monitor, cache invalidation worker, and the operations/gate modules for
+the local control panel. `full` includes the enhanced services and also starts
+Mem0 extraction, the conversation monitor, cache invalidation worker, and the operations/gate modules for
 maintenance, consolidation, issue detection, auto-repair, repair reporting,
 landing scan, and 7-day canary reporting. Those full modules still honor their
 own `MEMORY_XX_*_ENABLED=0` switches and exit without work until enabled.
-Include both `enhanced` and `full` compose profiles for full-stack startup because full builds on enhanced modules. Model upstreams remain environment-specific; configure
+Model upstreams remain environment-specific; configure
 `EMBEDDING_PROXY_UPSTREAM_BASE`, `OPENAI_API_KEY`, reranker downstream URLs, and
 Mem0/LLM settings before relying on those modules.
