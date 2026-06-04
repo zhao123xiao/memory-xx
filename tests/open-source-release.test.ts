@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { buildOpenSourcePreauditReport, exportOpenSourceProject } from "../app/ops/open-source-release";
 
 async function withTempDir<T>(callback: (dir: string) => T | Promise<T>): Promise<T> {
@@ -118,5 +119,35 @@ test("open source preaudit allows the public release gate test", async () => {
 
     assert.equal(report.ok, true);
     assert.deepEqual(report.blockers, []);
+  });
+});
+
+test("open source export preserves manifest-declared full-stack capabilities", async () => {
+  await withTempDir(async (parent) => {
+    const root = path.join(parent, "private-source");
+    const targetDir = path.join(parent, "memory-xx");
+    write(root, "package.json", JSON.stringify({ name: "memory-xx" }, null, 2));
+    write(root, "app/full-stack-capabilities.ts", "export const FULL_STACK_CAPABILITIES = [];\n");
+    for (const capability of FULL_STACK_CAPABILITIES) {
+      for (const source of capability.source_paths) {
+        write(root, source, `export const capability = ${JSON.stringify(capability.name)};\n`);
+      }
+      for (const script of capability.script_paths) {
+        write(root, script, `console.log(${JSON.stringify(capability.name)});\n`);
+      }
+    }
+
+    const result = await exportOpenSourceProject({ root, targetDir, apply: true, targetExplicit: true });
+
+    assert.equal(result.ok, true);
+    assert.equal(existsSync(path.join(targetDir, "app/full-stack-capabilities.ts")), true);
+    for (const capability of FULL_STACK_CAPABILITIES) {
+      for (const source of capability.source_paths) {
+        assert.equal(existsSync(path.join(targetDir, source)), true, `missing ${capability.name}:${source}`);
+      }
+      for (const script of capability.script_paths) {
+        assert.equal(existsSync(path.join(targetDir, script)), true, `missing ${capability.name}:${script}`);
+      }
+    }
   });
 });

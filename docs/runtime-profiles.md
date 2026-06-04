@@ -37,6 +37,12 @@ Operations modules are modeled separately from sidecars. `maintenance_orchestrat
 modules with their own env switches and systemd units. They are disabled by
 default and can be enabled per environment without affecting Core write/recall.
 
+Non-service full-stack capabilities are tracked in `app/full-stack-capabilities.ts`.
+This manifest covers feature packages such as Knowledge ingest, Memory/Code
+Graph, Temporal decay/consolidation, Memory dreaming, Policy evaluation, and
+Recall quality. The open-source release gate checks that their source files and
+CLI scripts are exported even when the capability is disabled by default.
+
 ## Runtime Module States
 
 `app/runtime-modules.ts` is the canonical module registry. Each module records:
