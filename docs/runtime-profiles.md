@@ -70,6 +70,11 @@ so operators can opt into each package explicitly.
 - repo source path when source is included
 - degraded behavior when the module is disabled or unhealthy
 
+The public `configs/memory-xx-wrapper.env.example` also lists every
+`runtime_modules.states[*].env_enabled` switch. Core modules default to enabled;
+enhanced/full sidecars, workers, and gates default to disabled until their
+dependencies are configured.
+
 `/health` exposes the same registry as `runtime_modules.states`, and the control
 panel converts those states into component rows. Doctor should use the same
 semantics: `enabled`, `disabled`, `degraded`, or `missing_dependency`. A disabled

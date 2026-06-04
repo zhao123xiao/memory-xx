@@ -53,6 +53,20 @@ test("runtime module dependencies resolve to registry entries", () => {
   assert.deepEqual(unresolved, []);
 });
 
+test("runtime module env switches are documented in public env examples", () => {
+  const envExample = [
+    readFileSync(".env.example", "utf8"),
+    readFileSync("configs/memory-xx.env.example", "utf8"),
+    readFileSync("configs/memory-xx-wrapper.env.example", "utf8"),
+  ].join("\n");
+  const missing = RUNTIME_MODULES
+    .map((module) => module.env_enabled)
+    .filter((name): name is string => Boolean(name))
+    .filter((name) => !envExample.includes(name));
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("runtime module plan keeps core minimal and treats enhanced modules as pluggable", () => {
   const core = buildRuntimeModulePlan("core");
   const enhanced = buildRuntimeModulePlan("enhanced");
