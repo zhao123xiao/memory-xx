@@ -28,6 +28,7 @@ TMPDIR=/tmp npm run memory:agent -- create codex-main --project=memory-xx
 TMPDIR=/tmp npm run memory:agent -- create claude-code-main --project=memory-xx
 TMPDIR=/tmp npm run memory:trusted-agent -- --json
 TMPDIR=/tmp npm run memory:agent -- audit
+TMPDIR=/tmp npm run smoke:trusted-agent
 ```
 
 ## 验证

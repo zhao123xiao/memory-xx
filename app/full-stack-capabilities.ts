@@ -244,7 +244,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_TRUSTED_AGENT_TOOLS_ENABLED",
     source_paths: ["app/server/permissions.ts", "app/orchestrator/scope-plan.ts", "app/mcp/tool-registry.ts"],
-    script_paths: ["scripts/memory-trusted-agent.ts"],
+    script_paths: ["scripts/memory-trusted-agent.ts", "scripts/trusted-agent-smoke.ts"],
     degraded_behavior: "Token and scope grant provisioning must be handled manually; strict scope enforcement remains available.",
   },
   {
