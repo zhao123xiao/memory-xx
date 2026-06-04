@@ -44,7 +44,7 @@ import {
   OutboxDispatchStatus
 } from "../app";
 import { ProjectorEmbeddingResolver } from "../app/qdrant-sync/projector-embedding-resolver.js";
-import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider.js";
+import { OpenAICompatibleEmbeddingProvider } from "../app/server/embedding-provider.js";
 
 interface ReplayCliArgs {
   readonly eventId?: string;
@@ -132,7 +132,7 @@ async function main(): Promise<void> {
   const outboxRepository = new DatabaseQdrantSyncOutboxRepository(database);
   const replayRepository = new SnapshotQdrantReplayRepairRepository(database);
   const embeddingResolver = new ProjectorEmbeddingResolver({
-    provider: new QwenEmbeddingProviderWrapper(),
+    provider: new OpenAICompatibleEmbeddingProvider(),
     database
   });
   const projectionSyncService = new QdrantProjectionSyncService({

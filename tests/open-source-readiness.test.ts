@@ -1395,6 +1395,16 @@ test("public embedding defaults are provider-neutral", async () => {
 
 test("public generic embedding scripts do not default to local Qwen generations", async () => {
   const files = [
+    "app/server/embedding-provider.ts",
+    "app/server/runtime.ts",
+    "app/server/cli.ts",
+    "app/qdrant-sync/daemon.ts",
+    "app/knowledge/service.ts",
+    "scripts/memory-auto-repair.ts",
+    "scripts/memory-knowledge-md.ts",
+    "scripts/benchmark-reranker-policy.ts",
+    "scripts/qdrant-reconcile.ts",
+    "scripts/replay-qdrant-outbox.ts",
     "scripts/generate-embeddings.ts",
     "scripts/generate-local-memory-embeddings.ts",
     "scripts/embedding-manifest.ts",
@@ -1415,7 +1425,7 @@ test("public generic embedding scripts do not default to local Qwen generations"
   const stale: string[] = [];
   for (const file of files) {
     const content = await readFile(file, "utf8");
-    if (/Qwen3-Embedding-8B|memory-xx-local-qwen8b-int4(?:-v1)?|local-qwen8b-int4-v1/u.test(content)) {
+    if (/QwenEmbeddingProviderWrapper|Qwen3-Embedding-8B|memory-xx-local-qwen8b-int4(?:-v1)?|local-qwen8b-int4-v1/u.test(content)) {
       stale.push(file);
     }
   }

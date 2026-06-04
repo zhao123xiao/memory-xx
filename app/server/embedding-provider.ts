@@ -36,7 +36,7 @@ export function loadEmbeddingProviderRequestConfig(
   };
 }
 
-export class QwenEmbeddingProviderWrapper {
+export class OpenAICompatibleEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
   private readonly timeoutMs: number;
