@@ -73,6 +73,26 @@ test("full-stack capability CLI paths have public npm entrypoints", () => {
   assert.deepEqual(missing.sort(), []);
 });
 
+test("module catalog documents public npm entrypoints for full-stack capabilities", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const catalog = readFileSync("docs/module-catalog.md", "utf8");
+  const missing: string[] = [];
+  for (const capability of FULL_STACK_CAPABILITIES) {
+    const commandNames = capability.script_paths.flatMap((script) =>
+      Object.entries(packageJson.scripts)
+        .filter(([, command]) => command.includes(script))
+        .map(([name]) => name)
+    );
+    for (const name of commandNames) {
+      if (!catalog.includes(`\`${name}\``)) missing.push(`${capability.name}:${name}`);
+    }
+  }
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("full-stack capability manifest classifies production CLI scripts not modeled as services", () => {
   const covered = new Set(FULL_STACK_CAPABILITIES.flatMap((capability) => capability.script_paths));
   const expected = [

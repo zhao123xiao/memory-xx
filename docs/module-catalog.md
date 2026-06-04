@@ -62,3 +62,36 @@ This catalog is the public map for hot-pluggable runtime modules and CLI-only fu
 | `deployment_packaging` | full | beta | `MEMORY_XX_DEPLOYMENT_PACKAGING_ENABLED` | Deployment bundle, migration preflight, and memory-specific secrets audit must be run manually or by external tooling. |
 | `release_governance_gates` | full | beta | `MEMORY_XX_RELEASE_GOVERNANCE_GATES_ENABLED` | Release gates, landing/canary evidence, and capacity checks are not refreshed automatically; Core operations continue. |
 | `self_improvement_ops` | full | experimental | `MEMORY_XX_SELF_IMPROVEMENT_ENABLED` | Report-only self-improvement proposals and Graphiti shadow export are disabled; normal governance and review continue. |
+
+## Full-Stack Capability Commands
+
+These npm scripts are the public entrypoints for CLI-only capability packages.
+Capability env switches default to `0`; use these commands only after the
+matching dependencies are configured.
+
+| Capability | Public npm entrypoints |
+| --- | --- |
+| `knowledge_ingest` | `memory:knowledge-md` |
+| `memory_knowledge_graph` | `memory:graph-report`, `memory:graph-health` |
+| `code_graph` | `memory:code-graph` |
+| `temporal_decay` | `memory:decay`, `memory:temporal-sweep`, `memory:temporal-policy` |
+| `temporal_consolidation` | `memory:consolidate` |
+| `memory_dreaming` | `run:dream-worker` |
+| `policy_evaluation` | `memory:policy-corpus`, `memory:policy-eval`, `memory:policy-report`, `memory:debt-plan` |
+| `recall_quality` | `memory:quality`, `memory:intelligence-quality`, `memory:reranker-policy-benchmark`, `memory:p1-evidence`, `memory:recall-repair`, `memory:trace-feedback` |
+| `auto_approval_ops` | `memory:auto-approval`, `memory:auto-approval-ops`, `memory:auto-approval-sweep`, `memory:auto-approval-limit-advisor` |
+| `auto_update_ops` | `memory:auto-update` |
+| `embedding_manifest` | `memory:embedding-manifest` |
+| `embedding_calibration` | `memory:embedding-calibrate` |
+| `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark` |
+| `backup_and_restore` | `memory:backup` |
+| `platform_doctor` | `memory:platform-doctor`, `memory:doctor` |
+| `trusted_agent_tools` | `memory:trusted-agent` |
+| `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit` |
+| `conversation_ops` | `memory:conversation-sources`, `memory:conversation-monitor-report` |
+| `governance_operations` | `memory:governance-audit`, `memory:governance-cleanup`, `memory:governance-freeze`, `memory:governance-revert`, `memory:policy-backfill`, `memory:pending-canary-report`, `memory:pending-governance`, `memory:pending`, `memory:governance`, `memory:governance-dry-run-jobs`, `memory:governance-stuck-runs`, `memory:memory-type-backfill`, `memory:event-lifecycle`, `memory:archive-events` |
+| `runtime_observability_retention` | `memory:runtime-observability-retention`, `memory:trace-retention`, `memory:cleanup-runtime-artifacts`, `memory:archive-next-residue` |
+| `write_ticket_maintenance` | `memory:sweep-write-ticket-timeouts`, `memory:archive-write-tickets`, `memory:sweep-ingest-accepted`, `memory:sweep-low-confidence` |
+| `deployment_packaging` | `memory:migration-preflight`, `memory:deployment-bundle`, `memory:secrets-audit` |
+| `release_governance_gates` | `memory:p0-gate`, `memory:p1-gate`, `memory:cutover-gate`, `memory:landing-scan`, `memory:canary-7d-report`, `memory:freeze-m0`, `memory:capacity-audit`, `memory:capacity-smoke`, `memory:consistency-scan`, `memory:dlq-recovery`, `memory:quality-metadata-backfill` |
+| `self_improvement_ops` | `memory:self-improvement`, `memory:graphiti-shadow-export`, `memory:sweep-test-pollution` |
