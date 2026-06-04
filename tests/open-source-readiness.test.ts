@@ -1399,6 +1399,7 @@ test("public embedding defaults are provider-neutral", async () => {
     "docs/quickstart.zh-CN.md",
     "docs/vector-runtime.zh-CN.md",
     "configs/memory-xx-wrapper.env.example",
+    "systemd/memory-xx-embedding-proxy.service",
   ];
   const stale: string[] = [];
   for (const file of files) {
@@ -1412,6 +1413,13 @@ test("public embedding defaults are provider-neutral", async () => {
   assert.match(await readFile("configs/memory-xx-wrapper.env.example", "utf8"), /^EMBEDDING_MODEL=memory-xx-dev-embedding$/mu);
   assert.match(await readFile("configs/memory-xx-wrapper.env.example", "utf8"), /^EMBEDDING_DIMS=4096$/mu);
   assert.match(await readFile("docs/vector-runtime.zh-CN.md", "utf8"), /MEMORY_XX_EMBEDDING_GENERATION_ID=memory-xx-default-v1/u);
+  assert.doesNotMatch(await readFile("systemd/memory-xx-embedding-proxy.service", "utf8"), /qwen3-embedding/u);
+});
+
+test("public intelligence defaults are provider-neutral", async () => {
+  const config = await readFile("app/intelligence/config.ts", "utf8");
+  assert.doesNotMatch(config, /qwen3-8b/u);
+  assert.match(config, /memory-xx-dev-chat/u);
 });
 
 test("public generic embedding scripts do not default to local Qwen generations", async () => {

@@ -36,6 +36,10 @@ export function loadEmbeddingProviderRequestConfig(
   };
 }
 
+export function resolveEmbeddingProviderMetricLabel(apiBase: string): "local" | "remote" {
+  return /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(apiBase) ? "local" : "remote";
+}
+
 export class OpenAICompatibleEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
@@ -76,7 +80,7 @@ export class OpenAICompatibleEmbeddingProvider {
     query_terms: string[];
   }) {
     const started = Date.now();
-    const provider = this.apiBase.includes("127.0.0.1") || this.apiBase.includes("localhost") ? "local-ovms" : "remote";
+    const provider = resolveEmbeddingProviderMetricLabel(this.apiBase);
     const isLocalProxy = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(this.apiBase);
     if (!this.apiKey && !isLocalProxy) {
       recordEmbeddingProviderCall({ provider, status: "missing_api_key", latencyMs: Date.now() - started });
