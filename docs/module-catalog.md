@@ -105,7 +105,7 @@ matching dependencies are configured.
 | `backup_and_restore` | `memory:backup` |
 | `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core`, `smoke:compose-profile-live`, `smoke:cache-invalidation`, `smoke:markdown-projection` |
 | `trusted_agent_tools` | `memory:trusted-agent` |
-| `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit` |
+| `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit`, `smoke:qdrant-reconciliation` |
 | `conversation_ops` | `memory:conversation-sources`, `memory:conversation-monitor-report`, `smoke:conversation-monitor` |
 | `governance_operations` | `memory:governance-audit`, `memory:governance-cleanup`, `memory:governance-freeze`, `memory:governance-revert`, `memory:policy-backfill`, `memory:pending-canary-report`, `memory:pending-governance`, `memory:pending`, `memory:governance`, `memory:governance-dry-run-jobs`, `memory:governance-stuck-runs`, `memory:memory-type-backfill`, `memory:event-lifecycle`, `memory:archive-events` |
 | `runtime_observability_retention` | `memory:runtime-observability-retention`, `memory:trace-retention`, `memory:cleanup-runtime-artifacts`, `memory:archive-next-residue` |

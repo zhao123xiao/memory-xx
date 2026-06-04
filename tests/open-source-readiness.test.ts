@@ -875,6 +875,51 @@ test("public repository exposes knowledge graph smoke for enhanced graph modules
   assert.match(moduleCatalog, /smoke:knowledge-graph/u);
 });
 
+test("public repository exposes qdrant reconciliation smoke as a read-only full-stack check", async () => {
+  const files = [
+    "app/qdrant-sync/consistency-reconcile.ts",
+    "app/qdrant-sync/replay-repair.ts",
+    "app/ops/outbox-recovery.ts",
+    "scripts/qdrant-reconcile.ts",
+    "scripts/outbox-recovery.ts",
+    "scripts/qdrant-collection-audit.ts",
+    "scripts/qdrant-alias.ts",
+    "scripts/qdrant-reconciliation-smoke.ts",
+    "tests/qdrant-reconciliation-smoke.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+  const smoke = await readFile("scripts/qdrant-reconciliation-smoke.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+  const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["smoke:qdrant-reconciliation"], "node --import tsx scripts/qdrant-reconciliation-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /tests\/qdrant-reconciliation-smoke\.test\.ts/u);
+  assert.match(capabilities, /name: "qdrant_reconciliation"[\s\S]*scripts\/qdrant-reconciliation-smoke\.ts/u);
+  assert.doesNotMatch(smoke, /--apply|--mark-dispatched|fix-qdrant-replay\.ts|replay-qdrant-outbox\.ts/u);
+  assert.match(readme, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
+  assert.match(operations, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
+  assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
+  assert.match(moduleCatalog, /smoke:qdrant-reconciliation/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

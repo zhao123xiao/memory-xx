@@ -262,6 +262,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/outbox-recovery.ts",
       "scripts/qdrant-alias.ts",
       "scripts/qdrant-collection-audit.ts",
+      "scripts/qdrant-reconciliation-smoke.ts",
     ],
     degraded_behavior: "Projection repair is not run automatically; vector freshness may lag while Postgres remains authoritative.",
   },
