@@ -1,6 +1,6 @@
 -- Migration 0004: Add HNSW index on content_embedding for fast approximate nearest-neighbor search.
--- pgvector HNSW has a 2000-dimension limit. The production Qwen3-Embedding-8B
--- path uses 4096 dimensions and relies on Qdrant as the primary vector index, so
+-- pgvector HNSW has a 2000-dimension limit. The current memory-xx
+-- vector path uses 4096 dimensions and relies on Qdrant as the primary vector index, so
 -- pgvector fallback must skip HNSW instead of failing fresh migrations.
 
 DO $$

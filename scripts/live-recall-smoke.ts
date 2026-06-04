@@ -48,9 +48,9 @@ const TEST_CASES: SmokeTestCase[] = [
   },
   {
     id: "S03",
-    query: "embedding 主链用的什么模型",
-    description: "查 embedding 模型决策",
-    expectedKeywords: ["Qwen3", "4096", "embedding"]
+    query: "embedding 主链的向量维度和 provider 是什么",
+    description: "查 embedding provider / 维度决策",
+    expectedKeywords: ["4096", "embedding", "provider", "OpenAI-compatible", "向量"]
   },
   {
     id: "S04",
@@ -90,9 +90,9 @@ const TEST_CASES: SmokeTestCase[] = [
   },
   {
     id: "S10",
-    query: "当前 OpenClaw 的运行环境",
+    query: "当前 memory-xx 的运行环境",
     description: "查 facts / 环境事实",
-    expectedKeywords: ["WSL", "飞书", "Asia/Shanghai", "gateway"]
+    expectedKeywords: ["memory-xx", "PostgreSQL", "Redis", "Qdrant", "gateway"]
   },
   {
     id: "S11",
@@ -110,7 +110,7 @@ const TEST_CASES: SmokeTestCase[] = [
     id: "S13",
     query: "go-no-go 决策结果",
     description: "查 Go/No-Go 决策",
-    expectedKeywords: ["GO", "HOLD", "<windows-user>", "cutover"]
+    expectedKeywords: ["GO", "HOLD", "cutover", "发布", "迁移"]
   },
   {
     id: "S14",
@@ -122,7 +122,7 @@ const TEST_CASES: SmokeTestCase[] = [
     id: "S15",
     query: "当前模型配置是什么",
     description: "查模型/运行态事实",
-    expectedKeywords: ["GLM", "gpt-5", "模型", "fallback"]
+    expectedKeywords: ["模型", "fallback", "provider", "embedding", "reranker"]
   },
   {
     id: "S16",
@@ -152,7 +152,7 @@ const TEST_CASES: SmokeTestCase[] = [
     id: "S20",
     query: "今天做了什么",
     description: "查当日/今日进展",
-    expectedKeywords: ["今天", "今日", "完成", "记忆框架", "OpenClaw"]
+    expectedKeywords: ["今天", "今日", "完成", "记忆框架", "memory-xx"]
   },
   {
     id: "S21",
@@ -168,9 +168,9 @@ const TEST_CASES: SmokeTestCase[] = [
   }
 ];
 
-// ── QueryEmbeddingProvider using Qwen3-Embedding-8B ──────────────────────
+// ── QueryEmbeddingProvider using configured OpenAI-compatible API ────────
 
-class QwenEmbeddingProvider implements QueryEmbeddingProvider {
+class ConfiguredEmbeddingProvider implements QueryEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
   private readonly model: string;
@@ -182,8 +182,8 @@ class QwenEmbeddingProvider implements QueryEmbeddingProvider {
       process.env.EMBEDDING_PROXY_URL?.trim() ||
       process.env.EMBEDDING_API_BASE?.trim() ||
       "http://127.0.0.1:5221";
-    this.model = "Qwen3-Embedding-8B";
-    this.dims = 4096;
+    this.model = process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
+    this.dims = Number.parseInt(process.env.EMBEDDING_DIMS?.trim() || "4096", 10);
     const isLocalProxy = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(this.apiBase);
     if (!this.apiKey && !isLocalProxy) console.warn("Warning: OPENAI_API_KEY not set, vector retrieval will be unavailable");
   }
@@ -329,7 +329,7 @@ async function main() {
 
   try {
     const embeddingProvider = new ResilientQueryEmbeddingProvider(
-      new QwenEmbeddingProvider(),
+      new ConfiguredEmbeddingProvider(),
       {
         max_retries: 0,
         retry_delay_ms: 250,

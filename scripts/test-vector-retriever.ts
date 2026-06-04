@@ -2,13 +2,13 @@
  * Test vector retriever against the configured memory-xx schema with real embeddings.
  *
  * Creates a PostgresRecallRuntime with a QueryEmbeddingProvider that calls
- * the same Qwen3-Embedding-8B API, then runs 3 test queries and verifies
+ * the configured OpenAI-compatible embedding API, then runs 3 test queries and verifies
  * the vector retriever returns semantically relevant results.
  *
  * Usage:
  *   OPENAI_API_KEY=sk-xxx \
  *   EMBEDDING_API_BASE=https://embedding-provider.example/v1 \
- *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
+ *   EMBEDDING_MODEL=memory-xx-dev-embedding \
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
  *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/test-vector-retriever.ts
@@ -24,9 +24,9 @@ import {
   type QueryEmbeddingProvider
 } from "../app";
 
-// ── QueryEmbeddingProvider using Qwen3-Embedding-8B ────────────────────────
+// ── QueryEmbeddingProvider using configured OpenAI-compatible API ──────────
 
-class QwenEmbeddingProvider implements QueryEmbeddingProvider {
+class ConfiguredEmbeddingProvider implements QueryEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
   private readonly model: string;
@@ -35,7 +35,7 @@ class QwenEmbeddingProvider implements QueryEmbeddingProvider {
   constructor() {
     this.apiKey = process.env.OPENAI_API_KEY?.trim() || process.env.EMBEDDING_API_KEY?.trim() || "";
     this.apiBase = process.env.EMBEDDING_API_BASE?.trim() || "https://embedding-provider.example/v1";
-    this.model = process.env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B";
+    this.model = process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
     this.dims = parseInt(process.env.EMBEDDING_DIMS?.trim() || "4096", 10);
 
     if (!this.apiKey) throw new Error("OPENAI_API_KEY or EMBEDDING_API_KEY is required");
@@ -128,9 +128,9 @@ const TEST_CASES: VectorTestCase[] = [
     expectedKeywords: ["Markdown", "主账", "source of truth"]
   },
   {
-    query: "embedding 主链用的什么模型",
-    description: "查 embedding 模型决策",
-    expectedKeywords: ["Qwen3", "4096", "embedding"]
+    query: "embedding 主链的向量维度和 provider 是什么",
+    description: "查 embedding provider / 维度决策",
+    expectedKeywords: ["4096", "embedding", "provider", "OpenAI-compatible", "向量"]
   }
 ];
 
@@ -182,7 +182,7 @@ async function main() {
   try {
     runtime = createPostgresRecallRuntime({
       config,
-      query_embedding_provider: new QwenEmbeddingProvider(),
+      query_embedding_provider: new ConfiguredEmbeddingProvider(),
       vector_column_name: "content_embedding"
     });
 

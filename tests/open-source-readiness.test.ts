@@ -1384,6 +1384,15 @@ test("public generic embedding scripts do not default to local Qwen generations"
     "scripts/control-panel/summary.ts",
     "scripts/control-panel/runtime-snapshot.ts",
     "scripts/memory-doctor.ts",
+    "scripts/test-vector-retriever.ts",
+    "scripts/live-recall-smoke.ts",
+    "scripts/random-recall-sample.ts",
+    "app/knowledge/markdown-governance.ts",
+    "scripts/import-knowledge-chroma-export.ts",
+    "scripts/test-harness/layers/L18-graph-recall.ts",
+    "docs/api.md",
+    "docs/architecture.md",
+    "docs/operations.md",
   ];
   const stale: string[] = [];
   for (const file of files) {

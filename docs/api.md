@@ -535,7 +535,7 @@ GET /health
   "qdrant": { "configured": true, "collection_name": "memory-xx-active" },
   "redis": { "configured": true, "available": true },
   "embedding_generation": { "configured": true, "ok": true },
-  "embedding_provider": { "model": "Qwen3-Embedding-8B", "dims": 4096, "matches_active_generation": true },
+  "embedding_provider": { "model": "memory-xx-dev-embedding", "dims": 4096, "matches_active_generation": true },
   "config": {}
 }
 ```

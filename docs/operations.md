@@ -251,18 +251,19 @@ and recommends `EMBEDDING_PROXY_MAX_CONCURRENCY`,
 default production stance is stability-first: keep interaction timeouts short,
 use cache/stale fallback, and avoid retry storms on 429/503.
 
-For local OVMS embedding, point the proxy upstream at Windows port 8082:
+For an optional local OpenAI-compatible embedding upstream, point the proxy at
+the upstream base URL and model exposed by your local server:
 
 ```bash
-MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:8082/v3
-MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL=qwen3-embedding
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:<port>/v1
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL=<local-embedding-model-name>
 MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=<path-to-api-key-file>
 MEMORY_XX_EMBEDDING_PROXY_MAX_CONCURRENCY=1
 MEMORY_XX_EMBEDDING_PROXY_MIN_INTERVAL_MS=0
 ```
 
-The Windows model launcher is `<windows-drive>\ovms\run-embedding.bat`; it should serve
-`<windows-drive>\models\ov\Qwen3-Embedding-8B-int4-ov` as `qwen3-embedding`.
+Local upstream managers are optional. Keep them disabled when the proxy points
+at a remote OpenAI-compatible provider.
 
 ## Embedding Generation Switch
 
@@ -272,8 +273,8 @@ query cache version, and Qdrant payload `embedding_generation`.
 
 ```bash
 TMPDIR=/tmp npm run memory:embedding-manifest -- status
-TMPDIR=/tmp npm run memory:embedding-manifest -- validate --generation-id=local-qwen8b-int4-v1
-TMPDIR=/tmp npm run memory:embedding-manifest -- activate --generation-id=local-qwen8b-int4-v1
+TMPDIR=/tmp npm run memory:embedding-manifest -- validate --generation-id=memory-xx-default-v1
+TMPDIR=/tmp npm run memory:embedding-manifest -- activate --generation-id=memory-xx-default-v1
 TMPDIR=/tmp npm run memory:embedding-manifest -- rollback
 ```
 

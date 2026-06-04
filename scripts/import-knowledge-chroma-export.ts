@@ -151,7 +151,7 @@ async function main(): Promise<void> {
           endLine,
           item.document,
           JSON.stringify(metadata),
-          "Qwen3-Embedding-8B",
+          process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding",
           pointId,
           contentHash,
           embeddingHash
