@@ -3,6 +3,7 @@ export interface MemoryCanary7dReportInput {
   readonly reports: readonly Record<string, unknown>[];
   readonly days?: number;
   readonly minRealFeedbackSamples?: number;
+  readonly requiredSources?: readonly string[];
 }
 
 export interface SourceE2EStatus {
@@ -40,7 +41,7 @@ export interface MemoryCanary7dReport {
   readonly latest_report: Record<string, unknown> | null;
 }
 
-const REQUIRED_SOURCES = ["codex_session", "claude_code_session", "openclaw_session"] as const;
+const DEFAULT_REQUIRED_SOURCES = ["codex_session", "claude_code_session"] as const;
 
 function objectValue(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -138,6 +139,9 @@ export function buildMemoryCanary7dReport(input: MemoryCanary7dReportInput): Mem
   const generatedAt = input.now ?? new Date().toISOString();
   const days = input.days ?? 7;
   const minRealFeedbackSamples = input.minRealFeedbackSamples ?? 20;
+  const requiredSources = (input.requiredSources?.length ? input.requiredSources : DEFAULT_REQUIRED_SOURCES)
+    .map((source) => source.trim())
+    .filter((source) => source.length > 0);
   const reports = withinWindow(input.reports, generatedAt, days);
   const latest = reports[0] ?? null;
   const latestState = latest ? currentState(latest) : {};
@@ -177,7 +181,7 @@ export function buildMemoryCanary7dReport(input: MemoryCanary7dReportInput): Mem
     }
   }
 
-  for (const source of REQUIRED_SOURCES) {
+  for (const source of requiredSources) {
     sourceTotals[source] ??= { ok: false, events: 0, last_event_at: null };
   }
 
@@ -195,7 +199,7 @@ export function buildMemoryCanary7dReport(input: MemoryCanary7dReportInput): Mem
   const totalLeakage = defaultLeakage + explicitOnlyDefaultRecallLeakage + testNoiseDefaultRecallLeakage;
   if (totalLeakage !== 0) blockers.push(`default_recall_leakage_nonzero:${totalLeakage}`);
   if (unknownSensitiveOrTestNoiseAutoApprove !== 0) blockers.push(`unknown_sensitive_or_test_noise_auto_approve:${unknownSensitiveOrTestNoiseAutoApprove}`);
-  for (const source of REQUIRED_SOURCES) {
+  for (const source of requiredSources) {
     if (!sourceTotals[source]?.ok) blockers.push(`conversation_source_e2e_missing:${source}`);
   }
   if (latest && objectValue(currentState(latest).candidate_only).enabled !== true) {

@@ -119,7 +119,7 @@ test("7d canary report blocks candidate-only exit on runtime or source gaps", ()
   assert.match(report.blockers.join(","), /p1_gate_not_stable:6\/7/u);
   assert.match(report.blockers.join(","), /production_guard_not_stable:6\/7/u);
   assert.match(report.blockers.join(","), /conversation_source_e2e_missing:claude_code_session/u);
-  assert.match(report.blockers.join(","), /conversation_source_e2e_missing:openclaw_session/u);
+  assert.doesNotMatch(report.blockers.join(","), /conversation_source_e2e_missing:openclaw_session/u);
 });
 
 test("7d canary report accepts conversation monitor E2E evidence when dry-run has no new events", () => {
@@ -159,4 +159,67 @@ test("7d canary report accepts conversation monitor E2E evidence when dry-run ha
   assert.equal(report.conversation_source_e2e.codex_session.ok, true);
   assert.equal(report.conversation_source_e2e.claude_code_session.ok, true);
   assert.equal(report.conversation_source_e2e.openclaw_session.ok, true);
+});
+
+test("7d canary report does not require optional OpenClaw adapter in public defaults", () => {
+  const reports = [2, 3, 4, 5, 6, 7, 8].map((day) => landing(day, {
+    current_state: {
+      runtime_ok: true,
+      governance_ok: true,
+      candidate_current: 0,
+      qdrant_drift: 0,
+      p1_ok_without_compare_warning: true,
+      production_guard_ok: true,
+      compare_observations: { count: 20, minimum: 20, status: "ok" },
+      conversation_sources: {
+        adapters: [
+          { adapter: "codex_session", events: 1, last_event_at: `2026-06-${String(day).padStart(2, "0")}T04:10:00.000Z` },
+          { adapter: "claude_code_session", events: 1, last_event_at: `2026-06-${String(day).padStart(2, "0")}T04:11:00.000Z` },
+        ],
+      },
+      candidate_only: { enabled: true },
+    },
+  }));
+  const report = buildMemoryCanary7dReport({
+    now: "2026-06-08T05:00:00.000Z",
+    reports,
+    minRealFeedbackSamples: 20,
+  });
+
+  assert.equal(report.candidate_only_exit_ready, true);
+  assert.equal(report.conversation_source_e2e.codex_session.ok, true);
+  assert.equal(report.conversation_source_e2e.claude_code_session.ok, true);
+  assert.equal(report.conversation_source_e2e.openclaw_session, undefined);
+  assert.doesNotMatch(report.blockers.join(","), /openclaw_session/u);
+});
+
+test("7d canary report can explicitly require optional OpenClaw adapter", () => {
+  const reports = [2, 3, 4, 5, 6, 7, 8].map((day) => landing(day, {
+    current_state: {
+      runtime_ok: true,
+      governance_ok: true,
+      candidate_current: 0,
+      qdrant_drift: 0,
+      p1_ok_without_compare_warning: true,
+      production_guard_ok: true,
+      compare_observations: { count: 20, minimum: 20, status: "ok" },
+      conversation_sources: {
+        adapters: [
+          { adapter: "codex_session", events: 1, last_event_at: `2026-06-${String(day).padStart(2, "0")}T04:10:00.000Z` },
+          { adapter: "claude_code_session", events: 1, last_event_at: `2026-06-${String(day).padStart(2, "0")}T04:11:00.000Z` },
+        ],
+      },
+      candidate_only: { enabled: true },
+    },
+  }));
+  const report = buildMemoryCanary7dReport({
+    now: "2026-06-08T05:00:00.000Z",
+    reports,
+    minRealFeedbackSamples: 20,
+    requiredSources: ["codex_session", "claude_code_session", "openclaw_session"],
+  });
+
+  assert.equal(report.candidate_only_exit_ready, false);
+  assert.equal(report.conversation_source_e2e.openclaw_session.ok, false);
+  assert.match(report.blockers.join(","), /conversation_source_e2e_missing:openclaw_session/u);
 });

@@ -16,6 +16,17 @@ function argValue(name: string): string | null {
   return index >= 0 ? process.argv[index + 1] ?? null : null;
 }
 
+function argValues(name: string): string[] {
+  const prefix = `${name}=`;
+  const values: string[] = [];
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+    if (arg.startsWith(prefix)) values.push(arg.slice(prefix.length));
+    else if (arg === name && process.argv[index + 1]) values.push(process.argv[index + 1]);
+  }
+  return values.flatMap((value) => value.split(",")).map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
 async function loadReports(reportDir: string): Promise<Record<string, unknown>[]> {
   const names = await readdir(reportDir).catch(() => []);
   const reports: Record<string, unknown>[] = [];
@@ -42,6 +53,7 @@ async function main(): Promise<void> {
     reports: await loadReports(landingReportDir),
     days: Number.isFinite(days) && days > 0 ? days : 7,
     minRealFeedbackSamples: Number.isFinite(minRealFeedbackSamples) && minRealFeedbackSamples > 0 ? minRealFeedbackSamples : 20,
+    requiredSources: argValues("--required-source"),
   });
 
   const output: Record<string, unknown> = { ...report };

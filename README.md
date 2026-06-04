@@ -148,7 +148,7 @@ MEMORY_XX_QDRANT_HOST_PORT=16333 \
 docker-compose --profile dev up --build -d
 ```
 
-如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
+如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用。OpenClaw 是可选 adapter；公开 canary 默认只要求 Codex / Claude Code source，只有显式传入 `--required-source=openclaw_session` 时才把 OpenClaw 纳入阻塞条件：
 
 ```bash
 MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions

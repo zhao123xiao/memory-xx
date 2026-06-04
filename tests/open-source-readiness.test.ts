@@ -574,10 +574,22 @@ test("README documents required session roots and API embedding option", async (
   assert.match(readme, /MEMORY_XX_CODEX_SESSION_ROOTS/u);
   assert.match(readme, /MEMORY_XX_CLAUDE_SESSION_ROOTS/u);
   assert.match(readme, /MEMORY_XX_OPENCLAW_SESSION_ROOTS/u);
+  assert.match(readme, /OpenClaw 是可选 adapter/u);
+  assert.match(readme, /--required-source=openclaw_session/u);
   assert.match(readme, /https:\/\/embedding-provider\.example\/v1/u);
   assert.doesNotMatch(readme, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
   assert.match(readme, /MEMORY_XX_SCOPE_POLICY_MODE=single_user/u);
   assert.match(readme, /sidecar/u);
+});
+
+test("public canary docs keep optional conversation adapters opt-in", async () => {
+  const canary = await readFile("docs/canary.zh-CN.md", "utf8");
+  const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
+
+  assert.match(canary, /codex_session/u);
+  assert.match(canary, /claude_code_session/u);
+  assert.match(canary, /--required-source=openclaw_session/u);
+  assert.match(quickstart, /OpenClaw 是可选 adapter/u);
 });
 
 test("public quickstart and env template keep embedding provider vendor-neutral", async () => {
