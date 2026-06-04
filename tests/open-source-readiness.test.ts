@@ -1235,6 +1235,21 @@ test("public Windows helper scripts derive paths from env or current directory",
   assert.match(await readFile("scripts/windows/start-ovms-upstreams.ps1", "utf8"), /MEMORY_XX_OVMS_DIR/u);
 });
 
+test("public OVMS helpers require explicit local paths instead of private defaults", async () => {
+  const manager = await readFile("scripts/manage-ovms-upstream.sh", "utf8");
+  const benchmark = await readFile("scripts/local-qwen8b-benchmark.ts", "utf8");
+  const platformDoctor = await readFile("scripts/platform/platform-doctor.ts", "utf8");
+
+  assert.match(manager, /MEMORY_XX_OVMS_DIR is required/u);
+  assert.ok(manager.includes("MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"));
+  assert.match(benchmark, /MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE/u);
+  assert.match(platformDoctor, /<memory-xx-ovms-dir>/u);
+
+  for (const [name, content] of Object.entries({ manager, benchmark, platformDoctor })) {
+    assert.doesNotMatch(content, /\/mnt\/d\/ovms|api_key\.txt/u, name);
+  }
+});
+
 test("public module catalog documents every runtime module and full-stack capability", async () => {
   const catalog = await readFile("docs/module-catalog.md", "utf8");
   const missingRuntimeModules = RUNTIME_MODULES

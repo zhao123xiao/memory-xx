@@ -4,7 +4,7 @@ set -euo pipefail
 kind="${1:-}"
 mode="${2:-run}"
 
-OVMS_DIR="${MEMORY_XX_OVMS_DIR:-/mnt/d/ovms}"
+OVMS_DIR="${MEMORY_XX_OVMS_DIR:-}"
 POLL_SECONDS="${MEMORY_XX_OVMS_MANAGER_POLL_SECONDS:-15}"
 READY_TIMEOUT_SECONDS="${MEMORY_XX_OVMS_MANAGER_READY_TIMEOUT_SECONDS:-300}"
 UNHEALTHY_THRESHOLD="${MEMORY_XX_OVMS_MANAGER_UNHEALTHY_THRESHOLD:-3}"
@@ -18,7 +18,7 @@ case "$kind" in
     port="${MEMORY_XX_EMBEDDING_UPSTREAM_PORT:-8082}"
     bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-embedding.bat}"
     model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-qwen3-embedding}"
-    api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-/mnt/d/ovms/api_key.txt}"
+    api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"
     process_match="--rest_port ${port}"
     ;;
   reranker)
@@ -37,6 +37,13 @@ esac
 
 log() {
   printf '[%s] [%s] %s\n' "$(date -Is)" "$kind" "$*"
+}
+
+require_ovms_dir() {
+  if [[ -z "$OVMS_DIR" ]]; then
+    echo "MEMORY_XX_OVMS_DIR is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
 }
 
 api_key() {
@@ -119,6 +126,7 @@ case "$mode" in
     ;;
 esac
 
+require_ovms_dir
 mkdir -p "$OVMS_DIR" >/dev/null 2>&1 || true
 log "manager started for $label"
 start_windows_process

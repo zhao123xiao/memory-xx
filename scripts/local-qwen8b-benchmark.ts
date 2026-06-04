@@ -429,7 +429,8 @@ async function benchmarkKnowledge(): Promise<JsonRecord[]> {
 
 async function benchmarkEmbeddingThroughput(): Promise<JsonRecord[]> {
   const apiBase = "http://127.0.0.1:8082/v3";
-  const apiKey = (await fs.readFile("/mnt/d/ovms/api_key.txt", "utf8").catch(() => "")).trim();
+  const apiKeyFile = process.env.MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE?.trim();
+  const apiKey = apiKeyFile ? (await fs.readFile(apiKeyFile, "utf8").catch(() => "")).trim() : "";
   const groups = [1, 2, 4];
   const rows: JsonRecord[] = [];
   for (const concurrency of groups) {

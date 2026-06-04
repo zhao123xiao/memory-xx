@@ -95,7 +95,7 @@ export function detectPlatformProfile(facts: PlatformFacts): PlatformDetection {
       [
         ...(currentOs === "wsl" ? [] : ["wsl"]),
         ...(facts.hasPowerShell ? [] : ["windows_powershell"]),
-        ...(facts.ovmsDirExists ? [] : ["D:/ovms 或 /mnt/d/ovms"]),
+        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 OVMS 目录"]),
       ],
       "systemctl --user start memory-xx.target；Windows 侧启动 <windows-drive>\\ovms\\start_all.bat",
     ),
@@ -188,7 +188,7 @@ function releaseText(): string {
 
 export function collectPlatformFacts(env: NodeJS.ProcessEnv = process.env): PlatformFacts {
   const powerShell = env.MEMORY_XX_WINDOWS_POWERSHELL_EXE?.trim() || "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
-  const ovmsDir = env.MEMORY_XX_OVMS_DIR?.trim() || (process.platform === "win32" ? "<windows-drive>\\ovms" : "/mnt/d/ovms");
+  const ovmsDir = env.MEMORY_XX_OVMS_DIR?.trim() || "<memory-xx-ovms-dir>";
   return {
     platform: process.platform,
     releaseText: releaseText(),
