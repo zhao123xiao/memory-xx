@@ -2,6 +2,21 @@
 
 This catalog is the public map for hot-pluggable runtime modules and CLI-only full-stack capabilities. PostgreSQL, Redis, Qdrant, wrapper, embedding proxy, and projector form Core. Enhanced and full modules are opt-in and should degrade without breaking Core write/recall.
 
+## Base Operational Commands
+
+These commands are part of the public operating surface. They are not optional
+full-stack capabilities; they start Core, inspect state, manage review/agent
+operations, or run worker entrypoints directly.
+
+| Area | Public npm entrypoints |
+| --- | --- |
+| Core startup and migration | `migrate`, `start`, `start:worker`, `run:qdrant-projector-worker` |
+| Runtime profile control | `memory:mode`, `memory:up`, `memory:down`, `memory:status` |
+| Review and agent operations | `memory:agent`, `memory:review`, `memory:approve`, `memory:reject`, `memory:archive` |
+| Operator views | `memory:control-panel`, `memory:dashboard`, `memory:report`, `memory:source-mode` |
+| Worker entrypoints | `run:cache-invalidation-worker`, `run:write-ticket-worker`, `run:conversation-monitor-worker`, `run:markdown-projection-worker`, `run:dream-worker` |
+| Import and bridge utilities | `conversation:codex-bridge`, `import:staging` |
+
 ## Runtime Modules
 
 | Name | Kind | Profile role | Env switch | Service/source | Degraded behavior |

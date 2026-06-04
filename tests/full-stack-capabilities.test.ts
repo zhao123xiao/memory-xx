@@ -94,6 +94,44 @@ test("module catalog documents public npm entrypoints for full-stack capabilitie
   assert.deepEqual(missing.sort(), []);
 });
 
+test("module catalog documents base operational npm entrypoints", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const catalog = readFileSync("docs/module-catalog.md", "utf8");
+  const baseEntrypoints = [
+    "migrate",
+    "start",
+    "start:worker",
+    "memory:status",
+    "memory:mode",
+    "memory:up",
+    "memory:down",
+    "memory:agent",
+    "memory:review",
+    "memory:approve",
+    "memory:reject",
+    "memory:archive",
+    "memory:control-panel",
+    "memory:dashboard",
+    "memory:report",
+    "memory:source-mode",
+    "run:qdrant-projector-worker",
+    "run:cache-invalidation-worker",
+    "run:write-ticket-worker",
+    "run:conversation-monitor-worker",
+    "run:markdown-projection-worker",
+    "run:dream-worker",
+    "conversation:codex-bridge",
+    "import:staging",
+  ];
+  const missing = baseEntrypoints
+    .filter((name) => name in packageJson.scripts)
+    .filter((name) => !catalog.includes(`\`${name}\``));
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("module catalog documents full-stack capability dependencies", () => {
   const catalog = readFileSync("docs/module-catalog.md", "utf8");
   const missing: string[] = [];
