@@ -448,7 +448,7 @@ GET /health
     "mode": "core",
     "required_components": ["wrapper", "postgres", "redis", "qdrant", "embedding_proxy", "projector"],
     "expected_components": [],
-    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "llm_upstream", "mem0_extractor", "conversation_monitor", "control_panel"]
+    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "llm_upstream", "mem0_extractor", "conversation_monitor", "markdown_projection", "control_panel", "maintenance_orchestrator", "temporal_consolidation", "runtime_issue_detection", "auto_repair", "repair_report", "landing_scan", "canary_7d_report", "quality_runner", "governance_report"]
   },
   "runtime_modules": {
     "mode": "core",
@@ -468,6 +468,33 @@ GET /health
         "blocks_profile": false,
         "source_path": "sidecars/mem0-extractor/extractor.py",
         "reason": "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE=disabled"
+      },
+      "auto_repair": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-auto-repair.service",
+        "env_enabled": "MEMORY_XX_AUTO_REPAIR_ENABLED",
+        "degraded_behavior": "Automatic repair is disabled; Qdrant and embedding repair must be run manually."
+      },
+      "maintenance_orchestrator": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-maintenance.service",
+        "env_enabled": "MEMORY_XX_MAINTENANCE_ENABLED",
+        "degraded_behavior": "Scheduled maintenance is disabled; manual repair, sweep, and governance commands remain available."
+      },
+      "canary_7d_report": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-canary-7d-report.service",
+        "env_enabled": "MEMORY_XX_CANARY_7D_REPORT_ENABLED",
+        "degraded_behavior": "7-day canary evidence is not refreshed automatically."
       }
     }
   },

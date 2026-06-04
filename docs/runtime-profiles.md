@@ -10,7 +10,7 @@ components are required, expected, or optional for the current goal.
 |---|---|---|
 | `core` | Daily stable operation | wrapper, Postgres, Redis, Qdrant, embedding proxy, projector |
 | `enhanced` | Better recall latency/quality | Core required; fastpath, lexical sidecar, Qdrant proxy, reranker, Mem0 extractor, conversation monitor, and control panel are expected but degradable |
-| `full` | Release, quality, governance, embedding switch validation | Enhanced services become release requirements, plus quality and governance gates |
+| `full` | Release, quality, governance, embedding switch validation | Enhanced services become release requirements, plus maintenance, consolidation, auto-repair, landing/canary, quality, and governance gates |
 
 `core` is intentionally vector-capable. It is not a lexical-only emergency mode.
 If fastpath, lexical sidecar, reranker, or graph enhancement is unavailable,
@@ -30,6 +30,12 @@ source of truth, while generated Markdown files are read-only review/export
 views. Enable it with `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` and set
 `MEMORY_XX_PROJECTION_ROOT_DIR` when you want projections outside the default
 `memory_projection/` directory.
+
+Operations modules are modeled separately from sidecars. `maintenance_orchestrator`,
+`temporal_consolidation`, `runtime_issue_detection`, `auto_repair`,
+`repair_report`, `landing_scan`, and `canary_7d_report` are full-profile
+modules with their own env switches and systemd units. They are disabled by
+default and can be enabled per environment without affecting Core write/recall.
 
 ## Runtime Module States
 
@@ -79,7 +85,8 @@ conversation monitor, or the control panel.
 
 Use `TMPDIR=/tmp npm run memory:up -- --mode enhanced` or start individual
 `systemd/` units to opt into enhanced modules. Use `--mode full` only when the
-local model/API dependencies for the full stack are configured.
+local model/API dependencies and operations modules for the full stack are
+configured.
 
 Core services are never stopped by `memory:down`. `memory:down -- --mode
 enhanced` stops only enhanced/full optional services such as fastpath, lexical

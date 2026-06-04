@@ -9,6 +9,6 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
-ExecStart=/usr/bin/npm run memory:maintenance -- run --mode auto --json
+ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/maintenance.ts run --mode auto --json
 StandardOutput=append:%h/services/memory-xx/maintenance.log
 StandardError=append:%h/services/memory-xx/maintenance.error.log

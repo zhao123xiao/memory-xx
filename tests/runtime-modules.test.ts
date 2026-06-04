@@ -193,3 +193,24 @@ test("startable runtime modules have matching public systemd units", () => {
   assert.deepEqual(missing, []);
   assert.deepEqual(missingSourceReferences, []);
 });
+
+test("public full-stack operations services are exposed as runtime modules", () => {
+  const services = new Map(RUNTIME_MODULES.flatMap((module) => module.service ? [[module.service, module]] : []));
+  const missing = [
+    "memory-xx-auto-repair.service",
+    "memory-xx-canary-7d-report.service",
+    "memory-xx-consolidation.service",
+    "memory-xx-detect.service",
+    "memory-xx-landing-scan.service",
+    "memory-xx-maintenance.service",
+    "memory-xx-repair-report.service",
+  ].filter((service) => !services.has(service));
+
+  assert.deepEqual(missing, []);
+
+  assert.equal(services.get("memory-xx-auto-repair.service")?.env_enabled, "MEMORY_XX_AUTO_REPAIR_ENABLED");
+  assert.equal(services.get("memory-xx-consolidation.service")?.source_path, "scripts/memory-consolidate.ts");
+  assert.equal(services.get("memory-xx-maintenance.service")?.source_path, "scripts/maintenance.ts");
+  assert.equal(services.get("memory-xx-landing-scan.service")?.command, "TMPDIR=/tmp npm run memory:landing-scan -- --json --write-report --max-files=200");
+  assert.equal(services.get("memory-xx-canary-7d-report.service")?.command, "TMPDIR=/tmp npm run memory:canary-7d-report -- --json --write-report");
+});
