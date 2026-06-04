@@ -138,8 +138,11 @@ TMPDIR=/tmp npm run memory:source-mode -- --verify --limit 500
 ```
 
 `memory:mode` only manages known systemd user services. It probes Postgres,
-Redis, Qdrant, and Windows/local OVMS embedding dependencies, but does not start
-or stop those external dependencies.
+Redis, Qdrant, and configured embedding dependencies, but does not start or
+stop external providers. The local `memory-xx-embedding-upstream.service`
+manager is optional and disabled by default; enable it only when this deployment
+uses the bundled local OVMS/OpenAI-compatible upstream instead of a remote
+embedding provider.
 
 ## Service Policy
 

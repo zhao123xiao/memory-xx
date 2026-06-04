@@ -1339,6 +1339,21 @@ test("public OVMS helpers require explicit local paths instead of private defaul
   }
 });
 
+test("public embedding upstream manager remains opt-in for remote providers", async () => {
+  const registry = await readFile("app/runtime-modules.ts", "utf8");
+  const catalog = await readFile("docs/module-catalog.md", "utf8");
+  const runtimeProfiles = await readFile("docs/runtime-profiles.md", "utf8");
+  const envExample = await readFile("configs/memory-xx-wrapper.env.example", "utf8");
+
+  assert.match(registry, /name:\s*"embedding_upstream"[\s\S]*?expected_in:\s*\[\]/u);
+  assert.match(registry, /name:\s*"embedding_upstream"[\s\S]*?default_enabled:\s*false/u);
+  assert.match(catalog, /\| `embedding_upstream` \| external \| optional \|/u);
+  assert.doesNotMatch(catalog, /`embedding_upstream` \| external \| expected: core\/enhanced\/full/u);
+  assert.match(runtimeProfiles, /manager is optional and disabled by default/u);
+  assert.match(runtimeProfiles, /remote\s+embedding provider/u);
+  assert.match(envExample, /^MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0$/mu);
+});
+
 test("public module catalog documents every runtime module and full-stack capability", async () => {
   const catalog = await readFile("docs/module-catalog.md", "utf8");
   const missingRuntimeModules = RUNTIME_MODULES

@@ -137,10 +137,10 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     health_url: "http://127.0.0.1:8082/v3/models",
     health_url_env: "MEMORY_XX_EMBEDDING_UPSTREAM_HEALTH_URL",
     required_in: [],
-    expected_in: ["core", "enhanced", "full"],
-    default_enabled: true,
+    expected_in: [],
+    default_enabled: false,
     startable: true,
-    degraded_behavior: "Embedding proxy is online but cannot generate new vectors.",
+    degraded_behavior: "Local upstream manager is disabled; embedding proxy should use the configured remote or local OpenAI-compatible provider.",
   },
   {
     name: "projector",

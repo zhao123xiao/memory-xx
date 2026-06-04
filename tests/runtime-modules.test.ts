@@ -173,6 +173,24 @@ test("remote embedding providers keep core start plan independent of local upstr
   ]);
 });
 
+test("local embedding upstream manager is opt-in when remote embedding provider is configured", () => {
+  const core = buildRuntimeModuleSnapshot("core", {
+    MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED: "0",
+    EMBEDDING_API_BASE: "https://embedding-provider.example/v1",
+  });
+  const full = buildRuntimeModuleSnapshot("full", {
+    MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED: "0",
+    EMBEDDING_API_BASE: "https://embedding-provider.example/v1",
+  });
+
+  assert.equal(core.expected_modules.includes("embedding_upstream"), false);
+  assert.equal(core.optional_modules.includes("embedding_upstream"), true);
+  assert.equal(core.states.embedding_upstream?.state, "disabled");
+  assert.equal(core.states.embedding_upstream?.blocks_profile, false);
+  assert.equal(full.expected_modules.includes("embedding_upstream"), false);
+  assert.equal(full.states.embedding_upstream?.state, "disabled");
+});
+
 test("memory mode start plan skips full modules disabled by kill switches", () => {
   const services = buildRuntimeProfileStartServices("full", {
     MEMORY_XX_FASTPATH_ENABLED: "0",

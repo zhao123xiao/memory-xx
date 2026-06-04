@@ -26,7 +26,7 @@ operations, or run worker entrypoints directly.
 | `redis` | external | required: core/enhanced/full | - | - | Cache and coordination are bypassed; throughput and latency degrade. |
 | `qdrant` | external | required: core/enhanced/full | - | - | Vector recall and current projection are unavailable. |
 | `embedding_proxy` | sidecar | required: core/enhanced/full | `MEMORY_XX_EMBEDDING_PROXY_ENABLED` | `memory-xx-embedding-proxy.service` | New query/write vectors fall back to cached/old results or non-vector paths. |
-| `embedding_upstream` | external | expected: core/enhanced/full | `MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED` | `memory-xx-embedding-upstream.service` | Embedding proxy is online but cannot generate new vectors. |
+| `embedding_upstream` | external | optional | `MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED` | `memory-xx-embedding-upstream.service` | Local upstream manager is disabled; embedding proxy should use the configured remote or local OpenAI-compatible provider. |
 | `projector` | worker | required: core/enhanced/full | - | `memory-xx-qdrant-projector-worker.service` | Committed writes wait in outbox and Qdrant freshness lags. |
 | `qdrant_proxy` | sidecar | expected: enhanced/full | `MEMORY_XX_QDRANT_PROXY_ENABLED` | `memory-xx-qdrant-proxy.service` | Collection blue/green routing is disabled; wrapper talks directly to Qdrant. |
 | `fastpath` | sidecar | required: full; expected: enhanced | `MEMORY_XX_FASTPATH_ENABLED` | `memory-xx-fastpath.service` | Recall falls back to the Node wrapper path with higher latency. |
