@@ -30,7 +30,7 @@ const PROFILED_SERVICES = [
   "memory-xx-reranker-adapter",
   "memory-xx-control-panel",
   "memory-xx-mem0-extractor",
-  "memory-xx-conversation-monitor",
+  "memory-xx-conversation-monitor-worker",
   "memory-xx-markdown-projection",
   "memory-xx-dream-worker",
   "memory-xx-cache-invalidation-worker",

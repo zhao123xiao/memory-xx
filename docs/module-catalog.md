@@ -106,7 +106,7 @@ matching dependencies are configured.
 | `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core` |
 | `trusted_agent_tools` | `memory:trusted-agent` |
 | `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit` |
-| `conversation_ops` | `memory:conversation-sources`, `memory:conversation-monitor-report` |
+| `conversation_ops` | `memory:conversation-sources`, `memory:conversation-monitor-report`, `smoke:conversation-monitor` |
 | `governance_operations` | `memory:governance-audit`, `memory:governance-cleanup`, `memory:governance-freeze`, `memory:governance-revert`, `memory:policy-backfill`, `memory:pending-canary-report`, `memory:pending-governance`, `memory:pending`, `memory:governance`, `memory:governance-dry-run-jobs`, `memory:governance-stuck-runs`, `memory:memory-type-backfill`, `memory:event-lifecycle`, `memory:archive-events` |
 | `runtime_observability_retention` | `memory:runtime-observability-retention`, `memory:trace-retention`, `memory:cleanup-runtime-artifacts`, `memory:archive-next-residue` |
 | `write_ticket_maintenance` | `memory:sweep-write-ticket-timeouts`, `memory:archive-write-tickets`, `memory:sweep-ingest-accepted`, `memory:sweep-low-confidence` |

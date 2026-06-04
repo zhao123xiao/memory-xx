@@ -190,7 +190,7 @@ test("docker compose does not let non-wrapper services inherit wrapper healthche
   const healthcheckDisabled = [
     "memory-xx-migrate",
     "memory-xx-qdrant-projector-worker",
-    "memory-xx-conversation-monitor",
+    "memory-xx-conversation-monitor-worker",
     "memory-xx-markdown-projection",
     "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
@@ -249,7 +249,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
     "memory-xx-qdrant-proxy",
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
-    "memory-xx-conversation-monitor",
+    "memory-xx-conversation-monitor-worker",
     "memory-xx-markdown-projection",
     "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
@@ -287,7 +287,7 @@ test("docker compose includes enhanced expected services in the enhanced profile
     "memory-xx-lexical-sidecar",
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
-    "memory-xx-conversation-monitor",
+    "memory-xx-conversation-monitor-worker",
     "memory-xx-control-panel",
   ];
 
@@ -320,7 +320,7 @@ test("docker compose pluggable profile services honor runtime module switches", 
     ["memory-xx-qdrant-proxy", "qdrant_proxy", "MEMORY_XX_QDRANT_PROXY_ENABLED"],
     ["memory-xx-reranker-adapter", "reranker_adapter", "MEMORY_XX_RERANKER_ADAPTER_ENABLED"],
     ["memory-xx-mem0-extractor", "mem0_extractor", "MEMORY_XX_MEM0_EXTRACTOR_ENABLED"],
-    ["memory-xx-conversation-monitor", "conversation_monitor", "MEMORY_XX_CONVERSATION_MONITOR_ENABLED"],
+    ["memory-xx-conversation-monitor-worker", "conversation_monitor", "MEMORY_XX_CONVERSATION_MONITOR_ENABLED"],
     ["memory-xx-control-panel", "control_panel", "MEMORY_XX_CONTROL_PANEL_ENABLED"],
   ] as const;
 
@@ -372,7 +372,7 @@ test("docker compose passes runtime profile into pluggable module guards", async
     "memory-xx-qdrant-proxy",
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
-    "memory-xx-conversation-monitor",
+    "memory-xx-conversation-monitor-worker",
     "memory-xx-markdown-projection",
     "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
@@ -424,7 +424,7 @@ test("docker compose restart policy matches pluggable module lifecycle", async (
     "memory-xx-qdrant-proxy",
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
-    "memory-xx-conversation-monitor",
+    "memory-xx-conversation-monitor-worker",
     "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
     "memory-xx-write-ticket-worker",
@@ -1680,6 +1680,7 @@ test("package exposes public harness entrypoints for unit contract and conversat
 
   assert.equal(packageJson.scripts["test:unit-contract"], "node --import tsx scripts/test-harness/layers/L1-unit-contract.ts");
   assert.equal(packageJson.scripts["test:conversation-monitor"], "node --import tsx scripts/test-harness/layers/L19-conversation-monitor.ts");
+  assert.equal(packageJson.scripts["smoke:conversation-monitor"], "node --import tsx scripts/conversation-monitor-smoke.ts");
   assert.match(readme, /npm run test:unit-contract/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
   assert.match(operationsZh, /npm run test:conversation-monitor/u);

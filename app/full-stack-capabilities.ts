@@ -273,7 +273,11 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     env_enabled: "MEMORY_XX_CONVERSATION_OPS_ENABLED",
     dependencies: ["conversation_monitor"],
     source_paths: ["app/conversation/conversation-source-status.ts", "app/conversation/conversation-monitor-report.ts"],
-    script_paths: ["scripts/memory-conversation-sources.ts", "scripts/memory-conversation-monitor-report.ts"],
+    script_paths: [
+      "scripts/memory-conversation-sources.ts",
+      "scripts/memory-conversation-monitor-report.ts",
+      "scripts/conversation-monitor-smoke.ts",
+    ],
     degraded_behavior: "Conversation source diagnostics and monitor reports are unavailable; direct memory APIs continue.",
   },
   {
