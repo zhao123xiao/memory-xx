@@ -1737,24 +1737,28 @@ test("package exposes public harness entrypoints for unit contract and conversat
   assert.equal(packageJson.scripts["smoke:markdown-projection"], "node --import tsx scripts/markdown-projection-smoke.ts");
   assert.equal(packageJson.scripts["smoke:memory-dreaming"], "node --import tsx scripts/memory-dreaming-smoke.ts");
   assert.equal(packageJson.scripts["smoke:full-ops"], "node --import tsx scripts/full-ops-smoke.ts");
+  assert.equal(packageJson.scripts["smoke:policy-ops"], "node --import tsx scripts/policy-ops-smoke.ts");
   assert.match(readme, /npm run test:unit-contract/u);
   assert.match(readme, /npm run smoke:cache-invalidation/u);
   assert.match(readme, /npm run smoke:write-ticket/u);
   assert.match(readme, /npm run smoke:markdown-projection/u);
   assert.match(readme, /npm run smoke:memory-dreaming/u);
   assert.match(readme, /npm run smoke:full-ops/u);
+  assert.match(readme, /npm run smoke:policy-ops/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
   assert.match(operations, /npm run smoke:cache-invalidation/u);
   assert.match(operations, /npm run smoke:write-ticket/u);
   assert.match(operations, /npm run smoke:markdown-projection/u);
   assert.match(operations, /npm run smoke:memory-dreaming/u);
   assert.match(operations, /npm run smoke:full-ops/u);
+  assert.match(operations, /npm run smoke:policy-ops/u);
   assert.match(operationsZh, /npm run test:conversation-monitor/u);
   assert.match(operationsZh, /npm run smoke:cache-invalidation/u);
   assert.match(operationsZh, /npm run smoke:write-ticket/u);
   assert.match(operationsZh, /npm run smoke:markdown-projection/u);
   assert.match(operationsZh, /npm run smoke:memory-dreaming/u);
   assert.match(operationsZh, /npm run smoke:full-ops/u);
+  assert.match(operationsZh, /npm run smoke:policy-ops/u);
 });
 
 test("package exposes an open-source verification script without runtime env gates", async () => {

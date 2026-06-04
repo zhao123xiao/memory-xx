@@ -120,6 +120,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/memory-policy-eval.ts",
       "scripts/memory-policy-report.ts",
       "scripts/memory-governance-debt-plan.ts",
+      "scripts/policy-ops-smoke.ts",
     ],
     degraded_behavior: "Policy evaluation reports are not refreshed automatically; runtime policy still executes.",
   },

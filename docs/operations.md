@@ -143,10 +143,12 @@ container while disabled module containers may exit cleanly.
 Public harness layers can be run individually when validating a module. `L1`
 checks the unit and HTTP contract layer, while `L19` exercises the conversation
 monitor path from JSONL spool ingestion through recall. The cache invalidation,
-write ticket, markdown projection, memory dreaming, and full ops smokes validate durable
+write ticket, markdown projection, memory dreaming, full ops, and policy ops smokes validate durable
 background workers against live PostgreSQL, Redis, Qdrant, the configured
 embedding provider, generated projection files, safe degraded dream cycles, and
-full-profile maintenance/governance/quality reportability:
+full-profile maintenance/governance/quality reportability. `smoke:policy-ops`
+uses policy evaluation, auto-approval reporting, and auto-update dry-run paths;
+it does not apply approvals or updates:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -156,6 +158,7 @@ TMPDIR=/tmp npm run smoke:write-ticket
 TMPDIR=/tmp npm run smoke:markdown-projection
 TMPDIR=/tmp npm run smoke:memory-dreaming
 TMPDIR=/tmp npm run smoke:full-ops
+TMPDIR=/tmp npm run smoke:policy-ops
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in

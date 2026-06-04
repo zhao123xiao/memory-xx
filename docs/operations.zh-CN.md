@@ -74,6 +74,7 @@ TMPDIR=/tmp npm run smoke:write-ticket
 TMPDIR=/tmp npm run smoke:markdown-projection
 TMPDIR=/tmp npm run smoke:memory-dreaming
 TMPDIR=/tmp npm run smoke:full-ops
+TMPDIR=/tmp npm run smoke:policy-ops
 ```
 
 `L7` 覆盖可选 OpenClaw adapter。公开 harness 默认不把它作为阻塞层，避免没有 OpenClaw 的部署无法验证 Core、enhanced 和 full 模块。只有目标环境明确要求 OpenClaw 时才显式开启：
