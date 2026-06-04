@@ -76,7 +76,7 @@ test("low confidence guard keeps one flagged semantic result for open-ended low 
     [candidate("a", 0.01, 0.01), candidate("b", 0.02, 0.02)],
     constraints(QueryType.ExploratorySemantic),
     { model_used: true },
-    { MEMORY_V2_RECALL_ABSOLUTE_MIN_SCORE: "0.03" }
+    { MEMORY_XX_RECALL_ABSOLUTE_MIN_SCORE: "0.03" }
   );
 
   assert.equal(result.audit.applied, true);
@@ -90,7 +90,7 @@ test("low confidence guard returns null for strict factual queries", () => {
     [candidate("a", 0.01, 0.01)],
     constraints(QueryType.ExactLookup),
     { model_used: true },
-    { MEMORY_V2_RECALL_ABSOLUTE_MIN_SCORE: "0.03" }
+    { MEMORY_XX_RECALL_ABSOLUTE_MIN_SCORE: "0.03" }
   );
 
   assert.equal(result.audit.applied, true);
@@ -103,7 +103,7 @@ test("low confidence guard keeps model-confident semantic results", () => {
     [candidate("a", 0.2), candidate("b", 0.01)],
     constraints(QueryType.ExploratorySemantic),
     { model_used: true },
-    { MEMORY_V2_RERANKER_NULL_GUARD_MIN_SCORE: "0.03" }
+    { MEMORY_XX_RERANKER_NULL_GUARD_MIN_SCORE: "0.03" }
   );
 
   assert.equal(result.audit.applied, false);
@@ -116,7 +116,7 @@ test("low confidence guard lets sufficiently scored exact lookups pass", () => {
     [candidate("a", 0.001)],
     constraints(QueryType.ExactLookup),
     { model_used: true },
-    { MEMORY_V2_RERANKER_NULL_GUARD_MIN_SCORE: "0.03" }
+    { MEMORY_XX_RERANKER_NULL_GUARD_MIN_SCORE: "0.03" }
   );
 
   assert.equal(result.audit.applied, false);

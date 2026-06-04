@@ -9,7 +9,7 @@ import {
 } from "../app/shared";
 import {
   createConfiguredRecallRuntime,
-  loadMemoryV2QdrantConfig
+  loadMemoryXXQdrantConfig
 } from "../app/recall";
 import { RecallOrchestrator } from "../app/recall/orchestrator";
 import { StubLexicalRetriever } from "../app/recall/retrievers/lexical-retriever";
@@ -311,9 +311,9 @@ test("qdrant backend status exposes primary and fallback metadata", async () => 
 });
 
 test("configured runtime prefers qdrant-primary when docker qdrant env is present", async () => {
-  const config = loadMemoryV2QdrantConfig({
-    MEMORY_V2_QDRANT_BASE_URL: "http://127.0.0.1:6333",
-    MEMORY_V2_QDRANT_COLLECTION: "memory-xx-live"
+  const config = loadMemoryXXQdrantConfig({
+    MEMORY_XX_QDRANT_BASE_URL: "http://127.0.0.1:6333",
+    MEMORY_XX_QDRANT_COLLECTION: "memory-xx-live"
   });
 
   const runtime = createConfiguredRecallRuntime({

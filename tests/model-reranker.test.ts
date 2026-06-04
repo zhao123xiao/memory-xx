@@ -82,10 +82,10 @@ test("model reranker calibrates local scores instead of replacing them", async (
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.test",
-        MEMORY_V2_RERANKER_MODEL_WEIGHT: "0.03",
-        MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.test",
+        MEMORY_XX_RERANKER_MODEL_WEIGHT: "0.03",
+        MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
       },
       fetchImpl: async () => new Response(JSON.stringify({
         results: [
@@ -114,11 +114,11 @@ test("model reranker timeout cap falls back to local ordering", async () => {
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.test",
-        MEMORY_V2_RERANKER_TIMEOUT_MS: "30000",
-        MEMORY_V2_RERANKER_TIMEOUT_CAP_MS: "5",
-        MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.test",
+        MEMORY_XX_RERANKER_TIMEOUT_MS: "30000",
+        MEMORY_XX_RERANKER_TIMEOUT_CAP_MS: "5",
+        MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
       },
       fetchImpl: async (_url, init) => new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {
@@ -146,10 +146,10 @@ test("model reranker does not apply default timeout cap when cap is unset", asyn
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.test",
-        MEMORY_V2_RERANKER_TIMEOUT_MS: "3000",
-        MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.test",
+        MEMORY_XX_RERANKER_TIMEOUT_MS: "3000",
+        MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
       },
       fetchImpl: async (_url, init) => {
         init?.signal?.addEventListener("abort", () => {
@@ -181,10 +181,10 @@ test("model reranker sends structured document fields for adapter compatibility"
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.test",
-        MEMORY_V2_RERANKER_MODEL_WEIGHT: "0.25",
-        MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.test",
+        MEMORY_XX_RERANKER_MODEL_WEIGHT: "0.25",
+        MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1"
       },
       fetchImpl: async (_url, init) => {
         requestBody = JSON.parse(String(init?.body));
@@ -211,8 +211,8 @@ test("model reranker intentionally skips tiny candidate sets", async () => {
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.test",
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.test",
       },
       fetchImpl: async () => {
         throw new Error("should not call model reranker");
@@ -232,9 +232,9 @@ test("force_top1 policy attempts model rerank for two candidates", async () => {
     constraints(),
     {
       env: {
-        MEMORY_V2_RERANKER_MODE: "model",
-        MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.force-top1.test",
-        MEMORY_V2_RERANKER_POLICY: "force_top1",
+        MEMORY_XX_RERANKER_MODE: "model",
+        MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.force-top1.test",
+        MEMORY_XX_RERANKER_POLICY: "force_top1",
       },
       fetchImpl: async () => {
         calls += 1;
@@ -256,10 +256,10 @@ test("force_top1 policy attempts model rerank for two candidates", async () => {
 test("model reranker caches score maps for repeated candidate signatures", async () => {
   let calls = 0;
   const env = {
-    MEMORY_V2_RERANKER_MODE: "model",
-    MEMORY_V2_RERANKER_ENDPOINT: "http://reranker.cache.test",
-    MEMORY_V2_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1",
-    MEMORY_V2_RERANKER_CACHE_TTL_MS: "60000",
+    MEMORY_XX_RERANKER_MODE: "model",
+    MEMORY_XX_RERANKER_ENDPOINT: "http://reranker.cache.test",
+    MEMORY_XX_RERANKER_LOCAL_TOP3_GAP_THRESHOLD: "1",
+    MEMORY_XX_RERANKER_CACHE_TTL_MS: "60000",
   };
   const input = [
     candidate("first", 1),

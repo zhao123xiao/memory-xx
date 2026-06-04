@@ -16,10 +16,10 @@ import {
   isEffectiveRecallable
 } from "../app/shared";
 
-test("API prefixes stay under /api/memory/v2", () => {
-  assert.equal(API_PREFIXES.base, "/api/memory/v2");
-  assert.equal(API_PREFIXES.recall, "/api/memory/v2/recall");
-  assert.equal(API_PREFIXES.write, "/api/memory/v2/write");
+test("API prefixes stay under /api/memory/xx", () => {
+  assert.equal(API_PREFIXES.base, "/api/memory/xx");
+  assert.equal(API_PREFIXES.recall, "/api/memory/xx/recall");
+  assert.equal(API_PREFIXES.write, "/api/memory/xx/write");
   assert.equal(RECALL_API_CONTRACT.defaultFilterMode, FilterMode.Default);
 });
 

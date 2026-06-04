@@ -16,14 +16,14 @@ import {
 } from "../app";
 
 function withRuntimeDir<T>(callback: (dir: string) => T): T {
-  const previousRuntimeDir = process.env.MEMORY_V2_RUNTIME_DIR;
+  const previousRuntimeDir = process.env.MEMORY_XX_RUNTIME_DIR;
   const dir = mkdtempSync(join(tmpdir(), "memory-xx-runtime-controls-"));
-  process.env.MEMORY_V2_RUNTIME_DIR = dir;
+  process.env.MEMORY_XX_RUNTIME_DIR = dir;
   try {
     return callback(dir);
   } finally {
-    if (previousRuntimeDir === undefined) delete process.env.MEMORY_V2_RUNTIME_DIR;
-    else process.env.MEMORY_V2_RUNTIME_DIR = previousRuntimeDir;
+    if (previousRuntimeDir === undefined) delete process.env.MEMORY_XX_RUNTIME_DIR;
+    else process.env.MEMORY_XX_RUNTIME_DIR = previousRuntimeDir;
     rmSync(dir, { recursive: true, force: true });
   }
 }
@@ -406,11 +406,11 @@ test("auto approval policy honors candidate-only kill switch and hourly cap", ()
 });
 
 test("auto approval policy allows scoped canary to bypass candidate-only", () => {
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   try {
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx";
     const result = evaluateAutoApprovalPolicy(baseInput({
       candidateOnly: true,
       candidateOnlyReasons: ["false_positive_proxy_high"],
@@ -419,38 +419,38 @@ test("auto approval policy allows scoped canary to bypass candidate-only", () =>
     assert.equal(result.candidate_only_bypassed, true);
     assert.doesNotMatch(result.blocked_reasons.join(","), /candidate_only_kill_switch/u);
   } finally {
-    if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-    if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+    if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+    if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
   }
 });
 
 test("auto approval policy treats scoped canary project as enabled", () => {
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   try {
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx-canary-scope";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx-canary-scope";
     const result = evaluateAutoApprovalPolicy(baseInput({
       candidate: { ...baseInput().candidate, scopeId: "memory-xx-canary-scope" },
     }));
     assert.equal(result.decision, "approve");
     assert.doesNotMatch(result.blocked_reasons.join(","), /project_not_enabled/u);
   } finally {
-    if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-    if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+    if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+    if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
   }
 });
 
 test("auto approval policy supports tiered workspace and user canary scopes", () => {
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   try {
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "workspace:current-instance,user:current-instance-owner";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "workspace:current-instance,user:current-instance-owner";
     const workspace = evaluateAutoApprovalPolicy(baseInput({
       candidate: {
         ...baseInput().candidate,
@@ -474,10 +474,10 @@ test("auto approval policy supports tiered workspace and user canary scopes", ()
     assert.equal(user.decision, "approve");
     assert.equal(user.scope_profile.id, "user");
   } finally {
-    if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-    if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+    if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+    if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
   }
 });
 
@@ -874,11 +874,11 @@ test("auto approval policy blocks PII, expired candidates, and workspace records
   assert.equal(expired.decision, "pending");
   assert.match(expired.blocked_reasons.join(","), /expired_candidate/u);
 
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   try {
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "workspace:current-instance";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "workspace:current-instance";
     const workspace = evaluateAutoApprovalPolicy(baseInput({
       candidate: {
         ...baseInput().candidate,
@@ -890,19 +890,19 @@ test("auto approval policy blocks PII, expired candidates, and workspace records
     assert.equal(workspace.decision, "pending");
     assert.match(workspace.blocked_reasons.join(","), /review_at_required/u);
   } finally {
-    if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-    if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+    if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+    if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
   }
 });
 
 test("self-improvement auto approval remains report-only", () => {
-  const previousCanary = process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-  const previousScopes = process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+  const previousCanary = process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+  const previousScopes = process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
   try {
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = "1";
-    process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx-self-improvement";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = "1";
+    process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = "project:memory-xx-self-improvement";
     const result = evaluateAutoApprovalPolicy(baseInput({
       sourceText: "建议自动修复并重启服务。",
       candidate: {
@@ -916,10 +916,10 @@ test("self-improvement auto approval remains report-only", () => {
     assert.equal(result.decision, "pending");
     assert.match(result.blocked_reasons.join(","), /self_improvement_report_only/u);
   } finally {
-    if (previousCanary === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANARY;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANARY = previousCanary;
-    if (previousScopes === undefined) delete process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
-    else process.env.MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
+    if (previousCanary === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANARY;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANARY = previousCanary;
+    if (previousScopes === undefined) delete process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES;
+    else process.env.MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES = previousScopes;
   }
 });
 

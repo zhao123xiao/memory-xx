@@ -442,9 +442,9 @@ test("projection sync skips an upsert when qdrant already has the same projectio
 test("projection verifyReadback retries transient retrieve failures", async () => {
   const database = new InMemoryWriteDatabase();
   const pointWriter = new FlakyVerifyPointWriter(1);
-  process.env.MEMORY_V2_QDRANT_VERIFY_READBACK = "true";
+  process.env.MEMORY_XX_QDRANT_VERIFY_READBACK = "true";
   const projector = new QdrantProjectionSyncService({ database, pointWriter });
-  delete process.env.MEMORY_V2_QDRANT_VERIFY_READBACK;
+  delete process.env.MEMORY_XX_QDRANT_VERIFY_READBACK;
   const createService = new CreateMemoryService({ database });
   const created = await createService.execute(createApprovedCommand("req-qdrant-verify-retry"));
 
@@ -458,9 +458,9 @@ test("projection verifyReadback retries transient retrieve failures", async () =
 test("projection verifyReadback marks only mismatched upserts as failed", async () => {
   const database = new InMemoryWriteDatabase();
   const pointWriter = new FlakyVerifyPointWriter(0, true);
-  process.env.MEMORY_V2_QDRANT_VERIFY_READBACK = "true";
+  process.env.MEMORY_XX_QDRANT_VERIFY_READBACK = "true";
   const projector = new QdrantProjectionSyncService({ database, pointWriter });
-  delete process.env.MEMORY_V2_QDRANT_VERIFY_READBACK;
+  delete process.env.MEMORY_XX_QDRANT_VERIFY_READBACK;
   const createService = new CreateMemoryService({ database });
   const created = await createService.execute(createApprovedCommand("req-qdrant-verify-mismatch"));
 

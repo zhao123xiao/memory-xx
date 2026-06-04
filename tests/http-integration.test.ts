@@ -279,7 +279,7 @@ test("skills and intelligence JSON routes reject bodies over 1MB", async () => {
   const harness = await createTestHarness();
   try {
     const largeText = "x".repeat(1_048_577);
-    for (const path of ["/api/memory/v2/skills/execute", "/api/memory/v2/intelligence/extract"]) {
+    for (const path of ["/api/memory/xx/skills/execute", "/api/memory/xx/intelligence/extract"]) {
       const res = await fetch(`${harness.baseUrl}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -294,17 +294,17 @@ test("skills and intelligence JSON routes reject bodies over 1MB", async () => {
 
 test("POST JSON routes reject malformed JSON with 400 instead of 500", async () => {
   const harness = await createTestHarness({
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
   });
   try {
     const paths = [
-      "/api/memory/v2/skills/execute",
-      "/api/memory/v2/intelligence/extract",
-      "/api/memory/v2/intelligence/smart-write",
-      "/api/memory/v2/mcp/smart-write",
-      "/api/memory/v2/conversation/events",
-      "/api/memory/v2/conversation/ingest",
-      "/api/memory/v2/conversation/flush",
+      "/api/memory/xx/skills/execute",
+      "/api/memory/xx/intelligence/extract",
+      "/api/memory/xx/intelligence/smart-write",
+      "/api/memory/xx/mcp/smart-write",
+      "/api/memory/xx/conversation/events",
+      "/api/memory/xx/conversation/ingest",
+      "/api/memory/xx/conversation/flush",
     ];
 
     for (const path of paths) {
@@ -363,7 +363,7 @@ test("GET /unknown returns 404", async () => {
 
 test("unified recall-feedback records feedback without appending outbox events", async () => {
   const harness = await createTestHarness({
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv
   });
   try {
     const repository = new RecallFeedbackRepository();
@@ -380,7 +380,7 @@ test("unified recall-feedback records feedback without appending outbox events",
       audit: {}
     }));
 
-    const res = await request(harness.baseUrl, "/api/memory/v2/unified/recall-feedback", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/unified/recall-feedback", {
       method: "POST",
       body: {
         request_id: "recall-feedback-command-1",
@@ -391,7 +391,7 @@ test("unified recall-feedback records feedback without appending outbox events",
         memory_id: "mem-http-1"
       }
     });
-    const replay = await request(harness.baseUrl, "/api/memory/v2/unified/recall-feedback", {
+    const replay = await request(harness.baseUrl, "/api/memory/xx/unified/recall-feedback", {
       method: "POST",
       body: {
         request_id: "recall-feedback-command-1",
@@ -402,7 +402,7 @@ test("unified recall-feedback records feedback without appending outbox events",
         memory_id: "mem-http-1"
       }
     });
-    const conflict = await request(harness.baseUrl, "/api/memory/v2/unified/recall-feedback", {
+    const conflict = await request(harness.baseUrl, "/api/memory/xx/unified/recall-feedback", {
       method: "POST",
       body: {
         request_id: "recall-feedback-command-1",
@@ -437,7 +437,7 @@ test("unified recall-feedback records feedback without appending outbox events",
 test("ordinary feedback uses its own idempotent command chain", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "feedback-chain-test", content: "Feedback chain target memory" },
     });
@@ -450,15 +450,15 @@ test("ordinary feedback uses its own idempotent command chain", async () => {
       reason: "covered by test"
     };
 
-    const first = await request(harness.baseUrl, "/api/memory/v2/unified/feedback", {
+    const first = await request(harness.baseUrl, "/api/memory/xx/unified/feedback", {
       method: "POST",
       body: feedbackBody,
     });
-    const replay = await request(harness.baseUrl, "/api/memory/v2/unified/feedback", {
+    const replay = await request(harness.baseUrl, "/api/memory/xx/unified/feedback", {
       method: "POST",
       body: feedbackBody,
     });
-    const conflict = await request(harness.baseUrl, "/api/memory/v2/unified/feedback", {
+    const conflict = await request(harness.baseUrl, "/api/memory/xx/unified/feedback", {
       method: "POST",
       body: { ...feedbackBody, feedback_type: "negative" },
     });
@@ -484,7 +484,7 @@ test("ordinary feedback uses its own idempotent command chain", async () => {
 test("runtime scopes are rejected at public write and runtime-only recall entries", async () => {
   const harness = await createTestHarness();
   try {
-    const write = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const write = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "run", scopeId: "run-1", content: "runtime scope should not be written" },
     });
@@ -492,7 +492,7 @@ test("runtime scopes are rejected at public write and runtime-only recall entrie
     assert.equal((write.body as Record<string, unknown>).error, "runtime_scope_not_supported_for_write");
     assert.match(String((write.body as Record<string, unknown>).message), /runtime-only|运行时/u);
 
-    const remember = await request(harness.baseUrl, "/api/memory/v2/unified/remember", {
+    const remember = await request(harness.baseUrl, "/api/memory/xx/unified/remember", {
       method: "POST",
       body: {
         user_id: "user-1",
@@ -505,7 +505,7 @@ test("runtime scopes are rejected at public write and runtime-only recall entrie
     assert.equal(remember.status, 400);
     assert.equal((remember.body as Record<string, unknown>).error, "runtime_scope_not_supported_for_write");
 
-    const recall = await request(harness.baseUrl, "/api/memory/v2/unified/recall", {
+    const recall = await request(harness.baseUrl, "/api/memory/xx/unified/recall", {
       method: "POST",
       body: { query: "runtime only", include_global: false, runtime: { run_id: "run-1" } },
     });
@@ -519,7 +519,7 @@ test("runtime scopes are rejected at public write and runtime-only recall entrie
 test("write rejects relation targets that do not exist with 404", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: {
         scopeType: "personal",
@@ -538,7 +538,7 @@ test("write rejects relation targets that do not exist with 404", async () => {
 test("write rejects invalid lifecycle state before DB constraints", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: {
         scopeType: "personal",
@@ -570,10 +570,10 @@ test("privileged filter modes require governance permission rather than env flag
   const reader = await createTestHarness({
     authToken: "reader",
     runtime,
-    env: { MEMORY_V2_LEGACY_TOKEN_PERMISSIONS: "memory:read", MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_LEGACY_TOKEN_PERMISSIONS: "memory:read", MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
   });
   try {
-    const normal = await request(reader.baseUrl, "/api/memory/v2/recall/query", {
+    const normal = await request(reader.baseUrl, "/api/memory/xx/recall/query", {
       method: "POST",
       headers: { authorization: "Bearer reader" },
       body: { query: "governance", scope_context: { project_ids: ["p1"] }, filter_mode: "governance" },
@@ -587,10 +587,10 @@ test("privileged filter modes require governance permission rather than env flag
     authToken: "reader",
     adminToken: "admin",
     runtime,
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
   });
   try {
-    const privileged = await request(admin.baseUrl, "/api/memory/v2/recall/query", {
+    const privileged = await request(admin.baseUrl, "/api/memory/xx/recall/query", {
       method: "POST",
       headers: { authorization: "Bearer admin" },
       body: { query: "governance", scope_context: { project_ids: ["p1"] }, filter_mode: "governance" },
@@ -644,7 +644,7 @@ test("auth enabled: no token returns 401", async () => {
 test("auth enabled: intelligence extract without token returns 401", async () => {
   const harness = await createTestHarness({ authToken: "secret-key" });
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/intelligence/extract", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/intelligence/extract", {
       method: "POST",
       body: { text: "extract this memory" },
     });
@@ -696,7 +696,7 @@ test("rate limit exceeded returns 429 with Retry-After", async () => {
 test("POST /write with missing scopeType returns 400", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeId: "x", content: "y" },
     });
@@ -709,7 +709,7 @@ test("POST /write with missing scopeType returns 400", async () => {
 test("POST /write rejects blank content", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "test-user", content: "   " },
     });
@@ -722,7 +722,7 @@ test("POST /write rejects blank content", async () => {
 test("POST /write with valid body returns 201", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: {
         scopeType: "personal",
@@ -750,9 +750,9 @@ test("POST /write with same requestId returns 200 (replay)", async () => {
       content: "Replay test",
       requestId: reqId,
     };
-    const res1 = await request(harness.baseUrl, "/api/memory/v2/write", { method: "POST", body });
+    const res1 = await request(harness.baseUrl, "/api/memory/xx/write", { method: "POST", body });
     assert.equal(res1.status, 201);
-    const res2 = await request(harness.baseUrl, "/api/memory/v2/write", { method: "POST", body });
+    const res2 = await request(harness.baseUrl, "/api/memory/xx/write", { method: "POST", body });
     assert.equal(res2.status, 200);
     const b2 = res2.body as Record<string, unknown>;
     assert.equal(b2.replayed, true);
@@ -792,14 +792,14 @@ test("GET /metrics/prometheus returns Prometheus text format", async () => {
 test("review approve lifecycle works", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Review test memory" },
     });
     const writeBody = writeRes.body as Record<string, string>;
     const memoryId = writeBody.memoryId;
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST",
       body: { actorId: "tester" },
     });
@@ -815,13 +815,13 @@ test("review approve lifecycle works", async () => {
 test("review reject lifecycle works", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Reject test memory" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/reject`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/reject`, {
       method: "POST",
       body: {},
     });
@@ -835,13 +835,13 @@ test("review reject lifecycle works", async () => {
 test("review update-candidate edits pending candidate in place", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Candidate draft before edit", title: "Draft" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/update-candidate`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/update-candidate`, {
       method: "POST",
       body: { content: "Candidate draft after edit", title: "Edited draft", actorId: "tester" },
     });
@@ -863,17 +863,17 @@ test("review update-candidate edits pending candidate in place", async () => {
 test("review update-candidate rejects approved memory", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Approved memory cannot be draft edited" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
-    await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST",
       body: {},
     });
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/update-candidate`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/update-candidate`, {
       method: "POST",
       body: { content: "Illegal candidate update" },
     });
@@ -886,18 +886,18 @@ test("review update-candidate rejects approved memory", async () => {
 test("review archive lifecycle works", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Archive test memory" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
     // Approve first
-    await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST", body: {},
     });
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/archive`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/archive`, {
       method: "POST", body: {},
     });
     assert.equal(res.status, 200);
@@ -910,7 +910,7 @@ test("review archive lifecycle works", async () => {
 test("deprecated feedback alias rejects unknown action before touching runtime", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/feedback/memories/memory-1/unknown", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/feedback/memories/memory-1/unknown", {
       method: "POST",
       body: { agent_id: "tester" },
     });
@@ -924,13 +924,13 @@ test("deprecated feedback alias rejects unknown action before touching runtime",
 test("deprecated feedback alias maps used action to unified feedback", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "feedback-alias-test", content: "Feedback alias target memory" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/feedback/memories/${memoryId}/used`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/feedback/memories/${memoryId}/used`, {
       method: "POST",
       body: { agent_id: "tester", reason: "alias smoke" },
     });
@@ -940,7 +940,7 @@ test("deprecated feedback alias maps used action to unified feedback", async () 
     const snapshot = await harness.database.snapshot();
     assert.equal(snapshot.memoryFeedbackEvents.length, 1);
     assert.equal(snapshot.memoryFeedbackEvents[0].feedbackType, "used");
-    assert.equal(snapshot.memoryFeedbackEvents[0].metadata.deprecated_alias, "/api/memory/v2/feedback/memories/:memory_id/:action");
+    assert.equal(snapshot.memoryFeedbackEvents[0].metadata.deprecated_alias, "/api/memory/xx/feedback/memories/:memory_id/:action");
   } finally {
     await harness.close();
   }
@@ -949,17 +949,17 @@ test("deprecated feedback alias maps used action to unified feedback", async () 
 test("review supersede with content returns 201", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Supersede original" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST", body: {},
     });
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/supersede`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/supersede`, {
       method: "POST",
       body: { content: "Superseded content", actorId: "tester" },
     });
@@ -976,13 +976,13 @@ test("review supersede with content returns 201", async () => {
 test("review supersede without content returns 400", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "No content supersede" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/supersede`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/supersede`, {
       method: "POST", body: {},
     });
     assert.equal(res.status, 400);
@@ -994,17 +994,17 @@ test("review supersede without content returns 400", async () => {
 test("review tombstone lifecycle works", async () => {
   const harness = await createTestHarness();
   try {
-    const writeRes = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const writeRes = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { scopeType: "personal", scopeId: "review-test", content: "Tombstone test" },
     });
     const memoryId = (writeRes.body as Record<string, string>).memoryId;
 
-    await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST", body: {},
     });
 
-    const res = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/tombstone`, {
+    const res = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/tombstone`, {
       method: "POST", body: {},
     });
     assert.equal(res.status, 200);
@@ -1023,14 +1023,14 @@ test("dedupeKey auto-supersede on second write", async () => {
       content: "First version", dedupeKey,
       lifecycleStatus: "approved", reviewState: "not_required",
     };
-    await request(harness.baseUrl, "/api/memory/v2/write", { method: "POST", body: body1 });
+    await request(harness.baseUrl, "/api/memory/xx/write", { method: "POST", body: body1 });
 
     const body2 = {
       scopeType: "personal", scopeId: "dedupe-test",
       content: "Second version", dedupeKey,
       lifecycleStatus: "approved", reviewState: "not_required",
     };
-    const res2 = await request(harness.baseUrl, "/api/memory/v2/write", { method: "POST", body: body2 });
+    const res2 = await request(harness.baseUrl, "/api/memory/xx/write", { method: "POST", body: body2 });
     assert.equal(res2.status, 201);
     const b2 = res2.body as Record<string, unknown>;
     assert.ok(b2.supersededMemoryId);
@@ -1047,8 +1047,8 @@ test("dedupeKey same content replays existing memory instead of leaking unique c
       scopeType: "personal", scopeId: "dedupe-test",
       content: "Same version", dedupeKey,
     };
-    const first = await request(harness.baseUrl, "/api/memory/v2/write", { method: "POST", body });
-    const second = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const first = await request(harness.baseUrl, "/api/memory/xx/write", { method: "POST", body });
+    const second = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       body: { ...body, requestId: "dedupe-replay-" + Date.now() },
     });
@@ -1064,7 +1064,7 @@ test("dedupeKey same content replays existing memory instead of leaking unique c
 test("recall with runtime null returns 503", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/recall/query", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/recall/query", {
       method: "POST",
       body: { query: "test", scope_context: { user_id: "u" } },
     });

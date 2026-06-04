@@ -18,7 +18,7 @@
 
 这意味着：
 
-- **直接调用 `POST /api/memory/v2/write`（`CreateMemoryService`）写入时，quality gate 不会介入。**
+- **直接调用 `POST /api/memory/xx/write`（`CreateMemoryService`）写入时，quality gate 不会介入。**
 - HTTP 入口只做 `requireTrimmedString` 校验（`content` 不能为空字符串），不做内容质量检查。
 - 任何满足 schema 的 payload（即使是纯空格 `"\t\t"`、重复字符、meta phrase 句都可以）都会被写入。
 
@@ -354,7 +354,7 @@ function qualityScoreOf(memory: ExtractedMemory, fallback: number): number {
 **发现的问题 — 最关键的架构缺陷：**
 
 ```
-POST /api/memory/v2/write
+POST /api/memory/xx/write
   → CreateMemoryService.execute()
       → withWriteTransaction() { PG 写入 }  ← 事务边界
       → projectionSyncService.syncWriteResult()  ← post-commit，无事务保护

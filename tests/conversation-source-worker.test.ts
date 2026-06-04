@@ -36,9 +36,9 @@ test("conversation source dry-run CLI scans configured roots without advancing c
       env: {
         ...process.env,
         TMPDIR: "/tmp",
-        MEMORY_V2_CODEX_SESSION_ROOTS: codexRoot,
-        MEMORY_V2_CLAUDE_SESSION_ROOTS: claudeRoot,
-        MEMORY_V2_OPENCLAW_SESSION_ROOTS: openclawRoot,
+        MEMORY_XX_CODEX_SESSION_ROOTS: codexRoot,
+        MEMORY_XX_CLAUDE_SESSION_ROOTS: claudeRoot,
+        MEMORY_XX_OPENCLAW_SESSION_ROOTS: openclawRoot,
       },
       encoding: "utf8",
       timeout: 120_000,

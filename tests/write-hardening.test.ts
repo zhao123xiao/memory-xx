@@ -69,13 +69,13 @@ test("semantic write lock waits for similar in-flight embedding", async () => {
 
 test("redis semantic lock config falls back only for single-wrapper deployments without redis url", async () => {
   SemanticWriteLock.clear();
-  const oldBackend = process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND;
-  const oldCount = process.env.MEMORY_V2_INSTANCE_COUNT;
-  const oldRedis = process.env.MEMORY_V2_REDIS_URL;
+  const oldBackend = process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND;
+  const oldCount = process.env.MEMORY_XX_INSTANCE_COUNT;
+  const oldRedis = process.env.MEMORY_XX_REDIS_URL;
   try {
-    process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND = "redis";
-    process.env.MEMORY_V2_INSTANCE_COUNT = "1";
-    delete process.env.MEMORY_V2_REDIS_URL;
+    process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND = "redis";
+    process.env.MEMORY_XX_INSTANCE_COUNT = "1";
+    delete process.env.MEMORY_XX_REDIS_URL;
     const single = await new SemanticWriteLock().acquire({
       scopeType: "project",
       scopeId: "p1",
@@ -85,7 +85,7 @@ test("redis semantic lock config falls back only for single-wrapper deployments 
     assert.equal(single.timed_out, false);
     single.release();
 
-    process.env.MEMORY_V2_INSTANCE_COUNT = "2";
+    process.env.MEMORY_XX_INSTANCE_COUNT = "2";
     await assert.rejects(
       new SemanticWriteLock().acquire({
         scopeType: "project",
@@ -96,12 +96,12 @@ test("redis semantic lock config falls back only for single-wrapper deployments 
       /redis_semantic_lock_unconfigured/
     );
   } finally {
-    if (oldBackend === undefined) delete process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND;
-    else process.env.MEMORY_V2_SEMANTIC_LOCK_BACKEND = oldBackend;
-    if (oldCount === undefined) delete process.env.MEMORY_V2_INSTANCE_COUNT;
-    else process.env.MEMORY_V2_INSTANCE_COUNT = oldCount;
-    if (oldRedis === undefined) delete process.env.MEMORY_V2_REDIS_URL;
-    else process.env.MEMORY_V2_REDIS_URL = oldRedis;
+    if (oldBackend === undefined) delete process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND;
+    else process.env.MEMORY_XX_SEMANTIC_LOCK_BACKEND = oldBackend;
+    if (oldCount === undefined) delete process.env.MEMORY_XX_INSTANCE_COUNT;
+    else process.env.MEMORY_XX_INSTANCE_COUNT = oldCount;
+    if (oldRedis === undefined) delete process.env.MEMORY_XX_REDIS_URL;
+    else process.env.MEMORY_XX_REDIS_URL = oldRedis;
   }
 });
 

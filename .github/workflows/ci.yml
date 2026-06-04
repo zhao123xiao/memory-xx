@@ -10,8 +10,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      MEMORY_V2_REDIS_URL: redis://localhost:6379/0
-      MEMORY_V2_API_TOKEN: test-token
+      MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+      MEMORY_XX_API_TOKEN: test-token
       OPENAI_API_KEY: test-key
     services:
       postgres:
@@ -55,22 +55,22 @@ jobs:
 
       - run: npm run test:gates
         env:
-          MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-          MEMORY_V2_LOG_LEVEL: error
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_LOG_LEVEL: error
 
       - run: npm run test:integration
         env:
-          MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-          MEMORY_V2_LOG_LEVEL: error
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_LOG_LEVEL: error
 
   test-postgres:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     env:
-      MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-      MEMORY_V2_API_TOKEN: test-token
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+      MEMORY_XX_API_TOKEN: test-token
       OPENAI_API_KEY: test-key
-      MEMORY_V2_LOG_LEVEL: error
+      MEMORY_XX_LOG_LEVEL: error
     services:
       postgres:
         image: pgvector/pgvector:pg16

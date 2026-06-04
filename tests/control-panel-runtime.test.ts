@@ -25,14 +25,14 @@ import { buildRuntimeObservabilityRows } from "../scripts/control-panel/runtime-
 import { buildRuntimeObservabilityRetentionPlan } from "../scripts/control-panel/runtime-observability-retention";
 
 function withRuntimeDir<T>(fn: () => T): T {
-  const previous = process.env.MEMORY_V2_RUNTIME_DIR;
+  const previous = process.env.MEMORY_XX_RUNTIME_DIR;
   const dir = mkdtempSync(join(tmpdir(), "memory-xx-runtime-control-"));
-  process.env.MEMORY_V2_RUNTIME_DIR = dir;
+  process.env.MEMORY_XX_RUNTIME_DIR = dir;
   try {
     return fn();
   } finally {
-    if (previous === undefined) delete process.env.MEMORY_V2_RUNTIME_DIR;
-    else process.env.MEMORY_V2_RUNTIME_DIR = previous;
+    if (previous === undefined) delete process.env.MEMORY_XX_RUNTIME_DIR;
+    else process.env.MEMORY_XX_RUNTIME_DIR = previous;
     rmSync(dir, { recursive: true, force: true });
   }
 }
@@ -59,7 +59,7 @@ test("runtime registry exposes typed, sourced, safety-labeled settings", () => w
 
 test("batch update rejects readonly env settings and previews restart requirements", () => withRuntimeDir(() => {
   assert.throws(
-    () => updateRuntimeSettingsBatch({ MEMORY_V2_DATABASE_URL: "postgres://example" }, {}),
+    () => updateRuntimeSettingsBatch({ MEMORY_XX_DATABASE_URL: "postgres://example" }, {}),
     /setting_not_writable/
   );
 

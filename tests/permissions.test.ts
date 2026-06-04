@@ -4,7 +4,7 @@ import { createPermissionChecker, hashToken, inspectTokenSeparation, loadScopePo
 import { requiredPermissionForPath, routeLabelForPath } from "../app/server/http-server";
 
 test("legacy API token gets read write feedback but not governance or admin", async () => {
-  const checker = createPermissionChecker({ MEMORY_V2_API_TOKEN: "legacy" });
+  const checker = createPermissionChecker({ MEMORY_XX_API_TOKEN: "legacy" });
   try {
     assert.equal((await checker.authorizeToken("legacy", "memory:read")).allowed, true);
     assert.equal((await checker.authorizeToken("legacy", "memory:write")).allowed, true);
@@ -18,8 +18,8 @@ test("legacy API token gets read write feedback but not governance or admin", as
 
 test("legacy permissions can be narrowed but not expanded to admin", async () => {
   const checker = createPermissionChecker({
-    MEMORY_V2_API_TOKEN: "legacy",
-    MEMORY_V2_LEGACY_TOKEN_PERMISSIONS: "memory:read,memory:admin,memory:governance_apply",
+    MEMORY_XX_API_TOKEN: "legacy",
+    MEMORY_XX_LEGACY_TOKEN_PERMISSIONS: "memory:read,memory:admin,memory:governance_apply",
   });
   try {
     assert.equal((await checker.authorizeToken("legacy", "memory:read")).allowed, true);
@@ -31,7 +31,7 @@ test("legacy permissions can be narrowed but not expanded to admin", async () =>
 });
 
 test("admin token has every permission", async () => {
-  const checker = createPermissionChecker({ MEMORY_V2_API_TOKEN: "legacy", MEMORY_V2_ADMIN_TOKEN: "admin" });
+  const checker = createPermissionChecker({ MEMORY_XX_API_TOKEN: "legacy", MEMORY_XX_ADMIN_TOKEN: "admin" });
   try {
     assert.equal((await checker.authorizeToken("admin", "memory:governance_apply")).allowed, true);
     assert.equal((await checker.authorizeToken("admin", "memory:admin")).allowed, true);
@@ -42,8 +42,8 @@ test("admin token has every permission", async () => {
 
 test("token separation detects legacy/admin token overlap", () => {
   assert.deepEqual(inspectTokenSeparation({
-    MEMORY_V2_API_TOKEN: "same-token",
-    MEMORY_V2_ADMIN_TOKEN: "same-token",
+    MEMORY_XX_API_TOKEN: "same-token",
+    MEMORY_XX_ADMIN_TOKEN: "same-token",
   }), {
     ok: false,
     legacy_configured: true,
@@ -51,21 +51,21 @@ test("token separation detects legacy/admin token overlap", () => {
     overlap: true,
   });
   assert.equal(inspectTokenSeparation({
-    MEMORY_V2_API_TOKEN: "legacy",
-    MEMORY_V2_ADMIN_TOKEN: "admin",
+    MEMORY_XX_API_TOKEN: "legacy",
+    MEMORY_XX_ADMIN_TOKEN: "admin",
   }).ok, true);
 });
 
 
 test("scope policy defaults to strict and allows explicit single_user rollback", () => {
   assert.equal(loadScopePolicyMode({}), "strict");
-  assert.equal(loadScopePolicyMode({ MEMORY_V2_SCOPE_POLICY_MODE: "strict" }), "strict");
-  assert.equal(loadScopePolicyMode({ MEMORY_V2_SCOPE_POLICY_MODE: "single_user" }), "single_user");
+  assert.equal(loadScopePolicyMode({ MEMORY_XX_SCOPE_POLICY_MODE: "strict" }), "strict");
+  assert.equal(loadScopePolicyMode({ MEMORY_XX_SCOPE_POLICY_MODE: "single_user" }), "single_user");
 });
 
 test("default strict scope policy denies legacy token scope grants", async () => {
   const checker = createPermissionChecker({
-    MEMORY_V2_API_TOKEN: "legacy",
+    MEMORY_XX_API_TOKEN: "legacy",
   });
   try {
     const decision = await checker.authorizeScope({
@@ -85,8 +85,8 @@ test("default strict scope policy denies legacy token scope grants", async () =>
 
 test("single_user rollback lets legacy token pass scoped checks", async () => {
   const checker = createPermissionChecker({
-    MEMORY_V2_API_TOKEN: "legacy",
-    MEMORY_V2_SCOPE_POLICY_MODE: "single_user",
+    MEMORY_XX_API_TOKEN: "legacy",
+    MEMORY_XX_SCOPE_POLICY_MODE: "single_user",
   });
   try {
     const decision = await checker.authorizeScope({
@@ -105,8 +105,8 @@ test("single_user rollback lets legacy token pass scoped checks", async () => {
 
 test("strict scope policy lets admin token bypass DB grants", async () => {
   const checker = createPermissionChecker({
-    MEMORY_V2_ADMIN_TOKEN: "admin",
-    MEMORY_V2_SCOPE_POLICY_MODE: "strict",
+    MEMORY_XX_ADMIN_TOKEN: "admin",
+    MEMORY_XX_SCOPE_POLICY_MODE: "strict",
   });
   try {
     const decision = await checker.authorizeScope({
@@ -124,25 +124,25 @@ test("strict scope policy lets admin token bypass DB grants", async () => {
 });
 
 test("requiredPermissionForPath maps key HTTP routes", () => {
-  assert.equal(requiredPermissionForPath("/api/memory/v2/unified/recall"), "memory:read");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/unified/remember"), "memory:write");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/unified/feedback"), "memory:feedback");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/unified/forget"), "memory:governance_revert");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/mcp/approve"), "memory:governance_apply");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/events"), "memory:write");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/ingest"), "memory:write");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/flush"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/unified/recall"), "memory:read");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/unified/remember"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/unified/feedback"), "memory:feedback");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/unified/forget"), "memory:governance_revert");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/mcp/approve"), "memory:governance_apply");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/events"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/ingest"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/flush"), "memory:write");
   assert.equal(requiredPermissionForPath("/metrics/prometheus"), "memory:read");
 });
 
 test("route labels normalize dynamic ids before metrics emission", () => {
   assert.equal(
-    routeLabelForPath("/api/memory/v2/review/memories/memory_abcdef1234567890/approve?token=secret"),
-    "/api/memory/v2/review/memories/:memory_id/:action"
+    routeLabelForPath("/api/memory/xx/review/memories/memory_abcdef1234567890/approve?token=secret"),
+    "/api/memory/xx/review/memories/:memory_id/:action"
   );
   assert.equal(
-    routeLabelForPath("/api/memory/v2/intelligence/write-tickets/ticket_abcdef1234567890"),
-    "/api/memory/v2/intelligence/write-tickets/:ticket_id"
+    routeLabelForPath("/api/memory/xx/intelligence/write-tickets/ticket_abcdef1234567890"),
+    "/api/memory/xx/intelligence/write-tickets/:ticket_id"
   );
 });
 

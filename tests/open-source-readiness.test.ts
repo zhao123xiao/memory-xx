@@ -34,8 +34,55 @@ test("public env examples use the same default wrapper port", async () => {
   const rootEnv = await fs.readFile(".env.example", "utf8");
   const wrapperEnv = await fs.readFile("configs/memory-xx-wrapper.env.example", "utf8");
 
-  assert.match(rootEnv, /^MEMORY_V2_WRAPPER_PORT=5100$/mu);
-  assert.match(wrapperEnv, /^MEMORY_V2_WRAPPER_PORT=5100$/mu);
+  assert.match(rootEnv, /^MEMORY_XX_WRAPPER_PORT=5100$/mu);
+  assert.match(wrapperEnv, /^MEMORY_XX_WRAPPER_PORT=5100$/mu);
+});
+
+test("public docs and config templates use memory-xx env and API names", async () => {
+  const files = [
+    "README.md",
+    ".env.example",
+    "configs/README.md",
+    "configs/memory-xx.env.example",
+    "configs/memory-xx-wrapper.env.example",
+    "configs/memory-xx-qdrant-projector-worker.env.example",
+    "docker-compose.yml",
+    "docs/api.md",
+    "docs/quickstart.zh-CN.md",
+    "docs/runtime-profiles.md",
+    "docs/vector-runtime.zh-CN.md",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/MEMORY_V2_|\/api\/memory\/v2/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale, []);
+});
+
+test("public systemd bundle provides the unit name used by scripts", async () => {
+  const fs = await import("node:fs/promises");
+  const wrapper = await fs.readFile("systemd/memory-xx-wrapper.service", "utf8");
+
+  assert.match(wrapper, /^Description=OpenClaw memory-xx wrapper$/mu);
+  assert.match(wrapper, /ExecStart=.*wrapper-entry\.mjs/u);
+  await assert.rejects(
+    () => fs.stat("systemd/openclaw-memory-xx-wrapper.service"),
+    /ENOENT/u
+  );
+});
+
+test("README documents required session roots and API embedding option", async () => {
+  const readme = await readFile("README.md", "utf8");
+
+  assert.match(readme, /MEMORY_XX_CODEX_SESSION_ROOTS/u);
+  assert.match(readme, /MEMORY_XX_CLAUDE_SESSION_ROOTS/u);
+  assert.match(readme, /MEMORY_XX_OPENCLAW_SESSION_ROOTS/u);
+  assert.match(readme, /https:\/\/www\.scnet\.cn/u);
+  assert.match(readme, /0\.1\s*\/\s*百万\s*token/u);
+  assert.match(readme, /MEMORY_XX_SCOPE_POLICY_MODE=single_user/u);
+  assert.match(readme, /sidecar/u);
 });
 
 test("MCP test fixtures use the public wrapper port 5100", async () => {

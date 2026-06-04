@@ -46,11 +46,11 @@ jobs:
           docker exec memory-xx-redis redis-cli ping
           docker run -d --name memory-xx-test \
             --network memory-xx-ci \
-            -e MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@memory-xx-postgres:5432/memory_xx \
-            -e MEMORY_V2_DATABASE_SCHEMA=memory_xx \
-            -e MEMORY_V2_REDIS_URL=redis://memory-xx-redis:6379/0 \
-            -e MEMORY_V2_BIND_HOST=0.0.0.0 \
-            -e MEMORY_V2_API_TOKEN=test-token \
+            -e MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@memory-xx-postgres:5432/memory_xx \
+            -e MEMORY_XX_DATABASE_SCHEMA=memory_xx \
+            -e MEMORY_XX_REDIS_URL=redis://memory-xx-redis:6379/0 \
+            -e MEMORY_XX_BIND_HOST=0.0.0.0 \
+            -e MEMORY_XX_API_TOKEN=test-token \
             -e OPENAI_API_KEY=test-key \
             memory-xx:test
           docker exec memory-xx-test node dist/app/migration/cli.js

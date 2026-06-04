@@ -27,11 +27,11 @@ test("cutover gate fails closed when metrics are missing or under-sampled", () =
 
 test("p1 production gate blocks unsafe async recovery settings", () => {
   const result = evaluateP1ProductionGate({
-    MEMORY_V2_FAST_ACK_INLINE_FALLBACK: "true",
-    MEMORY_V2_ACCEPTED_EXPIRED_BACKLOG: "1",
-    MEMORY_V2_WRITE_TICKET_PROCESSING_BACKLOG: "2",
-    MEMORY_V2_CACHE_INVALIDATION_BACKLOG: "3",
-    MEMORY_V2_P1_GATE_METRICS_JSON: JSON.stringify([
+    MEMORY_XX_FAST_ACK_INLINE_FALLBACK: "true",
+    MEMORY_XX_ACCEPTED_EXPIRED_BACKLOG: "1",
+    MEMORY_XX_WRITE_TICKET_PROCESSING_BACKLOG: "2",
+    MEMORY_XX_CACHE_INVALIDATION_BACKLOG: "3",
+    MEMORY_XX_P1_GATE_METRICS_JSON: JSON.stringify([
       { metricId: "query_pass_rate", actual: 1, sampleSize: 50, dataSource: "recall_feedback_events", window: "24h" },
       { metricId: "default_filter_accuracy", actual: 1, sampleSize: 50, dataSource: "audit_samples", window: "24h" },
       { metricId: "zero_hit_regression_delta", actual: 0, sampleSize: 50, dataSource: "recall_audit", window: "24h" },
@@ -47,11 +47,11 @@ test("p1 production gate blocks unsafe async recovery settings", () => {
 
 test("p1 production gate surfaces policy training readiness and blocks leakage", () => {
   const baseEnv = {
-    MEMORY_V2_DATABASE_URL: "postgres://memory-xx-test",
-    MEMORY_V2_API_TOKEN: "api-token",
+    MEMORY_XX_DATABASE_URL: "postgres://memory-xx-test",
+    MEMORY_XX_API_TOKEN: "api-token",
     EMBEDDING_API_KEY: "embedding-token",
-    MEMORY_V2_STRICT_SCOPE: "true",
-    MEMORY_V2_P1_GATE_METRICS_JSON: JSON.stringify([
+    MEMORY_XX_STRICT_SCOPE: "true",
+    MEMORY_XX_P1_GATE_METRICS_JSON: JSON.stringify([
       { metricId: "query_pass_rate", actual: 1, sampleSize: 50, dataSource: "recall_feedback_events", window: "24h" },
       { metricId: "default_filter_accuracy", actual: 1, sampleSize: 50, dataSource: "audit_samples", window: "24h" },
       { metricId: "zero_hit_regression_delta", actual: 0, sampleSize: 50, dataSource: "recall_audit", window: "24h" },
@@ -61,7 +61,7 @@ test("p1 production gate surfaces policy training readiness and blocks leakage",
 
   const undertrained = evaluateP1ProductionGate({
     ...baseEnv,
-    MEMORY_V2_POLICY_TRAINING_SUMMARY_JSON: JSON.stringify({
+    MEMORY_XX_POLICY_TRAINING_SUMMARY_JSON: JSON.stringify({
       progress_percent: 80,
       production_readiness_score: 0.97,
       leakage_eval: { default_leakage: 0 }
@@ -72,7 +72,7 @@ test("p1 production gate surfaces policy training readiness and blocks leakage",
 
   const leaked = evaluateP1ProductionGate({
     ...baseEnv,
-    MEMORY_V2_POLICY_TRAINING_SUMMARY_JSON: JSON.stringify({
+    MEMORY_XX_POLICY_TRAINING_SUMMARY_JSON: JSON.stringify({
       progress_percent: 90,
       production_readiness_score: 0.98,
       leakage_eval: { default_leakage: 1 }
@@ -103,11 +103,11 @@ test("p1 production gate can derive intelligence compare high diff rate from dat
   });
 
   const result = await evaluateP1ProductionGateWithDatabase({
-    MEMORY_V2_DATABASE_URL: "postgres://memory-xx-test",
-    MEMORY_V2_API_TOKEN: "api-token",
+    MEMORY_XX_DATABASE_URL: "postgres://memory-xx-test",
+    MEMORY_XX_API_TOKEN: "api-token",
     EMBEDDING_API_KEY: "embedding-token",
-    MEMORY_V2_STRICT_SCOPE: "true",
-    MEMORY_V2_P1_GATE_METRICS_JSON: JSON.stringify([
+    MEMORY_XX_STRICT_SCOPE: "true",
+    MEMORY_XX_P1_GATE_METRICS_JSON: JSON.stringify([
       { metricId: "query_pass_rate", actual: 1, sampleSize: 50, dataSource: "recall_feedback_events", window: "24h" },
       { metricId: "default_filter_accuracy", actual: 1, sampleSize: 50, dataSource: "audit_samples", window: "24h" },
       { metricId: "zero_hit_regression_delta", actual: 0, sampleSize: 50, dataSource: "recall_audit", window: "24h" },
@@ -140,11 +140,11 @@ test("p1 production gate treats clean intelligence compare observations as pass 
   });
 
   const result = await evaluateP1ProductionGateWithDatabase({
-    MEMORY_V2_DATABASE_URL: "postgres://memory-xx-test",
-    MEMORY_V2_API_TOKEN: "api-token",
+    MEMORY_XX_DATABASE_URL: "postgres://memory-xx-test",
+    MEMORY_XX_API_TOKEN: "api-token",
     EMBEDDING_API_KEY: "embedding-token",
-    MEMORY_V2_STRICT_SCOPE: "true",
-    MEMORY_V2_P1_GATE_METRICS_JSON: JSON.stringify([
+    MEMORY_XX_STRICT_SCOPE: "true",
+    MEMORY_XX_P1_GATE_METRICS_JSON: JSON.stringify([
       { metricId: "query_pass_rate", actual: 1, sampleSize: 50, dataSource: "recall_feedback_events", window: "24h" },
       { metricId: "default_filter_accuracy", actual: 1, sampleSize: 50, dataSource: "audit_samples", window: "24h" },
       { metricId: "zero_hit_regression_delta", actual: 0, sampleSize: 50, dataSource: "recall_audit", window: "24h" },
@@ -183,13 +183,13 @@ test("p1 production gate blocks continuous intelligence compare high diff trend"
   });
 
   const result = await evaluateP1ProductionGateWithDatabase({
-    MEMORY_V2_P1_GATE_METRICS_JSON: JSON.stringify([
+    MEMORY_XX_P1_GATE_METRICS_JSON: JSON.stringify([
       { metricId: "query_pass_rate", actual: 1, sampleSize: 50, dataSource: "recall_feedback_events", window: "24h" },
       { metricId: "default_filter_accuracy", actual: 1, sampleSize: 50, dataSource: "audit_samples", window: "24h" },
       { metricId: "zero_hit_regression_delta", actual: 0, sampleSize: 50, dataSource: "recall_audit", window: "24h" },
       { metricId: "cache_invalidation_accuracy", actual: 1, sampleSize: 50, dataSource: "cache_audit", window: "24h" },
     ]),
-    MEMORY_V2_P1_GATE_ALLOW_DEGRADED: "true"
+    MEMORY_XX_P1_GATE_ALLOW_DEGRADED: "true"
   }, {
     database,
     compareNow: "2026-05-25T12:30:00.000Z",

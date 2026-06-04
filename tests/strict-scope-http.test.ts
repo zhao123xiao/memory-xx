@@ -117,7 +117,7 @@ function fakeStrictPermissions(): PermissionChecker {
 function strictHarness() {
   return createTestHarness({
     permissions: fakeStrictPermissions(),
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "strict" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "strict" } as NodeJS.ProcessEnv,
   });
 }
 
@@ -135,7 +135,7 @@ function auth(token: string) {
 test("strict scope denies legacy token on scoped write", async () => {
   const harness = await defaultStrictHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("legacy"),
       body: { scopeType: "project", scopeId: "scope-a", content: "strict legacy denied" },
@@ -150,10 +150,10 @@ test("strict scope denies legacy token on scoped write", async () => {
 test("single_user rollback allows legacy scoped write", async () => {
   const harness = await createTestHarness({
     permissions: fakeStrictPermissions(),
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
   });
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("legacy"),
       body: { scopeType: "project", scopeId: "scope-a", content: "single user rollback write" },
@@ -167,7 +167,7 @@ test("single_user rollback allows legacy scoped write", async () => {
 test("strict scope allows trusted grant and denies missing revoked expired grants", async () => {
   const harness = await strictHarness();
   try {
-    const allowed = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const allowed = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { scopeType: "project", scopeId: "scope-a", content: "trusted write" },
@@ -175,7 +175,7 @@ test("strict scope allows trusted grant and denies missing revoked expired grant
     assert.equal(allowed.status, 201);
 
     for (const token of ["trusted-missing", "trusted-revoked", "trusted-expired"]) {
-      const denied = await request(harness.baseUrl, "/api/memory/v2/write", {
+      const denied = await request(harness.baseUrl, "/api/memory/xx/write", {
         method: "POST",
         headers: auth(token),
         body: { scopeType: "project", scopeId: "scope-a", content: `denied ${token}` },
@@ -190,7 +190,7 @@ test("strict scope allows trusted grant and denies missing revoked expired grant
 test("strict scope lets admin bypass scoped write", async () => {
   const harness = await strictHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "any-scope", content: "admin write" },
@@ -204,21 +204,21 @@ test("strict scope lets admin bypass scoped write", async () => {
 test("strict review and MCP approval use the memory record scope, not request body scope", async () => {
   const harness = await strictHarness();
   try {
-    const write = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const write = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "scope-a", content: "review scoped memory" },
     });
     const memoryId = (write.body as Record<string, string>).memoryId;
 
-    const denied = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/approve`, {
+    const denied = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/approve`, {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { scopeType: "project", scopeId: "scope-a" },
     });
     assert.equal(denied.status, 403);
 
-    const approved = await request(harness.baseUrl, "/api/memory/v2/mcp/approve", {
+    const approved = await request(harness.baseUrl, "/api/memory/xx/mcp/approve", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { memory_id: memoryId, scope_type: "project", scope_id: "other-scope" },
@@ -232,35 +232,35 @@ test("strict review and MCP approval use the memory record scope, not request bo
 test("strict forget and feedback are scoped by memory id", async () => {
   const harness = await strictHarness();
   try {
-    const write = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const write = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "scope-a", content: "feedback scoped memory" },
     });
     const memoryId = (write.body as Record<string, string>).memoryId;
 
-    const deniedFeedback = await request(harness.baseUrl, "/api/memory/v2/unified/feedback", {
+    const deniedFeedback = await request(harness.baseUrl, "/api/memory/xx/unified/feedback", {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { memory_id: memoryId, feedback_type: "used", agent_id: "agent-a" },
     });
     assert.equal(deniedFeedback.status, 403);
 
-    const deniedFeedbackAlias = await request(harness.baseUrl, `/api/memory/v2/feedback/memories/${memoryId}/used`, {
+    const deniedFeedbackAlias = await request(harness.baseUrl, `/api/memory/xx/feedback/memories/${memoryId}/used`, {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { agent_id: "agent-a" },
     });
     assert.equal(deniedFeedbackAlias.status, 403);
 
-    const allowedFeedback = await request(harness.baseUrl, "/api/memory/v2/unified/feedback", {
+    const allowedFeedback = await request(harness.baseUrl, "/api/memory/xx/unified/feedback", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { memory_id: memoryId, feedback_type: "used", agent_id: "agent-a" },
     });
     assert.notEqual(allowedFeedback.status, 403);
 
-    const deniedForget = await request(harness.baseUrl, "/api/memory/v2/orchestrator/forget-memory", {
+    const deniedForget = await request(harness.baseUrl, "/api/memory/xx/orchestrator/forget-memory", {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { memoryId },
@@ -274,21 +274,21 @@ test("strict forget and feedback are scoped by memory id", async () => {
 test("strict candidate update is scoped by existing memory id", async () => {
   const harness = await strictHarness();
   try {
-    const write = await request(harness.baseUrl, "/api/memory/v2/write", {
+    const write = await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "scope-a", content: "candidate update scoped memory" },
     });
     const memoryId = (write.body as Record<string, string>).memoryId;
 
-    const denied = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/update-candidate`, {
+    const denied = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/update-candidate`, {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { content: "denied candidate update" },
     });
     assert.equal(denied.status, 403);
 
-    const allowed = await request(harness.baseUrl, `/api/memory/v2/review/memories/${memoryId}/update-candidate`, {
+    const allowed = await request(harness.baseUrl, `/api/memory/xx/review/memories/${memoryId}/update-candidate`, {
       method: "POST",
       headers: auth("trusted-project"),
       body: { content: "allowed candidate update" },
@@ -302,14 +302,14 @@ test("strict candidate update is scoped by existing memory id", async () => {
 test("strict knowledge routes require global scope grant", async () => {
   const harness = await strictHarness();
   try {
-    const denied = await request(harness.baseUrl, "/api/memory/v2/knowledge/search", {
+    const denied = await request(harness.baseUrl, "/api/memory/xx/knowledge/search", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { query: "memory-xx" },
     });
     assert.equal(denied.status, 403);
 
-    const allowed = await request(harness.baseUrl, "/api/memory/v2/knowledge/ingest", {
+    const allowed = await request(harness.baseUrl, "/api/memory/xx/knowledge/ingest", {
       method: "POST",
       headers: auth("trusted-global"),
       body: {},
@@ -331,14 +331,14 @@ test("strict knowledge search allows explicit knowledge collection grant", async
       createdBy: "test"
     }));
 
-    const allowed = await request(harness.baseUrl, "/api/memory/v2/knowledge/search", {
+    const allowed = await request(harness.baseUrl, "/api/memory/xx/knowledge/search", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { query: "memory-xx", knowledge_collections: ["docs"] },
     });
     assert.notEqual(allowed.status, 403);
 
-    const denied = await request(harness.baseUrl, "/api/memory/v2/knowledge/search", {
+    const denied = await request(harness.baseUrl, "/api/memory/xx/knowledge/search", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { query: "memory-xx", knowledge_collections: ["private"] },
@@ -352,7 +352,7 @@ test("strict knowledge search allows explicit knowledge collection grant", async
 test("strict unified recall include_knowledge requires global scope grant", async () => {
   const harness = await strictHarness();
   try {
-    const denied = await request(harness.baseUrl, "/api/memory/v2/unified/recall", {
+    const denied = await request(harness.baseUrl, "/api/memory/xx/unified/recall", {
       method: "POST",
       headers: auth("trusted-project"),
       body: {
@@ -365,7 +365,7 @@ test("strict unified recall include_knowledge requires global scope grant", asyn
     });
     assert.equal(denied.status, 403);
 
-    const allowedScope = await request(harness.baseUrl, "/api/memory/v2/unified/recall", {
+    const allowedScope = await request(harness.baseUrl, "/api/memory/xx/unified/recall", {
       method: "POST",
       headers: auth("trusted-global"),
       body: {
@@ -384,18 +384,18 @@ test("strict unified recall include_knowledge requires global scope grant", asyn
 test("strict memory_counts includeByScope only returns authorized scope", async () => {
   const harness = await strictHarness();
   try {
-    await request(harness.baseUrl, "/api/memory/v2/write", {
+    await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "scope-a", content: "scope a count memory" },
     });
-    await request(harness.baseUrl, "/api/memory/v2/write", {
+    await request(harness.baseUrl, "/api/memory/xx/write", {
       method: "POST",
       headers: auth("admin"),
       body: { scopeType: "project", scopeId: "scope-b", content: "scope b count memory" },
     });
 
-    const counts = await request(harness.baseUrl, "/api/memory/v2/orchestrator/memory-counts", {
+    const counts = await request(harness.baseUrl, "/api/memory/xx/orchestrator/memory-counts", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { scopeType: "project", scopeId: "scope-a", includeByScope: true },
@@ -411,7 +411,7 @@ test("strict memory_counts includeByScope only returns authorized scope", async 
 test("strict smart-write requires explicit scope before runtime write", async () => {
   const harness = await strictHarness();
   try {
-    for (const path of ["/api/memory/v2/intelligence/smart-write", "/api/memory/v2/mcp/smart-write"]) {
+    for (const path of ["/api/memory/xx/intelligence/smart-write", "/api/memory/xx/mcp/smart-write"]) {
       const denied = await request(harness.baseUrl, path, {
         method: "POST",
         headers: auth("legacy"),
@@ -428,7 +428,7 @@ test("strict smart-write requires explicit scope before runtime write", async ()
 test("strict intelligence extract requires scope grant even though it is draft-only", async () => {
   const harness = await strictHarness();
   try {
-    const missingScope = await request(harness.baseUrl, "/api/memory/v2/intelligence/extract", {
+    const missingScope = await request(harness.baseUrl, "/api/memory/xx/intelligence/extract", {
       method: "POST",
       headers: auth("legacy"),
       body: { text: "what is memory-xx?" },
@@ -436,21 +436,21 @@ test("strict intelligence extract requires scope grant even though it is draft-o
     assert.equal(missingScope.status, 400);
     assert.equal((missingScope.body as Record<string, unknown>).error, "scope_hint_required");
 
-    const missingGrant = await request(harness.baseUrl, "/api/memory/v2/intelligence/extract", {
+    const missingGrant = await request(harness.baseUrl, "/api/memory/xx/intelligence/extract", {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { text: "what is memory-xx?", scopeType: "project", scopeId: "scope-a" },
     });
     assert.equal(missingGrant.status, 403);
 
-    const admin = await request(harness.baseUrl, "/api/memory/v2/intelligence/extract", {
+    const admin = await request(harness.baseUrl, "/api/memory/xx/intelligence/extract", {
       method: "POST",
       headers: auth("admin"),
       body: { text: "what is memory-xx?", scopeType: "project", scopeId: "any-scope" },
     });
     assert.equal(admin.status, 200);
 
-    const trusted = await request(harness.baseUrl, "/api/memory/v2/intelligence/extract", {
+    const trusted = await request(harness.baseUrl, "/api/memory/xx/intelligence/extract", {
       method: "POST",
       headers: auth("trusted-project"),
       body: { text: "what is memory-xx?", scopeType: "project", scopeId: "scope-a" },
@@ -464,14 +464,14 @@ test("strict intelligence extract requires scope grant even though it is draft-o
 test("strict smart-write checks scope grants when scope is provided", async () => {
   const harness = await strictHarness();
   try {
-    const denied = await request(harness.baseUrl, "/api/memory/v2/intelligence/smart-write", {
+    const denied = await request(harness.baseUrl, "/api/memory/xx/intelligence/smart-write", {
       method: "POST",
       headers: auth("trusted-missing"),
       body: { text: "remember scoped text", scopeType: "project", scopeId: "scope-a" },
     });
     assert.equal(denied.status, 403);
 
-    const legacyDenied = await request(harness.baseUrl, "/api/memory/v2/mcp/smart-write", {
+    const legacyDenied = await request(harness.baseUrl, "/api/memory/xx/mcp/smart-write", {
       method: "POST",
       headers: auth("legacy"),
       body: { text: "remember scoped text", scope_hint: { scope_type: "project", scope_id: "scope-a" } },
@@ -486,10 +486,10 @@ test("strict smart-write checks scope grants when scope is provided", async () =
 test("single_user rollback keeps no-scope smart-write compatibility", async () => {
   const harness = await createTestHarness({
     permissions: fakeStrictPermissions(),
-    env: { MEMORY_V2_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
+    env: { MEMORY_XX_SCOPE_POLICY_MODE: "single_user" } as NodeJS.ProcessEnv,
   });
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/intelligence/smart-write", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/intelligence/smart-write", {
       method: "POST",
       headers: auth("legacy"),
       body: { text: "single user smart write without explicit scope" },

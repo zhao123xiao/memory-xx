@@ -185,13 +185,13 @@ describe("McpServer", () => {
 });
 
 describe("MCP stdio transport", () => {
-  it("prefers MEMORY_V2_MCP_TOKEN over legacy API token", () => {
+  it("prefers MEMORY_XX_MCP_TOKEN over legacy API token", () => {
     assert.equal(resolveMcpApiToken({
-      MEMORY_V2_MCP_TOKEN: "trusted-agent",
-      MEMORY_V2_API_TOKEN: "legacy",
+      MEMORY_XX_MCP_TOKEN: "trusted-agent",
+      MEMORY_XX_API_TOKEN: "legacy",
     }), "trusted-agent");
     assert.equal(resolveMcpApiToken({
-      MEMORY_V2_API_TOKEN: "legacy",
+      MEMORY_XX_API_TOKEN: "legacy",
     }), "legacy");
   });
 
@@ -200,7 +200,7 @@ describe("MCP stdio transport", () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        MEMORY_V2_BASE_URL: "http://127.0.0.1:5100",
+        MEMORY_XX_BASE_URL: "http://127.0.0.1:5100",
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -295,7 +295,7 @@ describe("registerMemoryTools", () => {
       });
 
       assert.equal(calls.length, 1);
-      assert.equal(calls[0].url, "http://localhost:5100/api/memory/v2/unified/recall");
+      assert.equal(calls[0].url, "http://localhost:5100/api/memory/xx/unified/recall");
       assert.equal(calls[0].body.scope_type, "project");
       assert.equal(calls[0].body.scope_id, "project-a");
       assert.deepEqual(calls[0].body.project_ids, ["project-a", "project-b"]);

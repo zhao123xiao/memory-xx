@@ -5,15 +5,15 @@ import { requiredPermissionForPath } from "../app/server/http-server";
 import { createTestHarness, request } from "./http-test-harness";
 
 test("conversation routes require write permission", () => {
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/events"), "memory:write");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/ingest"), "memory:write");
-  assert.equal(requiredPermissionForPath("/api/memory/v2/conversation/flush"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/events"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/ingest"), "memory:write");
+  assert.equal(requiredPermissionForPath("/api/memory/xx/conversation/flush"), "memory:write");
 });
 
 test("conversation ingest validates messages before extraction", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/conversation/ingest", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/conversation/ingest", {
       method: "POST",
       body: {
         conversation_id: "conv-test",
@@ -35,7 +35,7 @@ test("conversation ingest validates messages before extraction", async () => {
 test("conversation events endpoint is wired and reports unavailable runtime cleanly", async () => {
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/conversation/events", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/conversation/events", {
       method: "POST",
       body: {
         conversation_id: "conv-test",
@@ -57,11 +57,11 @@ test("conversation events endpoint is wired and reports unavailable runtime clea
 });
 
 test("conversation ingest strict scope rejects missing long-term scope", async () => {
-  const previous = process.env.MEMORY_V2_CONVERSATION_STRICT_SCOPE;
-  process.env.MEMORY_V2_CONVERSATION_STRICT_SCOPE = "1";
+  const previous = process.env.MEMORY_XX_CONVERSATION_STRICT_SCOPE;
+  process.env.MEMORY_XX_CONVERSATION_STRICT_SCOPE = "1";
   const harness = await createTestHarness();
   try {
-    const res = await request(harness.baseUrl, "/api/memory/v2/conversation/ingest", {
+    const res = await request(harness.baseUrl, "/api/memory/xx/conversation/ingest", {
       method: "POST",
       body: {
         conversation_id: "conv-test",
@@ -73,7 +73,7 @@ test("conversation ingest strict scope rejects missing long-term scope", async (
     assert.equal((res.body as { error?: string }).error, "scope_context_required");
   } finally {
     await harness.close();
-    if (previous === undefined) delete process.env.MEMORY_V2_CONVERSATION_STRICT_SCOPE;
-    else process.env.MEMORY_V2_CONVERSATION_STRICT_SCOPE = previous;
+    if (previous === undefined) delete process.env.MEMORY_XX_CONVERSATION_STRICT_SCOPE;
+    else process.env.MEMORY_XX_CONVERSATION_STRICT_SCOPE = previous;
   }
 });
