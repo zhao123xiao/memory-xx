@@ -370,6 +370,26 @@ test("startable runtime modules have matching public systemd units", () => {
   assert.deepEqual(missingSourceReferences, []);
 });
 
+test("deploy systemd templates honor runtime module kill switches", () => {
+  const missingGate: string[] = [];
+  const serviceModules = new Map(RUNTIME_MODULES.flatMap((module) => module.service ? [[module.service, module]] : []));
+
+  for (const [service, module] of serviceModules) {
+    if (!module.env_enabled) continue;
+    const unitPath = path.join("deploy", "systemd", service);
+    try {
+      const content = readFileSync(unitPath, "utf8");
+      if (!content.includes(`runtime-module-enabled.ts ${module.name}`)) {
+        missingGate.push(`${module.name}:${unitPath}`);
+      }
+    } catch {
+      // Not every public unit has a deploy/systemd template.
+    }
+  }
+
+  assert.deepEqual(missingGate, []);
+});
+
 test("public full-stack operations services are exposed as runtime modules", () => {
   const services = new Map(RUNTIME_MODULES.flatMap((module) => module.service ? [[module.service, module]] : []));
   const missing = [
