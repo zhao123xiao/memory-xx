@@ -57,6 +57,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
     "memory-xx-markdown-projection",
     "memory-xx-dream-worker",
     "memory-xx-cache-invalidation-worker",
+    "memory-xx-write-ticket-worker",
     "memory-xx-control-panel",
   ]) {
     assert.match(compose, new RegExp(`^  ${service}:`, "mu"), `missing compose service ${service}`);
@@ -73,6 +74,8 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /scripts\/runtime-module-enabled\.ts memory_dreaming/u);
   assert.match(compose, /MEMORY_XX_DREAMING_ENABLED: \$\{MEMORY_XX_DREAMING_ENABLED:-0\}/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
+  assert.match(compose, /scripts\/runtime-module-enabled\.ts write_ticket_worker/u);
+  assert.match(compose, /scripts\/run-write-ticket-worker\.ts/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
   assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
@@ -340,6 +343,7 @@ test("public systemd worker and control units point at repo-local source scripts
     ["systemd/memory-xx-markdown-projection.service", "scripts/run-markdown-projection-worker.ts"],
     ["systemd/memory-xx-dream-worker.service", "scripts/run-dream-worker.ts"],
     ["systemd/memory-xx-control-panel.service", "scripts/memory-control-panel.ts"],
+    ["systemd/memory-xx-write-ticket-worker.service", "scripts/run-write-ticket-worker.ts"],
   ] as const;
   const stale: string[] = [];
   for (const [unit, source] of units) {
@@ -377,6 +381,7 @@ test("public systemd default target starts only core services", async () => {
     "memory-xx-mem0-extractor.service",
     "memory-xx-conversation-monitor-worker.service",
     "memory-xx-cache-invalidation-worker.service",
+    "memory-xx-write-ticket-worker.service",
     "memory-xx-control-panel.service",
   ]) {
     assert.doesNotMatch(target, new RegExp(`^Wants=${pluggableService.replaceAll(".", "\\.")}$`, "mu"));

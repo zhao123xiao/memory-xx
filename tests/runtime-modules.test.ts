@@ -122,6 +122,7 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
     MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
     MEMORY_XX_DREAMING_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: "0",
     MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
     MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
   });
@@ -152,6 +153,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
     MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
     MEMORY_XX_DREAMING_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: "0",
   });
 
   assert.ok(services.includes("memory-xx-fastpath.service"));
@@ -161,6 +163,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
   assert.ok(services.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(services.includes("memory-xx-dream-worker.service"));
   assert.ok(services.includes("memory-xx-control-panel.service"));
+  assert.ok(services.includes("memory-xx-write-ticket-worker.service"));
 });
 
 test("memory mode payload separates enabled start services from disabled cleanup services", () => {
@@ -174,6 +177,7 @@ test("memory mode payload separates enabled start services from disabled cleanup
       MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
       MEMORY_XX_DREAMING_ENABLED: "0",
       MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+      MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: "0",
     },
     unitState: () => "inactive",
   });
@@ -183,8 +187,10 @@ test("memory mode payload separates enabled start services from disabled cleanup
   assert.equal(payload.start_services.includes("memory-xx-fastpath.service"), false);
   assert.equal(payload.start_services.includes("memory-xx-control-panel.service"), false);
   assert.equal(payload.start_services.includes("memory-xx-dream-worker.service"), false);
+  assert.equal(payload.start_services.includes("memory-xx-write-ticket-worker.service"), false);
   assert.equal(payload.stop_services.includes("memory-xx-fastpath.service"), true);
   assert.equal(payload.stop_services.includes("memory-xx-dream-worker.service"), true);
+  assert.equal(payload.stop_services.includes("memory-xx-write-ticket-worker.service"), true);
   assert.equal(payload.stop_services.includes("memory-xx-control-panel.service"), true);
 });
 
@@ -356,6 +362,7 @@ test("public full-stack operations services are exposed as runtime modules", () 
     "memory-xx-landing-scan.service",
     "memory-xx-maintenance.service",
     "memory-xx-repair-report.service",
+    "memory-xx-write-ticket-worker.service",
   ].filter((service) => !services.has(service));
 
   assert.deepEqual(missing, []);
@@ -363,6 +370,8 @@ test("public full-stack operations services are exposed as runtime modules", () 
   assert.equal(services.get("memory-xx-auto-repair.service")?.env_enabled, "MEMORY_XX_AUTO_REPAIR_ENABLED");
   assert.equal(services.get("memory-xx-cache-invalidation-worker.service")?.env_enabled, "MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED");
   assert.equal(services.get("memory-xx-cache-invalidation-worker.service")?.source_path, "scripts/run-cache-invalidation-worker.ts");
+  assert.equal(services.get("memory-xx-write-ticket-worker.service")?.env_enabled, "MEMORY_XX_WRITE_TICKET_WORKER_ENABLED");
+  assert.equal(services.get("memory-xx-write-ticket-worker.service")?.source_path, "scripts/run-write-ticket-worker.ts");
   assert.equal(services.get("memory-xx-consolidation.service")?.source_path, "scripts/memory-consolidate.ts");
   assert.equal(services.get("memory-xx-maintenance.service")?.source_path, "scripts/maintenance.ts");
   assert.equal(services.get("memory-xx-landing-scan.service")?.command, "TMPDIR=/tmp npm run memory:landing-scan -- --json --write-report --max-files=200");

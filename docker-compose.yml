@@ -260,6 +260,25 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  memory-xx-write-ticket-worker:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts write_ticket_worker || exit 0; exec node --import tsx scripts/run-write-ticket-worker.ts"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: ${MEMORY_XX_WRITE_TICKET_WORKER_ENABLED:-0}
+      MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS: ${MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS:-1000}
+      MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE: ${MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE:-10}
+      MEMORY_XX_WRITE_TICKET_LEASE_TTL_SECONDS: ${MEMORY_XX_WRITE_TICKET_LEASE_TTL_SECONDS:-120}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   memory-xx-maintenance:
     build: .
     profiles:
