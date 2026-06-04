@@ -448,7 +448,7 @@ GET /health
     "mode": "core",
     "required_components": ["wrapper", "postgres", "redis", "qdrant", "embedding_proxy", "projector"],
     "expected_components": [],
-    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "mem0_extractor", "conversation_monitor", "control_panel"]
+    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "llm_upstream", "mem0_extractor", "conversation_monitor", "control_panel"]
   },
   "runtime_modules": {
     "mode": "core",

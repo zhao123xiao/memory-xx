@@ -24,6 +24,7 @@ test("runtime module registry describes full-stack pluggable modules", () => {
     "projector",
     "fastpath",
     "lexical_sidecar",
+    "llm_upstream",
     "reranker_adapter",
     "mem0_extractor",
     "conversation_monitor",
@@ -38,6 +39,18 @@ test("runtime module registry describes full-stack pluggable modules", () => {
   assert.equal(modules.get("mem0_extractor")?.source_path, "sidecars/mem0-extractor/extractor.py");
   assert.equal(modules.get("fastpath")?.source_path, "sidecars/fastpath/fastpath.mjs");
   assert.equal(modules.get("lexical_sidecar")?.source_path, "sidecars/lexical-sidecar/lexical-sidecar.mjs");
+});
+
+test("runtime module dependencies resolve to registry entries", () => {
+  const moduleNames = new Set(RUNTIME_MODULES.map((module) => module.name));
+  const unresolved: string[] = [];
+  for (const module of RUNTIME_MODULES) {
+    for (const dependency of module.dependencies ?? []) {
+      if (!moduleNames.has(dependency)) unresolved.push(`${module.name}->${dependency}`);
+    }
+  }
+
+  assert.deepEqual(unresolved, []);
 });
 
 test("runtime module plan keeps core minimal and treats enhanced modules as pluggable", () => {

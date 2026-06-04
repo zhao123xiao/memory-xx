@@ -229,6 +229,17 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     degraded_behavior: "Model reranking is skipped and local rank fusion is used.",
   },
   {
+    name: "llm_upstream",
+    label: "OpenAI-compatible LLM upstream",
+    kind: "external",
+    env_enabled: "MEMORY_XX_LLM_UPSTREAM_ENABLED",
+    health_url: process.env.MEMORY_XX_LLM_UPSTREAM_HEALTH_URL?.trim() || process.env.MEMORY_XX_MEM0_BASE_URL?.trim() || process.env.MEMORY_INTELLIGENCE_BASE_URL?.trim(),
+    required_in: ["full"],
+    expected_in: ["enhanced"],
+    default_enabled: false,
+    degraded_behavior: "Mem0 extraction and LLM-backed intelligence use built-in heuristics or remain disabled.",
+  },
+  {
     name: "mem0_extractor",
     label: "Mem0-style extraction sidecar",
     kind: "sidecar",

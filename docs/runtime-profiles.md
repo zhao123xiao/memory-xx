@@ -22,6 +22,9 @@ reranker adapter, Mem0 extractor, fastpath, and lexical recall under
 HTTP sidecar contracts; optimized Go/Rust implementations can replace them in a
 deployment as long as the contracts stay compatible. They can be disabled with
 `MEMORY_XX_FASTPATH_ENABLED=0` and `MEMORY_XX_LEXICAL_SIDECAR_ENABLED=0`.
+Mem0 extraction depends on an external OpenAI-compatible LLM endpoint, modeled
+as `llm_upstream` in `/health`; set `MEMORY_XX_MEM0_BASE_URL` or
+`MEMORY_INTELLIGENCE_BASE_URL` for that dependency.
 
 ## Runtime Module States
 
