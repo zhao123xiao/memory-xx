@@ -64,11 +64,12 @@ TMPDIR=/tmp npm run memory:p1-gate
 
 candidate-only 退出至少需要满足：真实反馈样本足够、pending 不失控、Qdrant drift 为 0、P1 gate 通过、production guard 通过、default recall leakage 为 0、unknown/sensitive/test-noise auto approve 为 0、rollback rate 可解释。
 
-公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路：
+公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路。cache invalidation smoke 会用 live PostgreSQL 和 Redis 验证持久化缓存失效请求 worker：
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run test:conversation-monitor
+TMPDIR=/tmp npm run smoke:cache-invalidation
 ```
 
 `L7` 覆盖可选 OpenClaw adapter。公开 harness 默认不把它作为阻塞层，避免没有 OpenClaw 的部署无法验证 Core、enhanced 和 full 模块。只有目标环境明确要求 OpenClaw 时才显式开启：

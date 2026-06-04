@@ -1722,9 +1722,13 @@ test("package exposes public harness entrypoints for unit contract and conversat
   assert.equal(packageJson.scripts["test:unit-contract"], "node --import tsx scripts/test-harness/layers/L1-unit-contract.ts");
   assert.equal(packageJson.scripts["test:conversation-monitor"], "node --import tsx scripts/test-harness/layers/L19-conversation-monitor.ts");
   assert.equal(packageJson.scripts["smoke:conversation-monitor"], "node --import tsx scripts/conversation-monitor-smoke.ts");
+  assert.equal(packageJson.scripts["smoke:cache-invalidation"], "node --import tsx scripts/cache-invalidation-smoke.ts");
   assert.match(readme, /npm run test:unit-contract/u);
+  assert.match(readme, /npm run smoke:cache-invalidation/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
+  assert.match(operations, /npm run smoke:cache-invalidation/u);
   assert.match(operationsZh, /npm run test:conversation-monitor/u);
+  assert.match(operationsZh, /npm run smoke:cache-invalidation/u);
 });
 
 test("package exposes an open-source verification script without runtime env gates", async () => {
