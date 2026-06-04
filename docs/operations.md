@@ -444,7 +444,10 @@ MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full 
 
 `enhanced` starts fastpath, lexical sidecar, Qdrant proxy, reranker adapter, and
 the local control panel. `full` also starts Mem0 extraction, the conversation
-monitor, and cache invalidation worker; include both `enhanced` and `full` compose profiles for full-stack
-startup because full builds on enhanced modules. Model upstreams remain environment-specific; configure
+monitor, cache invalidation worker, and the operations/gate modules for
+maintenance, consolidation, issue detection, auto-repair, repair reporting,
+landing scan, and 7-day canary reporting. Those full modules still honor their
+own `MEMORY_XX_*_ENABLED=0` switches and exit without work until enabled.
+Include both `enhanced` and `full` compose profiles for full-stack startup because full builds on enhanced modules. Model upstreams remain environment-specific; configure
 `EMBEDDING_PROXY_UPSTREAM_BASE`, `OPENAI_API_KEY`, reranker downstream URLs, and
 Mem0/LLM settings before relying on those modules.

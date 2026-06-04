@@ -223,6 +223,157 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  memory-xx-maintenance:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts maintenance_orchestrator || exit 0; exec npm run memory:maintenance -- run --mode auto --json"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_MAINTENANCE_ENABLED: ${MEMORY_XX_MAINTENANCE_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  memory-xx-consolidation:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts temporal_consolidation || exit 0; exec npm run memory:consolidate"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_CONSOLIDATION_ENABLED: ${MEMORY_XX_CONSOLIDATION_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  memory-xx-detect:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts runtime_issue_detection || exit 0; exec npm run memory:auto-repair -- --json"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED: ${MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  memory-xx-auto-repair:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts auto_repair || exit 0; exec npm run memory:auto-repair -- --apply --json"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_AUTO_REPAIR_ENABLED: ${MEMORY_XX_AUTO_REPAIR_ENABLED:-0}
+    depends_on:
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  memory-xx-repair-report:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts repair_report || exit 0; npm run memory:auto-repair -- --json; exec npm run memory:doctor -- --target ops-ready --mode full --plan"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_REPAIR_REPORT_ENABLED: ${MEMORY_XX_REPAIR_REPORT_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  memory-xx-landing-scan:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts landing_scan || exit 0; exec npm run memory:landing-scan -- --json --write-report --max-files=200"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_LANDING_SCAN_ENABLED: ${MEMORY_XX_LANDING_SCAN_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  memory-xx-canary-7d-report:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts canary_7d_report || exit 0; exec npm run memory:canary-7d-report -- --json --write-report"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_CANARY_7D_REPORT_ENABLED: ${MEMORY_XX_CANARY_7D_REPORT_ENABLED:-0}
+    depends_on:
+      memory-xx-landing-scan:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:

@@ -71,6 +71,24 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
 });
 
+test("docker compose exposes full-stack operations modules with runtime switches", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const modules = [
+    ["memory-xx-maintenance", "maintenance_orchestrator"],
+    ["memory-xx-consolidation", "temporal_consolidation"],
+    ["memory-xx-detect", "runtime_issue_detection"],
+    ["memory-xx-auto-repair", "auto_repair"],
+    ["memory-xx-repair-report", "repair_report"],
+    ["memory-xx-landing-scan", "landing_scan"],
+    ["memory-xx-canary-7d-report", "canary_7d_report"],
+  ] as const;
+
+  for (const [service, moduleName] of modules) {
+    assert.match(compose, new RegExp(`^  ${service}:$`, "mu"), `missing compose service ${service}`);
+    assert.match(compose, new RegExp(`scripts/runtime-module-enabled\\.ts ${moduleName}`, "u"), `missing runtime switch for ${moduleName}`);
+  }
+});
+
 test("Dockerfile includes source needed by public pluggable modules", async () => {
   const dockerfile = await readFile("Dockerfile", "utf8");
 
