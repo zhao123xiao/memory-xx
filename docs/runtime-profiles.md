@@ -33,9 +33,11 @@ public export audit only found running binaries. They can be disabled with
 - repo source path when source is included
 - degraded behavior when the module is disabled or unhealthy
 
-Doctor and the control panel should report states as `enabled`, `disabled`,
-`degraded`, or `missing_dependency`. A disabled optional/enhanced module should
-not block `core`; a missing required module should block the selected profile.
+`/health` exposes the same registry as `runtime_modules.states`, and the control
+panel converts those states into component rows. Doctor should use the same
+semantics: `enabled`, `disabled`, `degraded`, or `missing_dependency`. A disabled
+optional/enhanced module should not block `core`; a missing required module
+should block the selected profile.
 
 ## Commands
 

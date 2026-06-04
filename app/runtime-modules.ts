@@ -39,6 +39,30 @@ export interface RuntimeModuleResolvedState {
 
 export type RuntimeEnv = Pick<NodeJS.ProcessEnv, string>;
 
+export interface RuntimeModuleSnapshotItem {
+  readonly state: RuntimeModuleState;
+  readonly role: "required" | "expected" | "optional";
+  readonly enabled: boolean;
+  readonly blocks_profile: boolean;
+  readonly label: string;
+  readonly kind: RuntimeModuleKind;
+  readonly service?: string;
+  readonly health_url?: string;
+  readonly source_path?: string;
+  readonly env_enabled?: string;
+  readonly dependencies?: readonly string[];
+  readonly degraded_behavior: string;
+  readonly reason?: string;
+}
+
+export interface RuntimeModuleSnapshot {
+  readonly mode: MemoryRuntimeProfile;
+  readonly required_modules: readonly string[];
+  readonly expected_modules: readonly string[];
+  readonly optional_modules: readonly string[];
+  readonly states: Readonly<Record<string, RuntimeModuleSnapshotItem>>;
+}
+
 const DEFAULT_WRAPPER_HEALTH_URL = process.env.MEMORY_XX_WRAPPER_HEALTH_URL?.trim() || "http://127.0.0.1:5100/health";
 const DEFAULT_EMBEDDING_PROXY_HEALTH_URL = process.env.MEMORY_XX_EMBEDDING_PROXY_HEALTH_URL?.trim() || "http://127.0.0.1:5221/health";
 const DEFAULT_FASTPATH_HEALTH_URL = process.env.MEMORY_XX_FASTPATH_HEALTH_URL?.trim() || "http://127.0.0.1:5200/health";
@@ -327,6 +351,44 @@ export function resolveRuntimeModuleState(
     state: "enabled",
     enabled: true,
     blocks_profile: false,
+  };
+}
+
+export function buildRuntimeModuleSnapshot(
+  profile: MemoryRuntimeProfile,
+  env: RuntimeEnv = process.env
+): RuntimeModuleSnapshot {
+  const plan = buildRuntimeModulePlan(profile);
+  const states = Object.fromEntries(resolveRuntimeModuleStates(profile, env).map((resolved) => {
+    const role = resolved.module.required_in.includes(profile)
+      ? "required"
+      : resolved.module.expected_in?.includes(profile)
+        ? "expected"
+        : "optional";
+    const item: RuntimeModuleSnapshotItem = {
+      state: resolved.state,
+      role,
+      enabled: resolved.enabled,
+      blocks_profile: resolved.blocks_profile,
+      label: resolved.module.label,
+      kind: resolved.module.kind,
+      service: resolved.module.service,
+      health_url: resolved.module.health_url,
+      source_path: resolved.module.source_path,
+      env_enabled: resolved.module.env_enabled,
+      dependencies: resolved.module.dependencies,
+      degraded_behavior: resolved.module.degraded_behavior,
+      reason: resolved.reason,
+    };
+    return [resolved.module.name, item];
+  }));
+
+  return {
+    mode: profile,
+    required_modules: plan.required_modules.map((module) => module.name),
+    expected_modules: plan.expected_modules.map((module) => module.name),
+    optional_modules: plan.optional_modules.map((module) => module.name),
+    states,
   };
 }
 

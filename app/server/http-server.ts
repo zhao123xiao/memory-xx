@@ -33,7 +33,8 @@ import { createMcpHttpHandler } from "../mcp/transport-http";
 import { createDefaultSkillRegistry } from "../skills/default-registry";
 import { inspectEmbeddingGenerationHealth, type EmbeddingGenerationHealth } from "../embedding";
 import { loadEmbeddingProviderRequestConfig, type EmbeddingProviderRequestConfig } from "./embedding-provider";
-import { buildRuntimeProfilePlan, parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../runtime-profiles";
+import { parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../runtime-profiles";
+import { buildRuntimeModuleSnapshot, type RuntimeModuleSnapshot } from "../runtime-modules";
 import { validateRuntimeConfig, type RuntimeConfigValidationResult } from "../runtime-config-validator";
 import { getIntelligenceLlmCircuitHealthSnapshot } from "../intelligence/llm-client";
 import {
@@ -158,6 +159,7 @@ interface WrapperHealthSnapshot {
     readonly expected_components: readonly string[];
     readonly optional_components: readonly string[];
   };
+  readonly runtime_modules: RuntimeModuleSnapshot;
   readonly security: {
     readonly token_separation: ReturnType<typeof inspectTokenSeparation>;
   };
@@ -412,7 +414,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
       embeddingProviderConfig.generation_id === activeGeneration.generation_id
     : null;
   const runtimeProfile = parseMemoryRuntimeProfile();
-  const dependencyProfile = buildRuntimeProfilePlan(runtimeProfile);
+  const runtimeModules = buildRuntimeModuleSnapshot(runtimeProfile);
 
   const tokenSeparation = inspectTokenSeparation(process.env);
   const configValidation = validateRuntimeConfig(process.env);
@@ -509,10 +511,11 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     },
     dependency_profile: {
       mode: runtimeProfile,
-      required_components: dependencyProfile.required_components.map((component) => component.name),
-      expected_components: dependencyProfile.expected_components.map((component) => component.name),
-      optional_components: dependencyProfile.optional_components.map((component) => component.name),
+      required_components: runtimeModules.required_modules,
+      expected_components: runtimeModules.expected_modules,
+      optional_components: runtimeModules.optional_modules,
     },
+    runtime_modules: runtimeModules,
     security: {
       token_separation: tokenSeparation,
     },

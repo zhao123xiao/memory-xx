@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildRuntimeModulePlan,
+  buildRuntimeModuleSnapshot,
   RUNTIME_MODULES,
   resolveRuntimeModuleStates,
 } from "../app/runtime-modules";
@@ -89,4 +90,19 @@ test("required full modules become missing_dependency when enabled but source is
   assert.equal(byName.get("fastpath")?.blocks_profile, true);
   assert.equal(byName.get("lexical_sidecar")?.state, "missing_dependency");
   assert.equal(byName.get("lexical_sidecar")?.blocks_profile, true);
+});
+
+test("runtime module snapshot exposes compact health payload names and states", () => {
+  const snapshot = buildRuntimeModuleSnapshot("enhanced", {
+    MEMORY_XX_FASTPATH_ENABLED: "0",
+    MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "1",
+    MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE: "0",
+  });
+
+  assert.deepEqual(snapshot.required_modules, ["wrapper", "postgres", "redis", "qdrant", "embedding_proxy", "projector"]);
+  assert.ok(snapshot.expected_modules.includes("fastpath"));
+  assert.equal(snapshot.states.fastpath?.state, "disabled");
+  assert.equal(snapshot.states.fastpath?.blocks_profile, false);
+  assert.equal(snapshot.states.mem0_extractor?.state, "missing_dependency");
+  assert.equal(snapshot.states.mem0_extractor?.source_path, "sidecars/mem0-extractor/extractor.py");
 });

@@ -23,6 +23,7 @@ import {
 } from "../scripts/control-panel/settings";
 import { buildRuntimeObservabilityRows } from "../scripts/control-panel/runtime-observability-rows";
 import { buildRuntimeObservabilityRetentionPlan } from "../scripts/control-panel/runtime-observability-retention";
+import { buildComponentStatusesFromRuntimeModules } from "../app/runtime-module-components";
 
 function withRuntimeDir<T>(fn: () => T): T {
   const previous = process.env.MEMORY_XX_RUNTIME_DIR;
@@ -228,4 +229,45 @@ test("runtime observability retention plan keeps current state and prunes histor
   assert.ok(plan.current_state_tables.includes("runtime_setting_effective_values"));
   assert.ok(plan.current_state_tables.includes("runtime_tool_invocations"));
   assert.equal(plan.policies.some((policy) => policy.table === "runtime_setting_effective_values"), false);
+});
+
+test("control panel component statuses use runtime module snapshot states", () => {
+  const components = buildComponentStatusesFromRuntimeModules({
+    states: {
+      wrapper: {
+        state: "enabled",
+        role: "required",
+        label: "memory-xx wrapper HTTP API",
+        kind: "core",
+        service: "memory-xx-wrapper.service",
+        degraded_behavior: "HTTP API unavailable",
+      },
+      fastpath: {
+        state: "disabled",
+        role: "expected",
+        label: "Go fastpath recall sidecar",
+        kind: "sidecar",
+        service: "memory-xx-fastpath.service",
+        source_path: "sidecars/fastpath/README.md",
+        degraded_behavior: "Recall falls back to Node.",
+      },
+      mem0_extractor: {
+        state: "missing_dependency",
+        role: "expected",
+        label: "Mem0-style extraction sidecar",
+        kind: "sidecar",
+        service: "memory-xx-mem0-extractor.service",
+        source_path: "sidecars/mem0-extractor/extractor.py",
+        degraded_behavior: "Smart extraction falls back.",
+        reason: "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE=disabled",
+      },
+    },
+  });
+
+  const byName = new Map(components.map((component) => [component.name, component]));
+  assert.equal(byName.get("wrapper")?.status, "ok");
+  assert.equal(byName.get("fastpath")?.status, "degraded");
+  assert.equal(byName.get("fastpath")?.detail.includes("disabled"), true);
+  assert.equal(byName.get("mem0_extractor")?.status, "blocked");
+  assert.equal(byName.get("mem0_extractor")?.source, "sidecars/mem0-extractor/extractor.py");
 });

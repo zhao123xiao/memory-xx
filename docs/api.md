@@ -450,6 +450,27 @@ GET /health
     "expected_components": [],
     "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "mem0_extractor", "conversation_monitor", "control_panel"]
   },
+  "runtime_modules": {
+    "mode": "core",
+    "states": {
+      "fastpath": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "source_path": "sidecars/fastpath/README.md",
+        "degraded_behavior": "Recall falls back to the Node wrapper path with higher latency."
+      },
+      "mem0_extractor": {
+        "state": "missing_dependency",
+        "role": "expected",
+        "enabled": true,
+        "blocks_profile": false,
+        "source_path": "sidecars/mem0-extractor/extractor.py",
+        "reason": "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE=disabled"
+      }
+    }
+  },
   "vector": { "available": true, "backend": "qdrant", "primary_backend": "qdrant" },
   "qdrant": { "configured": true, "collection_name": "memory-xx-active" },
   "redis": { "configured": true, "available": true },

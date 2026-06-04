@@ -150,6 +150,16 @@ test("public systemd sidecar units point at repo-local sidecar sources", async (
   assert.deepEqual(stale, []);
 });
 
+test("public docs expose runtime module state semantics", async () => {
+  const api = await readFile("docs/api.md", "utf8");
+  const runtimeProfiles = await readFile("docs/runtime-profiles.md", "utf8");
+
+  assert.match(api, /"runtime_modules"/u);
+  assert.match(api, /"missing_dependency"/u);
+  assert.match(runtimeProfiles, /runtime_modules\.states/u);
+  assert.match(runtimeProfiles, /enabled.*disabled.*degraded.*missing_dependency/us);
+});
+
 test("MCP test fixtures use the public wrapper port 5100", async () => {
   const content = await readFile("tests/mcp-server.test.ts", "utf8");
 

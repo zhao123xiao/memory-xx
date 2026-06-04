@@ -8,6 +8,9 @@ import { buildDatabaseMaintenanceSummary } from "./database-maintenance.js";
 import { persistRuntimeObservabilitySnapshot } from "./runtime-observability-store.js";
 import { serviceControls } from "./service-controls.js";
 import { buildRuntimeRegistry, restartPlan } from "./settings.js";
+import { buildRuntimeModuleSnapshot } from "../../app/runtime-modules.js";
+import { parseMemoryRuntimeProfile } from "../../app/runtime-profiles.js";
+import { buildComponentStatusesFromRuntimeModules } from "../../app/runtime-module-components.js";
 
 export interface RuntimeSnapshot {
   readonly snapshot_id: string;
@@ -259,6 +262,40 @@ function componentStatusFromInputs(
   const projectionDiff = objectValue(metrics.qdrant_pg_diff);
   const metricsError = stringValue(metrics.error);
   const generation = objectValue(health.embedding_generation);
+  const moduleStatuses = buildComponentStatusesFromRuntimeModules(objectValue(health.runtime_modules));
+  if (moduleStatuses.length > 0) {
+    return [
+      ...moduleStatuses,
+      {
+        name: "outbox",
+        label: "Outbox（投影事件队列）",
+        status: metricsError ? "blocked" : Number(outbox.dead_letter ?? 0) > 0 ? "blocked" : Number(outbox.pending ?? 0) > 0 ? "degraded" : "ok",
+        detail: metricsError ? `runtime metrics query failed: ${metricsError}` : `pending=${outbox.pending ?? 0} failed=${outbox.failed ?? 0} dead=${outbox.dead_letter ?? 0}`,
+        source: "PostgreSQL outbox_events",
+      },
+      {
+        name: "cache_invalidation",
+        label: "Cache invalidation（缓存失效队列）",
+        status: Number(cache.pending ?? 0) > 0 || Number(cache.failed ?? 0) > 0 ? "degraded" : "ok",
+        detail: `pending=${cache.pending ?? 0} failed=${cache.failed ?? 0} completed=${cache.completed ?? 0}`,
+        source: "PostgreSQL cache_invalidation_requests",
+      },
+      {
+        name: "qdrant_pg_diff",
+        label: "Qdrant/PG diff（向量库与数据库数量差）",
+        status: metricsError ? "blocked" : Number(projectionDiff.diff ?? 0) === 0 ? "ok" : "blocked",
+        detail: metricsError ? `runtime metrics query failed: ${metricsError}` : `PG=${projectionDiff.postgres_effective_recallable ?? "n/a"} Qdrant=${projectionDiff.qdrant_points ?? "n/a"} diff=${projectionDiff.diff ?? "n/a"}`,
+        source: "runtime snapshot reconcile",
+      },
+      {
+        name: "embedding_manifest",
+        label: "Embedding manifest（嵌入清单）",
+        status: generation.ok === true ? "ok" : "blocked",
+        detail: generation.ok === true ? `active=${objectValue(generation.active_generation).generation_id ?? "unknown"}` : stringValue(generation.status) || "manifest unhealthy",
+        source: "wrapper /health",
+      },
+    ];
+  }
   const serviceComponent = (name: string, label: string, unit: string): ComponentStatus => {
     const service = serviceByUnit.get(unit);
     const active = service?.active === true;
@@ -385,10 +422,18 @@ export async function collectRuntimeSnapshot(options: { readonly persist?: boole
   }));
   const registry = buildRuntimeRegistry();
   const serviceObjects = services as readonly Record<string, unknown>[];
+  const healthObject = objectValue(health);
+  const healthRuntimeModules = objectValue(healthObject.runtime_modules);
+  const healthWithRuntimeModules = {
+    ...healthObject,
+    runtime_modules: objectValue(healthRuntimeModules.states)
+      ? healthRuntimeModules
+      : buildRuntimeModuleSnapshot(parseMemoryRuntimeProfile(stringValue(healthObject.runtime_profile))),
+  };
   const metricsObject = {
     ...(metrics as Record<string, unknown>),
     database,
-    component_statuses: componentStatusFromInputs(health, serviceObjects, metrics as Record<string, unknown>, embeddingComponent, rerankerUpstreamComponent),
+    component_statuses: componentStatusFromInputs(healthWithRuntimeModules, serviceObjects, metrics as Record<string, unknown>, embeddingComponent, rerankerUpstreamComponent),
     client_connections: readMemoryClientConnections(),
     mcp_tool_invocations: readMcpToolInvocationMetrics(),
     writable_runtime_items: registry.filter((item) => item.writable).length,
@@ -405,7 +450,7 @@ export async function collectRuntimeSnapshot(options: { readonly persist?: boole
     collected_at: new Date().toISOString(),
     status: statusFromInputs(health, serviceObjects, metricsObject),
     summary: {
-      wrapper_health: health,
+      wrapper_health: healthWithRuntimeModules,
       services: serviceObjects,
       restart_plan: restartPlan(),
       closure_reasons: closureReasons(registry, metricsObject),

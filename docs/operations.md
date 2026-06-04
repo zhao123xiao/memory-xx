@@ -42,6 +42,9 @@ Key fields:
 - `runtime_profile` — `core`, `enhanced`, or `full`; defaults to `core`
 - `dependency_profile` — required/expected/optional components for the active
   runtime profile
+- `runtime_modules.states` — canonical hot-plug state for every module:
+  `enabled`, `disabled`, `degraded`, or `missing_dependency`; the control panel
+  uses the same registry.
 - `vector.available` — Qdrant or pgvector reachable
 - `config.openai_api_key_configured` — embedding API key set
 - `query_embedding_cache.stats.redis_hit_rate` — Redis query embedding cache effectiveness
