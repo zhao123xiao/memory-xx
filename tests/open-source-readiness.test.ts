@@ -1349,6 +1349,8 @@ test("public OVMS helpers require explicit local paths instead of private defaul
   assert.match(benchmark, /MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE/u);
   assert.match(platformDoctor, /<memory-xx-ovms-dir>/u);
   assert.doesNotMatch(platformDoctor, /Windows 侧启动/u);
+  assert.doesNotMatch(manager, /\/mnt\/c\/Windows/u);
+  assert.doesNotMatch(platformDoctor, /\/mnt\/c\/Windows/u);
   assert.doesNotMatch(manager, /<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat/u);
   assert.doesNotMatch(manager, /WorkingDirectory '<windows-drive>\\ovms'/u);
 

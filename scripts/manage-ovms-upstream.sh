@@ -9,8 +9,8 @@ POLL_SECONDS="${MEMORY_XX_OVMS_MANAGER_POLL_SECONDS:-15}"
 READY_TIMEOUT_SECONDS="${MEMORY_XX_OVMS_MANAGER_READY_TIMEOUT_SECONDS:-300}"
 UNHEALTHY_THRESHOLD="${MEMORY_XX_OVMS_MANAGER_UNHEALTHY_THRESHOLD:-3}"
 
-CMD_EXE="${MEMORY_XX_WINDOWS_CMD_EXE:-/mnt/c/Windows/System32/cmd.exe}"
-POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
+CMD_EXE="${MEMORY_XX_WINDOWS_CMD_EXE:-}"
+POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-}"
 
 case "$kind" in
   embedding)
@@ -42,6 +42,14 @@ log() {
 require_ovms_dir() {
   if [[ -z "$OVMS_DIR" ]]; then
     echo "MEMORY_XX_OVMS_DIR is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$CMD_EXE" ]]; then
+    echo "MEMORY_XX_WINDOWS_CMD_EXE is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$POWERSHELL_EXE" ]]; then
+    echo "MEMORY_XX_WINDOWS_POWERSHELL_EXE is required for Windows OVMS upstream management" >&2
     exit 78
   fi
   if [[ -z "$bat_path" ]]; then
@@ -86,7 +94,7 @@ start_windows_process() {
   fi
   log "starting $label via $bat_path"
   "$POWERSHELL_EXE" -NoProfile -ExecutionPolicy Bypass -Command \
-    "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${bat_path}' -WorkingDirectory '${OVMS_DIR}' -WindowStyle Minimized" >/dev/null
+    "Start-Process -FilePath '${CMD_EXE}' -ArgumentList '/c','${bat_path}' -WorkingDirectory '${OVMS_DIR}' -WindowStyle Minimized" >/dev/null
 
   local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
   until healthy; do
