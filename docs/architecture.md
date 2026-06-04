@@ -1,4 +1,4 @@
-# Memory-v2 Architecture
+# memory-xx Architecture
 
 ## Module Structure
 
@@ -75,37 +75,37 @@ HTTP POST /review/memories/:id/:action
 
 ## Configuration
 
-All configuration is via `MEMORY_V2_*` environment variables. The live local
+All configuration is via `MEMORY_XX_*` environment variables. The live local
 runtime is wrapper `5100` -> fastpath `5200` -> lexical `5210`, with Redis on
 `6381`, Qdrant on `6333`, and PostgreSQL selected by
-`MEMORY_V2_DATABASE_URL`. Query/write embeddings go through the local
+`MEMORY_XX_DATABASE_URL`. Query/write embeddings go through the local
 embedding proxy on `5221`, which rate-limits the cloud provider and exposes
 cache/429/latency health.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `MEMORY_V2_WRAPPER_PORT` | HTTP listen port | `5100` |
-| `MEMORY_V2_RUNTIME_PROFILE` | Operational profile: `core`, `enhanced`, or `full` | `core` |
-| `MEMORY_V2_DATABASE_URL` | Postgres truth-ledger connection string | required |
-| `MEMORY_V2_DATABASE_SCHEMA` | Postgres schema | `memory_xx` |
-| `MEMORY_V2_REDIS_URL` | Redis cache/coordination URL | `redis://127.0.0.1:6381/0` in live local env |
-| `MEMORY_V2_REDIS_PREFIX` | Redis key namespace; must match active embedding generation | `memory-xx-local-qwen8b-int4` in live local env |
-| `MEMORY_V2_QDRANT_BASE_URL` | Qdrant REST endpoint | `http://127.0.0.1:6333` |
-| `MEMORY_V2_QDRANT_COLLECTION` | Qdrant production alias, not a raw generation collection | `memory-xx-active` |
-| `MEMORY_V2_QDRANT_ALIAS` | Qdrant alias controlled by `memory:embedding-manifest activate/rollback` | `memory-xx-active` |
-| `MEMORY_V2_EMBEDDING_GENERATION_ID` | Active embedding generation manifest id | `local-qwen8b-int4-v1` |
-| `MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION` | Query embedding cache namespace; must match active manifest | generation-specific |
-| `MEMORY_V2_WRAPPER_MODE` | Wrapper-internal compatibility mode, not the overall runtime profile | `full` in service env |
-| `MEMORY_V2_SCOPE_POLICY_MODE` | `strict` by default; set `single_user` only for rollback | `strict` |
-| `MEMORY_V2_SEMANTIC_LOCK_BACKEND` | Semantic write lock backend; `local` for one wrapper, `redis` for multi-wrapper readiness | `local` |
-| `MEMORY_V2_QDRANT_VERIFY_TIMEOUT_MS` | Qdrant projector readback verification timeout | `1200` |
-| `MEMORY_V2_QDRANT_VERIFY_RETRIES` | Qdrant projector readback retry count | `2` |
-| `MEMORY_V2_DECAY_ARCHIVE_THRESHOLD` | Decay score below which current memories are archive candidates | `0.30` |
-| `MEMORY_V2_DECAY_HIDE_THRESHOLD` | Decay score below which memories are hidden | `0.10` |
-| `MEMORY_V2_EPISODE_WINDOW_HOURS` | Consolidation episode grouping time window | `24` |
-| `MEMORY_V2_API_TOKEN` | Legacy read/write/feedback token | -- |
-| `MEMORY_V2_MCP_TOKEN` | Scoped trusted-agent token preferred by MCP stdio and `/mcp` fallback | trusted-agent token |
-| `MEMORY_V2_ADMIN_TOKEN` | Admin/bypass token for operations and strict gates | -- |
+| `MEMORY_XX_WRAPPER_PORT` | HTTP listen port | `5100` |
+| `MEMORY_XX_RUNTIME_PROFILE` | Operational profile: `core`, `enhanced`, or `full` | `core` |
+| `MEMORY_XX_DATABASE_URL` | Postgres truth-ledger connection string | required |
+| `MEMORY_XX_DATABASE_SCHEMA` | Postgres schema | `memory_xx` |
+| `MEMORY_XX_REDIS_URL` | Redis cache/coordination URL | `redis://127.0.0.1:6381/0` in live local env |
+| `MEMORY_XX_REDIS_PREFIX` | Redis key namespace; must match active embedding generation | `memory-xx-local-qwen8b-int4` in live local env |
+| `MEMORY_XX_QDRANT_BASE_URL` | Qdrant REST endpoint | `http://127.0.0.1:6333` |
+| `MEMORY_XX_QDRANT_COLLECTION` | Qdrant production alias, not a raw generation collection | `memory-xx-active` |
+| `MEMORY_XX_QDRANT_ALIAS` | Qdrant alias controlled by `memory:embedding-manifest activate/rollback` | `memory-xx-active` |
+| `MEMORY_XX_EMBEDDING_GENERATION_ID` | Active embedding generation manifest id | `local-qwen8b-int4-v1` |
+| `MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION` | Query embedding cache namespace; must match active manifest | generation-specific |
+| `MEMORY_XX_WRAPPER_MODE` | Wrapper-internal compatibility mode, not the overall runtime profile | `full` in service env |
+| `MEMORY_XX_SCOPE_POLICY_MODE` | `strict` by default; set `single_user` only for rollback | `strict` |
+| `MEMORY_XX_SEMANTIC_LOCK_BACKEND` | Semantic write lock backend; `local` for one wrapper, `redis` for multi-wrapper readiness | `local` |
+| `MEMORY_XX_QDRANT_VERIFY_TIMEOUT_MS` | Qdrant projector readback verification timeout | `1200` |
+| `MEMORY_XX_QDRANT_VERIFY_RETRIES` | Qdrant projector readback retry count | `2` |
+| `MEMORY_XX_DECAY_ARCHIVE_THRESHOLD` | Decay score below which current memories are archive candidates | `0.30` |
+| `MEMORY_XX_DECAY_HIDE_THRESHOLD` | Decay score below which memories are hidden | `0.10` |
+| `MEMORY_XX_EPISODE_WINDOW_HOURS` | Consolidation episode grouping time window | `24` |
+| `MEMORY_XX_API_TOKEN` | Legacy read/write/feedback token | -- |
+| `MEMORY_XX_MCP_TOKEN` | Scoped trusted-agent token preferred by MCP stdio and `/mcp` fallback | trusted-agent token |
+| `MEMORY_XX_ADMIN_TOKEN` | Admin/bypass token for operations and strict gates | -- |
 | `EMBEDDING_API_BASE` | Embedding API base URL | local proxy in production |
 | `EMBEDDING_PROXY_MIN_INTERVAL_MS` | Cloud embedding start spacing | calibration-driven, stability-first |
 | `EMBEDDING_PROXY_MAX_CONCURRENCY` | Cloud embedding max in-flight requests | `1` unless calibration proves higher is safe |
@@ -119,14 +119,14 @@ cache/429/latency health.
   graph recall for better quality/latency.
 - **`full`** -- release/governance/quality mode. Uses Enhanced services plus
   one-shot quality, graph benchmark, embedding manifest, and governance gates.
-- **rollback-only compatibility** -- set `MEMORY_V2_SCOPE_POLICY_MODE=single_user`
+- **rollback-only compatibility** -- set `MEMORY_XX_SCOPE_POLICY_MODE=single_user`
   to temporarily restore legacy scoped access while keeping the same runtime
   profile.
 
 ### Vector Backends
 
-- **`qdrant-primary`** -- selected when `MEMORY_V2_QDRANT_BASE_URL` and
-  `MEMORY_V2_QDRANT_COLLECTION` are configured. Qdrant is the primary ANN
+- **`qdrant-primary`** -- selected when `MEMORY_XX_QDRANT_BASE_URL` and
+  `MEMORY_XX_QDRANT_COLLECTION` are configured. Qdrant is the primary ANN
   projection and pgvector/lexical are fallback paths.
 - **`postgres-primary`** -- compatibility mode when Qdrant is not configured.
 
@@ -158,9 +158,9 @@ project-context, current-state, and episode queries use stronger graph evidence
 | Component | Value |
 |---|---|
 | HTTP port | `5100` |
-| PostgreSQL | configured via `MEMORY_V2_DATABASE_URL` |
+| PostgreSQL | configured via `MEMORY_XX_DATABASE_URL` |
 | Redis | port `6381` |
-| Qdrant | configured via `MEMORY_V2_QDRANT_BASE_URL` |
+| Qdrant | configured via `MEMORY_XX_QDRANT_BASE_URL` |
 | Embedding proxy | local sidecar on port `5221`, upstream configured by env |
 
 Both deployments share the same codebase and schema. Differences are handled entirely through environment variables.

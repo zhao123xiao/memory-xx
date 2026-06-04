@@ -4,11 +4,11 @@ memory-xx 可以作为多 Agent 共享记忆底座。每个 Agent 应使用独�
 
 ## Token 边界
 
-- `MEMORY_V2_API_TOKEN`：普通 API token。
-- `MEMORY_V2_MCP_TOKEN`：MCP 客户端推荐 token，应绑定 trusted agent 和 scope grants。
-- `MEMORY_V2_ADMIN_TOKEN`：管理操作 token，不应作为默认 Agent/MCP token。
+- `MEMORY_XX_API_TOKEN`：普通 API token。
+- `MEMORY_XX_MCP_TOKEN`：MCP 客户端推荐 token，应绑定 trusted agent 和 scope grants。
+- `MEMORY_XX_ADMIN_TOKEN`：管理操作 token，不应作为默认 Agent/MCP token。
 
-MCP 客户端建议使用 `MEMORY_V2_MCP_TOKEN`。这个 token 应属于 trusted agent，并且必须有对应的 `trusted_agent_scope_grants`。
+MCP 客户端建议使用 `MEMORY_XX_MCP_TOKEN`。这个 token 应属于 trusted agent，并且必须有对应的 `trusted_agent_scope_grants`。
 
 ## Agent 能力
 

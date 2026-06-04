@@ -1,6 +1,6 @@
-# Memory-v2 Runtime Profiles
+# memory-xx Runtime Profiles
 
-`MEMORY_V2_RUNTIME_PROFILE` controls operational expectations. It does not
+`MEMORY_XX_RUNTIME_PROFILE` controls operational expectations. It does not
 remove capabilities from the code path; it tells Doctor and operators which
 components are required, expected, or optional for the current goal.
 
@@ -15,6 +15,9 @@ components are required, expected, or optional for the current goal.
 `core` is intentionally vector-capable. It is not a lexical-only emergency mode.
 If fastpath, lexical sidecar, reranker, or graph enhancement is unavailable,
 Core recall/write should still work and should report optional degradation.
+The public repository currently treats fastpath, lexical sidecar, reranker
+adapter, embedding proxy, Qdrant proxy, and Mem0 extractor as external optional
+components; it does not promise one-command builds for those sidecars.
 
 ## Commands
 

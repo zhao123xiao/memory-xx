@@ -1,6 +1,6 @@
 # configs
 
-Non-secret `MEMORY_V2_*` configuration templates live here.
+Non-secret `MEMORY_XX_*` configuration templates live here.
 
 - `memory-xx.env.example` is the minimum Postgres write-path template for
   `npm run migrate` and `npm run test:postgres`.

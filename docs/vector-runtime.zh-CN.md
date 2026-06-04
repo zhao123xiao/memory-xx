@@ -18,8 +18,8 @@ Embedding 同时影响：
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
 EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
-MEMORY_V2_EMBEDDING_GENERATION_ID=local-qwen8b-int4-v1
-MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-memory-v1
+MEMORY_XX_EMBEDDING_GENERATION_ID=local-qwen8b-int4-v1
+MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-memory-v1
 ```
 
 ## Qdrant Alias 与代际管理
@@ -28,9 +28,9 @@ MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-mem
 
 关键概念：
 
-- `MEMORY_V2_EMBEDDING_GENERATION_ID`：当前 embedding generation。
-- `MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION`：查询向量缓存版本，应随 generation 切换。
-- `MEMORY_V2_QDRANT_ALIAS`：稳定 active alias，外部读写不应直接绑定临时 generation collection。
+- `MEMORY_XX_EMBEDDING_GENERATION_ID`：当前 embedding generation。
+- `MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION`：查询向量缓存版本，应随 generation 切换。
+- `MEMORY_XX_QDRANT_ALIAS`：稳定 active alias，外部读写不应直接绑定临时 generation collection。
 - manifest validate：确认 Postgres/Qdrant/alias/payload generation 一致。
 - reconcile/repair：发现 missing、stale、payload drift、orphan 后修复投影。
 

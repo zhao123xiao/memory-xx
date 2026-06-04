@@ -1,21 +1,21 @@
-# Memory-v2 API Reference
+# memory-xx API Reference
 
-Base path: `/api/memory/v2`
+Base path: `/api/memory/xx`
 
 ## Authentication
 
-Set the `MEMORY_V2_API_TOKEN` environment variable to enable authentication. When set, all endpoints require one of:
+Set the `MEMORY_XX_API_TOKEN` environment variable to enable authentication. When set, all endpoints require one of:
 
 - `Authorization: Bearer <token>`
 - `X-API-Key: <token>`
 
-Strict scope is enabled by default. In strict mode, `MEMORY_V2_API_TOKEN` is a
+Strict scope is enabled by default. In strict mode, `MEMORY_XX_API_TOKEN` is a
 legacy read/write/feedback token and is denied for scoped operations unless the
-service is explicitly rolled back with `MEMORY_V2_SCOPE_POLICY_MODE=single_user`.
-Use trusted-agent grants or `MEMORY_V2_ADMIN_TOKEN` for scoped automation.
+service is explicitly rolled back with `MEMORY_XX_SCOPE_POLICY_MODE=single_user`.
+Use trusted-agent grants or `MEMORY_XX_ADMIN_TOKEN` for scoped automation.
 
-MCP clients should use `MEMORY_V2_MCP_TOKEN`. The MCP server prefers
-`MEMORY_V2_MCP_TOKEN` over `MEMORY_V2_API_TOKEN`; the token must belong to a
+MCP clients should use `MEMORY_XX_MCP_TOKEN`. The MCP server prefers
+`MEMORY_XX_MCP_TOKEN` over `MEMORY_XX_API_TOKEN`; the token must belong to a
 trusted agent with rows in `trusted_agent_scope_grants` for the scopes it reads,
 writes, or reviews. Do not use the admin token as the default MCP token.
 
@@ -31,8 +31,8 @@ writes, or reviews. Do not use the admin token as the default MCP token.
 ### 1. Recall Query
 
 ```
-POST /api/memory/v2/recall/query
-POST /api/memory/v2/recall
+POST /api/memory/xx/recall/query
+POST /api/memory/xx/recall
 ```
 
 Retrieve memories by semantic query.
@@ -90,7 +90,7 @@ Retrieve memories by semantic query.
 ### 2. Write Memory
 
 ```
-POST /api/memory/v2/write
+POST /api/memory/xx/write
 ```
 
 Create a new memory record.
@@ -148,7 +148,7 @@ fields return `400`; relation targets that do not exist return `404`.
 ### 3. Review Memory
 
 ```
-POST /api/memory/v2/review/memories/:memoryId/:action
+POST /api/memory/xx/review/memories/:memoryId/:action
 ```
 
 Transition a memory through its lifecycle.
@@ -203,13 +203,13 @@ Approved records must use `supersede`.
 Canonical feedback endpoint:
 
 ```
-POST /api/memory/v2/unified/feedback
+POST /api/memory/xx/unified/feedback
 ```
 
 Deprecated compatibility alias:
 
 ```
-POST /api/memory/v2/feedback/memories/:memory_id/:action
+POST /api/memory/xx/feedback/memories/:memory_id/:action
 ```
 
 Alias action mapping:
@@ -221,14 +221,14 @@ Alias action mapping:
 | `rejected` / `bad` | `negative` |
 
 The alias is retained for old clients only. New integrations should use
-`/api/memory/v2/unified/feedback`.
+`/api/memory/xx/unified/feedback`.
 
 ---
 
 ### 4. Resolve Scope Plan
 
 ```
-POST /api/memory/v2/orchestrator/resolve-scope-plan
+POST /api/memory/xx/orchestrator/resolve-scope-plan
 ```
 
 Resolve scope hints into a concrete scope plan.
@@ -249,7 +249,7 @@ Resolve scope hints into a concrete scope plan.
 ### 5. Orchestrator Write
 
 ```
-POST /api/memory/v2/orchestrator/write-memory
+POST /api/memory/xx/orchestrator/write-memory
 ```
 
 High-level write combining scope resolution and memory creation.
@@ -269,7 +269,7 @@ High-level write combining scope resolution and memory creation.
 ### 6. Orchestrator Recall
 
 ```
-POST /api/memory/v2/orchestrator/recall-memory
+POST /api/memory/xx/orchestrator/recall-memory
 ```
 
 High-level recall combining scope resolution and query.
@@ -289,7 +289,7 @@ High-level recall combining scope resolution and query.
 ### 7. Orchestrator Summarize
 
 ```
-POST /api/memory/v2/orchestrator/summarize-memory
+POST /api/memory/xx/orchestrator/summarize-memory
 ```
 
 Summarise memories matching the request.
@@ -310,7 +310,7 @@ Summarise memories matching the request.
 ### 8. Orchestrator Forget
 
 ```
-POST /api/memory/v2/orchestrator/forget-memory
+POST /api/memory/xx/orchestrator/forget-memory
 ```
 
 Archive or tombstone a memory.
@@ -331,7 +331,7 @@ Archive or tombstone a memory.
 ### 9. Audit Consistency
 
 ```
-POST /api/memory/v2/orchestrator/audit-memory-consistency
+POST /api/memory/xx/orchestrator/audit-memory-consistency
 ```
 
 Run a consistency audit across Postgres and Qdrant.
@@ -351,7 +351,7 @@ Run a consistency audit across Postgres and Qdrant.
 ### 10. Repair Consistency
 
 ```
-POST /api/memory/v2/orchestrator/repair-memory-consistency
+POST /api/memory/xx/orchestrator/repair-memory-consistency
 ```
 
 Repair consistency issues found by the audit endpoint.
@@ -375,8 +375,8 @@ Repair consistency issues found by the audit endpoint.
 Conversation event append and extraction ingest use different schemas.
 
 ```
-POST /api/memory/v2/conversation/events
-POST /api/memory/v2/conversation/ingest
+POST /api/memory/xx/conversation/events
+POST /api/memory/xx/conversation/ingest
 ```
 
 `/conversation/events` accepts event-style payloads for the conversation
@@ -402,7 +402,7 @@ If `messages` is missing or invalid, the endpoint returns `400` with an
 ### 12. Skills Execute
 
 ```
-POST /api/memory/v2/skills/execute
+POST /api/memory/xx/skills/execute
 ```
 
 Canonical request:

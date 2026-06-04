@@ -51,7 +51,7 @@ Key fields:
   with `recent_429_15m`, `cache_hit_rate`, `upstream_latency_ms`, `queue_wait_ms`,
   and `cooldown_until`
 - `strict_scope` in `memory:doctor` — strict is the default; set
-  `MEMORY_V2_SCOPE_POLICY_MODE=single_user` only as rollback
+  `MEMORY_XX_SCOPE_POLICY_MODE=single_user` only as rollback
 
 ## Local Agent Registration
 
@@ -78,8 +78,8 @@ allowed to mutate owner/global memory. Use `--env-file=<path>` when the token
 should be saved directly into a private runtime env file; the command writes it
 with `0600` permissions.
 
-For MCP stdio or `/mcp` clients, set `MEMORY_V2_MCP_TOKEN` to the trusted-agent
-token. The MCP server prefers `MEMORY_V2_MCP_TOKEN` over `MEMORY_V2_API_TOKEN`.
+For MCP stdio or `/mcp` clients, set `MEMORY_XX_MCP_TOKEN` to the trusted-agent
+token. The MCP server prefers `MEMORY_XX_MCP_TOKEN` over `MEMORY_XX_API_TOKEN`.
 The agent still needs matching `trusted_agent_scope_grants` rows for every
 project, workspace, user, or global scope it accesses.
 
@@ -104,12 +104,12 @@ The control panel graph viewport is 3D. Use the graph selector to switch between
 ## Runtime Profiles
 
 Daily operation should use the vector-capable Core profile. Release validation
-and the current full local stack should set `MEMORY_V2_RUNTIME_PROFILE=full`
+and the current full local stack should set `MEMORY_XX_RUNTIME_PROFILE=full`
 explicitly; Doctor treats missing or contradictory profile settings as a
 configuration blocker.
 
 ```bash
-MEMORY_V2_RUNTIME_PROFILE=core
+MEMORY_XX_RUNTIME_PROFILE=core
 TMPDIR=/tmp npm run memory:mode -- status
 TMPDIR=/tmp npm run memory:doctor -- --target ops-ready --mode core --plan
 ```
@@ -279,8 +279,8 @@ TMPDIR=/tmp npm run check:observation
 ## Metrics
 
 ```bash
-curl -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" http://localhost:5100/metrics
-curl -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" http://localhost:5100/metrics/prometheus
+curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" http://localhost:5100/metrics
+curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" http://localhost:5100/metrics/prometheus
 ```
 
 Returns JSON with:
@@ -298,23 +298,23 @@ Reset in-memory metrics by restarting the service.
 ## Safety Defaults
 
 HTTP CORS defaults to local desktop origins only (`localhost` / `127.0.0.1`).
-Set `MEMORY_V2_CORS_ORIGINS` explicitly for any non-local control-plane
+Set `MEMORY_XX_CORS_ORIGINS` explicitly for any non-local control-plane
 consumer; the wrapper does not fall back to wildcard origins.
 
 Qdrant projection readback is bounded by
-`MEMORY_V2_QDRANT_VERIFY_TIMEOUT_MS` (default 1200ms) and
-`MEMORY_V2_QDRANT_VERIFY_RETRIES` (default 2). Verify failures mark only the
+`MEMORY_XX_QDRANT_VERIFY_TIMEOUT_MS` (default 1200ms) and
+`MEMORY_XX_QDRANT_VERIFY_RETRIES` (default 2). Verify failures mark only the
 affected projected memories and rely on outbox replay plus consistency scan for
 repair.
 
 Single-wrapper deployments use the local semantic write lock. Before running
-multiple wrappers, set `MEMORY_V2_SEMANTIC_LOCK_BACKEND=redis`, verify Redis is
+multiple wrappers, set `MEMORY_XX_SEMANTIC_LOCK_BACKEND=redis`, verify Redis is
 healthy, and rerun `release-ready`; Doctor blocks multi-instance local locks.
 
 Decay and consolidation defaults are configurable without code changes:
-`MEMORY_V2_DECAY_ARCHIVE_THRESHOLD=0.30`,
-`MEMORY_V2_DECAY_HIDE_THRESHOLD=0.10`, and
-`MEMORY_V2_EPISODE_WINDOW_HOURS=24`.
+`MEMORY_XX_DECAY_ARCHIVE_THRESHOLD=0.30`,
+`MEMORY_XX_DECAY_HIDE_THRESHOLD=0.10`, and
+`MEMORY_XX_EPISODE_WINDOW_HOURS=24`.
 
 ## Event Lifecycle
 
@@ -335,7 +335,7 @@ not physically delete production rows.
 
 ## Alerts
 
-Set `MEMORY_V2_ALERT_WEBHOOK_URL` to enable webhook notifications for Doctor
+Set `MEMORY_XX_ALERT_WEBHOOK_URL` to enable webhook notifications for Doctor
 blockers and capacity/degradation checks. If unset, alerts stay visible in
 Doctor and the control panel only. Embedding/OVMS down, Qdrant down, projector
 dead-letter, post-commit degradation, recent 429/503, and release gate failures
@@ -356,7 +356,7 @@ cat /tmp/memory-xx-wrapper.log | jq 'select(.traceId=="abc-123")'
 cat /tmp/memory-xx-wrapper.log | jq 'select(.duration_ms > 1000)'
 ```
 
-Log level controlled by `MEMORY_V2_LOG_LEVEL` (error/warn/info/debug).
+Log level controlled by `MEMORY_XX_LOG_LEVEL` (error/warn/info/debug).
 
 ## Degradation Behavior
 
@@ -384,12 +384,12 @@ TMPDIR=/tmp npm run memory:archive-next-residue
 
 ## Strict Scope Rollback
 
-Strict scope is the default when `MEMORY_V2_SCOPE_POLICY_MODE` is unset. Legacy
+Strict scope is the default when `MEMORY_XX_SCOPE_POLICY_MODE` is unset. Legacy
 tokens are denied for scoped write/feedback/review/knowledge/MCP operations.
 Use this only for emergency compatibility rollback:
 
 ```bash
-printf '\nMEMORY_V2_SCOPE_POLICY_MODE=single_user\n' >> <project-root>/.env
+printf '\nMEMORY_XX_SCOPE_POLICY_MODE=single_user\n' >> <project-root>/.env
 systemctl --user restart memory-xx-wrapper.service
 ```
 
