@@ -474,6 +474,7 @@ test("public docs and config templates use memory-xx env and API names", async (
     "configs/memory-xx-qdrant-projector-worker.env.example",
     "docker-compose.yml",
     "docs/api.md",
+    "docs/migration-rollback-playbook.md",
     "docs/quickstart.zh-CN.md",
     "docs/runtime-profiles.md",
     "docs/vector-runtime.zh-CN.md",
@@ -485,6 +486,22 @@ test("public docs and config templates use memory-xx env and API names", async (
   }
 
   assert.deepEqual(stale, []);
+});
+
+test("public sources do not retain memory-xx-next project naming", async () => {
+  const files = [
+    ...(await collectPublicFiles("app", [".ts"])),
+    ...(await collectPublicFiles("scripts", [".ts", ".sh", ".ps1"])).filter((file) => file !== "scripts/check-hardcoded-paths.ts"),
+    ...(await collectPublicFiles("docs", [".md"])),
+    ...(await collectPublicFiles("tests", [".ts"])).filter((file) => file !== "tests/open-source-readiness.test.ts"),
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/memory-xx-next/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale.sort(), []);
 });
 
 test("public docker profile docs set matching runtime profile", async () => {

@@ -128,7 +128,6 @@ const DENYLIST_RELATIVE_FILES = new Set<string>();
 const PRIVATE_LINUX_USER = "local";
 const PRIVATE_WINDOWS_USER = "\u8d75\u6653\u6653";
 const PRIVATE_PROJECT_ROOT = ["/home", PRIVATE_LINUX_USER, "services", "memory-xx"].join("/");
-const PRIVATE_PROJECT_NEXT_ROOT = ["/home", PRIVATE_LINUX_USER, "services", "memory-xx-next"].join("/");
 const PRIVATE_LINUX_HOME = ["/home", PRIVATE_LINUX_USER].join("/");
 const PRIVATE_WINDOWS_HOME = ["/mnt/c", "Users", PRIVATE_WINDOWS_USER].join("/");
 const PRIVATE_WINDOWS_C_HOME = ["C:", "Users", PRIVATE_WINDOWS_USER].join("\\");
@@ -348,7 +347,6 @@ function sanitizeSecurityTest(content: string): string {
 
 export function sanitizeOpenSourceText(content: string, options: { readonly renameProject?: boolean } = {}): string {
   let output = content
-    .replace(new RegExp(escapeRegExp(PRIVATE_PROJECT_NEXT_ROOT), "gu"), "<project-root>")
     .replace(new RegExp(escapeRegExp(PRIVATE_PROJECT_ROOT), "gu"), "<project-root>")
     .replace(new RegExp(escapeRegExp(PRIVATE_LINUX_HOME), "gu"), "<linux-user-home>")
     .replace(new RegExp(escapeRegExp(PRIVATE_WINDOWS_HOME), "gu"), "<windows-user-home>")

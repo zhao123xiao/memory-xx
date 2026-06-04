@@ -40,7 +40,7 @@ test("qdrant collection classification separates active, knowledge, legacy, and 
   const base = {
     activeCollections: ["memory-xx-local-qwen8b-int4-v1"],
     knowledgeCollections: ["knowledge-v1"],
-    referencedCollections: ["memory-xx-next"],
+    referencedCollections: ["memory-xx-legacy"],
   };
 
   assert.deepEqual(classifyQdrantCollection({ ...base, name: "memory-xx-local-qwen8b-int4-v1" }), {
@@ -51,7 +51,7 @@ test("qdrant collection classification separates active, knowledge, legacy, and 
     role: "knowledge",
     reason: "matches_knowledge_collection",
   });
-  assert.equal(classifyQdrantCollection({ ...base, name: "memory-xx-next" }).role, "archive_candidate");
+  assert.equal(classifyQdrantCollection({ ...base, name: "memory-xx-legacy" }).role, "archive_candidate");
   assert.equal(classifyQdrantCollection({ ...base, name: "openclaw_mem0_4096" }).role, "archive_candidate");
   assert.equal(classifyQdrantCollection({ ...base, name: "unlabeled-experiment" }).role, "unknown");
 });
