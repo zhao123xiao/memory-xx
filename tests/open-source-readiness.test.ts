@@ -154,6 +154,29 @@ test("public systemd sidecar units point at repo-local sidecar sources", async (
   assert.deepEqual(stale, []);
 });
 
+test("public systemd worker and control units point at repo-local source scripts", async () => {
+  const units = [
+    ["systemd/memory-xx-conversation-monitor-worker.service", "scripts/run-conversation-monitor-worker.ts"],
+    ["systemd/memory-xx-control-panel.service", "scripts/memory-control-panel.ts"],
+  ] as const;
+  const stale: string[] = [];
+  for (const [unit, source] of units) {
+    const content = await readFile(unit, "utf8");
+    if (
+      !content.includes(source) ||
+      /services\/memory-xx-(conversation-monitor|control-panel)/u.test(content) ||
+      /\/mnt\/|[A-Z]:\\/u.test(content)
+    ) {
+      stale.push(unit);
+    }
+  }
+
+  const target = await readFile("systemd/memory-xx.target", "utf8");
+  assert.match(target, /Wants=memory-xx-conversation-monitor-worker\.service/u);
+  assert.match(target, /Wants=memory-xx-control-panel\.service/u);
+  assert.deepEqual(stale, []);
+});
+
 async function waitForSidecar(baseUrl: string, child: ChildProcess): Promise<void> {
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {

@@ -66,7 +66,7 @@ candidate-only 退出至少需要满足：真实反馈样本足够、pending 不
 
 ## systemd 与平台部署
 
-`systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter 等 user service/timer 模板。
+`systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter、mem0 extractor、conversation monitor、control panel 等 user service/timer 模板。
 
 ```bash
 mkdir -p ~/.config/systemd/user

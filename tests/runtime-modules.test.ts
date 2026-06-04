@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -105,4 +107,28 @@ test("runtime module snapshot exposes compact health payload names and states", 
   assert.equal(snapshot.states.fastpath?.blocks_profile, false);
   assert.equal(snapshot.states.mem0_extractor?.state, "missing_dependency");
   assert.equal(snapshot.states.mem0_extractor?.source_path, "sidecars/mem0-extractor/extractor.py");
+});
+
+test("startable runtime modules have matching public systemd units", () => {
+  const missing: string[] = [];
+  const missingSourceReferences: string[] = [];
+  for (const module of RUNTIME_MODULES) {
+    if (!module.startable || !module.service) continue;
+    const unitPath = path.join("systemd", module.service);
+    try {
+      statSync(unitPath);
+    } catch {
+      missing.push(`${module.name}:${module.service}`);
+      continue;
+    }
+    if (module.source_path) {
+      const content = readFileSync(unitPath, "utf8");
+      if (!content.includes(module.source_path)) {
+        missingSourceReferences.push(`${module.name}:${module.source_path}`);
+      }
+    }
+  }
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(missingSourceReferences, []);
 });
