@@ -1375,6 +1375,24 @@ test("public embedding upstream manager remains opt-in for remote providers", as
   assert.match(envExample, /^MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0$/mu);
 });
 
+test("public docs describe local embedding upstreams as optional external providers", async () => {
+  const files = [
+    "README.md",
+    "docs/runtime-profiles.md",
+    "docs/vector-runtime.zh-CN.md",
+    "configs/memory-xx-wrapper.env.example",
+    "scripts/platform/platform-doctor.ts",
+    "scripts/local-qwen8b-benchmark.ts",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/bundled local|Local OVMS|本地 OVMS/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("public embedding defaults are provider-neutral", async () => {
   const files = [
     "README.md",

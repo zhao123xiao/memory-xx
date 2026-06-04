@@ -180,7 +180,7 @@ function buildMemoryFixtures(): MemoryFixture[] {
       title: `proxy local mapping ${runId}`,
       content: `proxy maps Qwen3-Embedding-8B to qwen3-embedding for local OVMS; token ${frost}`,
       exact_query: frost,
-      semantic_query: "本地 OVMS 的 embedding 模型名映射在哪里处理"
+      semantic_query: "本地 embedding upstream 的模型名映射在哪里处理"
     },
     {
       profile: "terse",

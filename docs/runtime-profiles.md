@@ -141,8 +141,8 @@ TMPDIR=/tmp npm run memory:source-mode -- --verify --limit 500
 Redis, Qdrant, and configured embedding dependencies, but does not start or
 stop external providers. The local `memory-xx-embedding-upstream.service`
 manager is optional and disabled by default; enable it only when this deployment
-uses the bundled local OVMS/OpenAI-compatible upstream instead of a remote
-embedding provider.
+uses a user-managed local OpenAI-compatible upstream instead of a remote
+embedding provider. The public repository does not bundle model server artifacts.
 
 ## Service Policy
 

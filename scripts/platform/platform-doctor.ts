@@ -95,7 +95,7 @@ export function detectPlatformProfile(facts: PlatformFacts): PlatformDetection {
       [
         ...(currentOs === "wsl" ? [] : ["wsl"]),
         ...(facts.hasPowerShell ? [] : ["windows_powershell"]),
-        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 OVMS 目录"]),
+        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 upstream 目录"]),
       ],
       "systemctl --user start memory-xx.target；if needed, start the optional local upstream manager configured by MEMORY_XX_OVMS_DIR",
     ),
