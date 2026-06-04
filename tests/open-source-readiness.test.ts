@@ -1343,20 +1343,23 @@ test("public OVMS helpers require explicit local paths instead of private defaul
   const manager = await readFile("scripts/manage-ovms-upstream.sh", "utf8");
   const benchmark = await readFile("scripts/local-qwen8b-benchmark.ts", "utf8");
   const platformDoctor = await readFile("scripts/platform/platform-doctor.ts", "utf8");
+  const windowsSystemPath = new RegExp("/" + "mnt" + "/" + "c" + "/" + "Windows", "u");
+  const windowsOvmsDrivePath = new RegExp("D:" + "/" + "ovms", "u");
+  const privateOvmsPath = new RegExp("/" + "mnt" + "/" + "d" + "/" + "ovms|api_key\\.txt", "u");
 
   assert.match(manager, /MEMORY_XX_OVMS_DIR is required/u);
   assert.ok(manager.includes("MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"));
   assert.match(benchmark, /MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE/u);
   assert.match(platformDoctor, /<memory-xx-ovms-dir>/u);
   assert.doesNotMatch(platformDoctor, /Windows 侧启动/u);
-  assert.doesNotMatch(manager, /\/mnt\/c\/Windows/u);
-  assert.doesNotMatch(platformDoctor, /\/mnt\/c\/Windows/u);
-  assert.doesNotMatch(platformDoctor, /D:\/ovms/u);
+  assert.doesNotMatch(manager, windowsSystemPath);
+  assert.doesNotMatch(platformDoctor, windowsSystemPath);
+  assert.doesNotMatch(platformDoctor, windowsOvmsDrivePath);
   assert.doesNotMatch(manager, /<windows-drive>\\ovms\\run-(?:embedding|reranker)\.bat/u);
   assert.doesNotMatch(manager, /WorkingDirectory '<windows-drive>\\ovms'/u);
 
   for (const [name, content] of Object.entries({ manager, benchmark, platformDoctor })) {
-    assert.doesNotMatch(content, /\/mnt\/d\/ovms|api_key\.txt/u, name);
+    assert.doesNotMatch(content, privateOvmsPath, name);
   }
 });
 
@@ -1622,7 +1625,7 @@ test("package exposes an open-source verification script without runtime env gat
   const command = packageJson.scripts["verify:open-source"] ?? "";
 
   assert.match(command, /npm run check:secrets/u);
-  assert.match(command, /npm run open-source:preaudit/u);
+  assert.match(command, /npm run open-source:preaudit -- --fail-on-blockers/u);
   assert.match(command, /tests\/open-source-readiness\.test\.ts/u);
   assert.match(command, /tests\/open-source-release\.test\.ts/u);
   assert.match(command, /tests\/runtime-modules\.test\.ts/u);
