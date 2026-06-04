@@ -499,9 +499,20 @@ GET /health
     }
   },
   "full_stack_capabilities": {
-    "enabled": [],
+    "enabled": ["recall_quality"],
     "disabled": ["memory_dreaming", "auto_approval_ops"],
+    "missing_dependency": ["recall_quality"],
     "states": {
+      "recall_quality": {
+        "state": "missing_dependency",
+        "enabled": true,
+        "profile": "full",
+        "maturity": "beta",
+        "env_enabled": "MEMORY_XX_RECALL_QUALITY_ENABLED",
+        "dependencies": ["fastpath", "lexical_sidecar", "reranker_adapter"],
+        "reason": "dependency_unavailable:fastpath:disabled",
+        "degraded_behavior": "Release quality evidence is not refreshed automatically; recall still uses configured runtime paths."
+      },
       "memory_dreaming": {
         "state": "disabled",
         "enabled": false,

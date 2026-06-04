@@ -1,5 +1,8 @@
+import { resolveRuntimeModuleStates, type RuntimeEnv } from "./runtime-modules";
+
 export type FullStackCapabilityProfile = "core" | "enhanced" | "full";
 export type FullStackCapabilityMaturity = "stable" | "beta" | "experimental";
+export type FullStackCapabilityState = "enabled" | "disabled" | "missing_dependency";
 
 export interface FullStackCapability {
   readonly name: string;
@@ -8,13 +11,13 @@ export interface FullStackCapability {
   readonly maturity: FullStackCapabilityMaturity;
   readonly default_enabled: boolean;
   readonly env_enabled?: string;
+  readonly dependencies?: readonly string[];
   readonly source_paths: readonly string[];
   readonly script_paths: readonly string[];
   readonly degraded_behavior: string;
 }
 
-export type FullStackCapabilityState = "enabled" | "disabled";
-export type FullStackCapabilityEnv = Pick<NodeJS.ProcessEnv, string>;
+export type FullStackCapabilityEnv = RuntimeEnv;
 
 export interface FullStackCapabilitySnapshotItem {
   readonly state: FullStackCapabilityState;
@@ -23,14 +26,17 @@ export interface FullStackCapabilitySnapshotItem {
   readonly profile: FullStackCapabilityProfile;
   readonly maturity: FullStackCapabilityMaturity;
   readonly env_enabled?: string;
+  readonly dependencies?: readonly string[];
   readonly source_paths: readonly string[];
   readonly script_paths: readonly string[];
   readonly degraded_behavior: string;
+  readonly reason?: string;
 }
 
 export interface FullStackCapabilitySnapshot {
   readonly enabled: readonly string[];
   readonly disabled: readonly string[];
+  readonly missing_dependency: readonly string[];
   readonly states: Readonly<Record<string, FullStackCapabilitySnapshotItem>>;
 }
 
@@ -124,6 +130,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_RECALL_QUALITY_ENABLED",
+    dependencies: ["fastpath", "lexical_sidecar", "reranker_adapter"],
     source_paths: ["app/recall/orchestrator.ts", "app/recall/reranker.ts"],
     script_paths: [
       "scripts/memory-quality.ts",
@@ -379,28 +386,74 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
 export function buildFullStackCapabilitySnapshot(
   env: FullStackCapabilityEnv = process.env
 ): FullStackCapabilitySnapshot {
-  const entries = FULL_STACK_CAPABILITIES.map((capability) => {
+  const runtimeProfile = parseRuntimeProfile(env.MEMORY_XX_RUNTIME_PROFILE);
+  const runtimeStates = new Map(resolveRuntimeModuleStates(runtimeProfile, env).map((state) => [state.module.name, state]));
+  const capabilityNames = new Set(FULL_STACK_CAPABILITIES.map((capability) => capability.name));
+  const preliminary = new Map<string, FullStackCapabilitySnapshotItem>();
+
+  for (const capability of FULL_STACK_CAPABILITIES) {
     const enabled = readCapabilityEnabled(capability, env);
-    return [capability.name, {
+    preliminary.set(capability.name, {
       state: enabled ? "enabled" : "disabled",
       enabled,
       label: capability.label,
       profile: capability.profile,
       maturity: capability.maturity,
       env_enabled: capability.env_enabled,
+      dependencies: capability.dependencies,
       source_paths: capability.source_paths,
       script_paths: capability.script_paths,
       degraded_behavior: capability.degraded_behavior,
-    }] as const;
-  });
+      reason: enabled ? undefined : capability.env_enabled ? `${capability.env_enabled}=disabled` : "capability_disabled",
+    });
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const capability of FULL_STACK_CAPABILITIES) {
+      const current = preliminary.get(capability.name);
+      if (!current || current.state !== "enabled") continue;
+
+      const unavailable = (capability.dependencies ?? [])
+        .map((dependency) => {
+          const runtime = runtimeStates.get(dependency);
+          if (runtime) return { name: dependency, state: runtime.state };
+          const capabilityState = capabilityNames.has(dependency) ? preliminary.get(dependency) : undefined;
+          if (capabilityState) return { name: dependency, state: capabilityState.state };
+          return { name: dependency, state: "missing_dependency" as const };
+        })
+        .find((dependency) => dependency.state !== "enabled");
+
+      if (!unavailable) continue;
+      preliminary.set(capability.name, {
+        ...current,
+        state: "missing_dependency",
+        reason: `dependency_unavailable:${unavailable.name}:${unavailable.state}`,
+      });
+      changed = true;
+    }
+  }
+
+  const entries = [...preliminary.entries()];
   const enabled = entries.filter(([, state]) => state.enabled).map(([name]) => name);
-  const disabled = entries.filter(([, state]) => !state.enabled).map(([name]) => name);
+  const disabled = entries.filter(([, state]) => state.state === "disabled").map(([name]) => name);
+  const missingDependency = entries.filter(([, state]) => state.state === "missing_dependency").map(([name]) => name);
   return {
     enabled,
     disabled,
+    missing_dependency: missingDependency,
     states: Object.fromEntries(entries),
   };
 }
+
+function parseRuntimeProfile(raw?: string): "core" | "enhanced" | "full" {
+  const normalized = (raw ?? "core").trim().toLowerCase();
+  return normalized === "enhanced" || normalized === "full" ? normalized : "core";
+}
+
+// `enabled` reflects operator intent; `state` reflects whether dependencies can
+// actually support that capability in the current environment.
 
 function readCapabilityEnabled(capability: FullStackCapability, env: FullStackCapabilityEnv): boolean {
   if (!capability.env_enabled) return capability.default_enabled;

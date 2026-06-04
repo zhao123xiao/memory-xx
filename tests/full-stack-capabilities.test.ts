@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import test from "node:test";
 
@@ -222,4 +223,51 @@ test("full-stack capability snapshot exposes pluggable health state", () => {
   assert.equal(snapshot.states.memory_dreaming?.degraded_behavior, "Background dreaming/promoted insight generation is disabled; explicit write/recall continues.");
   assert.ok(snapshot.disabled.includes("memory_dreaming"));
   assert.ok(snapshot.enabled.includes("memory_knowledge_graph"));
+});
+
+test("enabled full-stack capabilities expose missing dependency state instead of looking healthy", () => {
+  const snapshot = buildFullStackCapabilitySnapshot({
+    MEMORY_XX_RECALL_QUALITY_ENABLED: "1",
+    MEMORY_XX_RUNTIME_PROFILE: "core",
+    MEMORY_XX_FASTPATH_ENABLED: "0",
+    MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+    MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+  });
+
+  assert.equal(snapshot.states.recall_quality?.state, "missing_dependency");
+  assert.equal(snapshot.states.recall_quality?.enabled, true);
+  assert.equal(snapshot.states.recall_quality?.reason, "dependency_unavailable:fastpath:disabled");
+  assert.deepEqual(snapshot.states.recall_quality?.dependencies, ["fastpath", "lexical_sidecar", "reranker_adapter"]);
+  assert.ok(snapshot.missing_dependency.includes("recall_quality"));
+});
+
+test("full-stack capability dependencies resolve against runtime modules and capabilities", () => {
+  const runtimeModuleNames = new Set(RUNTIME_MODULES.map((module) => module.name));
+  const capabilityNames = new Set(FULL_STACK_CAPABILITIES.map((capability) => capability.name));
+  const unresolved = FULL_STACK_CAPABILITIES.flatMap((capability) =>
+    (capability.dependencies ?? [])
+      .filter((dependency) => !runtimeModuleNames.has(dependency) && !capabilityNames.has(dependency))
+      .map((dependency) => `${capability.name}->${dependency}`)
+  );
+
+  assert.deepEqual(unresolved, []);
+});
+
+test("capability guard blocks enabled capabilities with missing dependencies", () => {
+  const result = spawnSync("node", ["--import", "tsx", "scripts/capability-enabled.ts", "recall_quality"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      MEMORY_XX_RECALL_QUALITY_ENABLED: "1",
+      MEMORY_XX_RUNTIME_PROFILE: "core",
+      MEMORY_XX_FASTPATH_ENABLED: "0",
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+    },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /recall_quality unavailable: missing_dependency/u);
+  assert.match(result.stderr, /dependency_unavailable:fastpath:disabled/u);
 });

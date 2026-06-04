@@ -726,11 +726,14 @@ test("public docs expose runtime module state semantics", async () => {
   assert.match(api, /"runtime_modules"/u);
   assert.match(api, /"full_stack_capabilities"/u);
   assert.match(api, /"missing_dependency"/u);
+  assert.match(api, /"dependencies": \["fastpath", "lexical_sidecar", "reranker_adapter"\]/u);
+  assert.match(api, /"reason": "dependency_unavailable:fastpath:disabled"/u);
   assert.match(api, /"maintenance_orchestrator"/u);
   assert.match(api, /"auto_repair"/u);
   assert.match(api, /"canary_7d_report"/u);
   assert.match(runtimeProfiles, /runtime_modules\.states/u);
   assert.match(runtimeProfiles, /full_stack_capabilities\.states/u);
+  assert.match(runtimeProfiles, /dependencies, state, reason, and\s+degraded behavior/u);
   assert.match(runtimeProfiles, /enabled.*disabled.*degraded.*missing_dependency/us);
 });
 

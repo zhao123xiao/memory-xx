@@ -54,9 +54,13 @@ gates, and report-only self-improvement operations. The open-source release gate
 checks that their source files and CLI scripts are exported even when the
 capability is disabled by default. `/health` exposes the same manifest as
 `full_stack_capabilities.states`, including each capability's profile, maturity,
-env switch, exported source/script paths, state, and degraded behavior. A
-disabled capability should not block Core unless a service module in
-`runtime_modules.states` is also required by the selected runtime profile.
+env switch, exported source/script paths, dependencies, state, reason, and
+degraded behavior. Capability states use `enabled`, `disabled`, or
+`missing_dependency`: `enabled` records operator intent, while
+`missing_dependency` means the switch is on but a required runtime module or
+capability is unavailable. A disabled or missing-dependency capability should
+not block Core unless a service module in `runtime_modules.states` is also
+required by the selected runtime profile.
 The public `configs/memory-xx-wrapper.env.example` lists every
 `full_stack_capabilities.states[*].env_enabled` switch with a default `0` value
 so operators can opt into each package explicitly.

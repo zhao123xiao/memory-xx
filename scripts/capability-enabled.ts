@@ -12,10 +12,13 @@ if (!capabilityName || !capability) {
 } else {
   const snapshot = buildFullStackCapabilitySnapshot(process.env);
   const state = snapshot.states[capability.name];
-  if (state?.enabled) {
+  if (state?.state === "enabled") {
     process.exitCode = 0;
   } else {
-    process.stderr.write(`${capability.name} disabled: ${capability.env_enabled ?? "capability_disabled"}=disabled\n`);
+    process.stderr.write(
+      `${capability.name} unavailable: ${state?.state ?? "unknown"}`
+      + `${state?.reason ? ` ${state.reason}` : ""}\n`
+    );
     process.exitCode = 1;
   }
 }
