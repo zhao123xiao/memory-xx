@@ -140,6 +140,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/memory-local-agent-evidence.ts",
       "scripts/memory-recall-repair.ts",
       "scripts/trace-replay-feedback.ts",
+      "scripts/recall-quality-smoke.ts",
     ],
     degraded_behavior: "Release quality evidence is not refreshed automatically; recall still uses configured runtime paths.",
   },

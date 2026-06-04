@@ -920,6 +920,50 @@ test("public repository exposes qdrant reconciliation smoke as a read-only full-
   assert.match(moduleCatalog, /smoke:qdrant-reconciliation/u);
 });
 
+test("public repository exposes recall quality smoke as a read-only full-stack check", async () => {
+  const files = [
+    "app/recall/orchestrator.ts",
+    "app/recall/reranker.ts",
+    "scripts/memory-quality.ts",
+    "scripts/intelligence-quality.ts",
+    "scripts/benchmark-reranker-policy.ts",
+    "scripts/trace-replay-feedback.ts",
+    "scripts/recall-quality-smoke.ts",
+    "tests/recall-quality-smoke.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+  const smoke = await readFile("scripts/recall-quality-smoke.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+  const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["smoke:recall-quality"], "node --import tsx scripts/recall-quality-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /tests\/recall-quality-smoke\.test\.ts/u);
+  assert.match(capabilities, /name: "recall_quality"[\s\S]*scripts\/recall-quality-smoke\.ts/u);
+  assert.doesNotMatch(smoke, /--apply|--write-observations|memory-recall-repair\.ts|memory-local-agent-evidence\.ts/u);
+  assert.match(readme, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
+  assert.match(operations, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
+  assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
+  assert.match(moduleCatalog, /smoke:recall-quality/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",
