@@ -45,7 +45,11 @@ auto-approval/update operations, embedding generation manifest and calibration,
 local embedding generation, backup, platform doctor, trusted agent tooling, and
 Qdrant reconciliation. The open-source release gate checks that their source
 files and CLI scripts are exported even when the capability is disabled by
-default.
+default. `/health` exposes the same manifest as
+`full_stack_capabilities.states`, including each capability's profile, maturity,
+env switch, exported source/script paths, state, and degraded behavior. A
+disabled capability should not block Core unless a service module in
+`runtime_modules.states` is also required by the selected runtime profile.
 
 ## Runtime Module States
 

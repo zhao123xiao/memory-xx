@@ -498,6 +498,28 @@ GET /health
       }
     }
   },
+  "full_stack_capabilities": {
+    "enabled": [],
+    "disabled": ["memory_dreaming", "auto_approval_ops"],
+    "states": {
+      "memory_dreaming": {
+        "state": "disabled",
+        "enabled": false,
+        "profile": "full",
+        "maturity": "experimental",
+        "env_enabled": "MEMORY_XX_DREAMING_ENABLED",
+        "degraded_behavior": "Background dreaming/promoted insight generation is disabled; explicit write/recall continues."
+      },
+      "auto_approval_ops": {
+        "state": "disabled",
+        "enabled": false,
+        "profile": "full",
+        "maturity": "beta",
+        "env_enabled": "MEMORY_XX_AUTO_APPROVAL_ENABLED",
+        "degraded_behavior": "Pending memories remain reviewable manually; automatic approvals and sweeps do not run."
+      }
+    }
+  },
   "vector": { "available": true, "backend": "qdrant", "primary_backend": "qdrant" },
   "qdrant": { "configured": true, "collection_name": "memory-xx-active" },
   "redis": { "configured": true, "available": true },

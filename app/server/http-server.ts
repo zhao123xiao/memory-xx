@@ -32,6 +32,7 @@ import { createDefaultMcpServer } from "../mcp";
 import { createMcpHttpHandler } from "../mcp/transport-http";
 import { createDefaultSkillRegistry } from "../skills/default-registry";
 import { inspectEmbeddingGenerationHealth, type EmbeddingGenerationHealth } from "../embedding";
+import { buildFullStackCapabilitySnapshot, type FullStackCapabilitySnapshot } from "../full-stack-capabilities";
 import { loadEmbeddingProviderRequestConfig, type EmbeddingProviderRequestConfig } from "./embedding-provider";
 import { parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../runtime-profiles";
 import { buildRuntimeModuleSnapshot, type RuntimeModuleSnapshot } from "../runtime-modules";
@@ -160,6 +161,7 @@ interface WrapperHealthSnapshot {
     readonly optional_components: readonly string[];
   };
   readonly runtime_modules: RuntimeModuleSnapshot;
+  readonly full_stack_capabilities: FullStackCapabilitySnapshot;
   readonly security: {
     readonly token_separation: ReturnType<typeof inspectTokenSeparation>;
   };
@@ -415,6 +417,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     : null;
   const runtimeProfile = parseMemoryRuntimeProfile();
   const runtimeModules = buildRuntimeModuleSnapshot(runtimeProfile);
+  const fullStackCapabilities = buildFullStackCapabilitySnapshot();
 
   const tokenSeparation = inspectTokenSeparation(process.env);
   const configValidation = validateRuntimeConfig(process.env);
@@ -516,6 +519,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
       optional_components: runtimeModules.optional_modules,
     },
     runtime_modules: runtimeModules,
+    full_stack_capabilities: fullStackCapabilities,
     security: {
       token_separation: tokenSeparation,
     },

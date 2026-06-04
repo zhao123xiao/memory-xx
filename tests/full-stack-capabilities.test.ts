@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { statSync } from "node:fs";
 import test from "node:test";
 
-import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
+import { buildFullStackCapabilitySnapshot, FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 
 function exists(path: string): boolean {
   try {
@@ -63,4 +63,20 @@ test("full-stack capability manifest keeps experimental capabilities disabled by
     .map((capability) => capability.name);
 
   assert.deepEqual(experimentalEnabled, []);
+});
+
+test("full-stack capability snapshot exposes pluggable health state", () => {
+  const snapshot = buildFullStackCapabilitySnapshot({
+    MEMORY_XX_MEMORY_GRAPH_ENABLED: "1",
+    MEMORY_XX_DREAMING_ENABLED: "0",
+  });
+
+  assert.equal(snapshot.states.memory_knowledge_graph?.state, "enabled");
+  assert.equal(snapshot.states.memory_knowledge_graph?.profile, "enhanced");
+  assert.equal(snapshot.states.memory_knowledge_graph?.env_enabled, "MEMORY_XX_MEMORY_GRAPH_ENABLED");
+  assert.equal(snapshot.states.memory_dreaming?.state, "disabled");
+  assert.equal(snapshot.states.memory_dreaming?.maturity, "experimental");
+  assert.equal(snapshot.states.memory_dreaming?.degraded_behavior, "Background dreaming/promoted insight generation is disabled; explicit write/recall continues.");
+  assert.ok(snapshot.disabled.includes("memory_dreaming"));
+  assert.ok(snapshot.enabled.includes("memory_knowledge_graph"));
 });

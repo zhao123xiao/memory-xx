@@ -13,6 +13,27 @@ export interface FullStackCapability {
   readonly degraded_behavior: string;
 }
 
+export type FullStackCapabilityState = "enabled" | "disabled";
+export type FullStackCapabilityEnv = Pick<NodeJS.ProcessEnv, string>;
+
+export interface FullStackCapabilitySnapshotItem {
+  readonly state: FullStackCapabilityState;
+  readonly enabled: boolean;
+  readonly label: string;
+  readonly profile: FullStackCapabilityProfile;
+  readonly maturity: FullStackCapabilityMaturity;
+  readonly env_enabled?: string;
+  readonly source_paths: readonly string[];
+  readonly script_paths: readonly string[];
+  readonly degraded_behavior: string;
+}
+
+export interface FullStackCapabilitySnapshot {
+  readonly enabled: readonly string[];
+  readonly disabled: readonly string[];
+  readonly states: Readonly<Record<string, FullStackCapabilitySnapshotItem>>;
+}
+
 export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
   {
     name: "knowledge_ingest",
@@ -210,3 +231,38 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     degraded_behavior: "Projection repair is not run automatically; vector freshness may lag while Postgres remains authoritative.",
   },
 ];
+
+export function buildFullStackCapabilitySnapshot(
+  env: FullStackCapabilityEnv = process.env
+): FullStackCapabilitySnapshot {
+  const entries = FULL_STACK_CAPABILITIES.map((capability) => {
+    const enabled = readCapabilityEnabled(capability, env);
+    return [capability.name, {
+      state: enabled ? "enabled" : "disabled",
+      enabled,
+      label: capability.label,
+      profile: capability.profile,
+      maturity: capability.maturity,
+      env_enabled: capability.env_enabled,
+      source_paths: capability.source_paths,
+      script_paths: capability.script_paths,
+      degraded_behavior: capability.degraded_behavior,
+    }] as const;
+  });
+  const enabled = entries.filter(([, state]) => state.enabled).map(([name]) => name);
+  const disabled = entries.filter(([, state]) => !state.enabled).map(([name]) => name);
+  return {
+    enabled,
+    disabled,
+    states: Object.fromEntries(entries),
+  };
+}
+
+function readCapabilityEnabled(capability: FullStackCapability, env: FullStackCapabilityEnv): boolean {
+  if (!capability.env_enabled) return capability.default_enabled;
+  const raw = env[capability.env_enabled]?.trim().toLowerCase();
+  if (raw === undefined || raw.length === 0) return capability.default_enabled;
+  if (["1", "true", "yes", "on", "enabled"].includes(raw)) return true;
+  if (["0", "false", "no", "off", "disabled"].includes(raw)) return false;
+  return capability.default_enabled;
+}
