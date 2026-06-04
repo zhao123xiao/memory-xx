@@ -121,12 +121,14 @@ TMPDIR=/tmp npm run memory:dev-embedding-upstream
 Docker Compose 也可以用 `dev` profile 启动同一个开发 upstream：
 
 ```bash
-MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+MEMORY_XX_DEV_EMBEDDING_DIMS=4096 \
 EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
 EMBEDDING_MODEL=memory-xx-dev-embedding \
-EMBEDDING_DIMS=384 \
+EMBEDDING_DIMS=4096 \
 docker-compose --profile dev up --build -d
 ```
+
+Core 数据库 schema 和 Qdrant projector 默认按 4096 维 embedding 校验。低维 dev embedding 只适合单独测试 sidecar，不适合 Core write/project/recall smoke。
 
 如果本机已经运行 PostgreSQL、Redis、Qdrant 或其他 memory-xx 实例，可以覆盖 Compose 暴露到宿主机的端口；容器内部连接仍使用默认端口：
 

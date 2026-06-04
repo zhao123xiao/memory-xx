@@ -456,6 +456,23 @@ test("public quickstart and env template keep embedding provider vendor-neutral"
   assert.doesNotMatch(envExample, /scnet\.cn/u);
 });
 
+test("public dev embedding smoke uses the schema-compatible 4096 dimensions", async () => {
+  const files = [
+    "README.md",
+    "docs/quickstart.zh-CN.md",
+    "sidecars/dev-embedding-upstream/README.md",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/MEMORY_XX_DEV_EMBEDDING_DIMS=384|EMBEDDING_DIMS=384/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("public repository includes source entries for pluggable full-stack sidecars", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

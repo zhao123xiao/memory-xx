@@ -77,12 +77,14 @@ TMPDIR=/tmp npm run memory:dev-embedding-upstream
 Docker Compose 场景可以用 `dev` profile 启动同一个开发 upstream：
 
 ```bash
-MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+MEMORY_XX_DEV_EMBEDDING_DIMS=4096 \
 EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
 EMBEDDING_MODEL=memory-xx-dev-embedding \
-EMBEDDING_DIMS=384 \
+EMBEDDING_DIMS=4096 \
 docker-compose --profile dev up --build -d memory-xx-dev-embedding-upstream memory-xx-embedding-proxy
 ```
+
+Core 数据库 schema 和 Qdrant projector 默认按 4096 维 embedding 校验。低维 dev embedding 只适合单独测试 sidecar，不适合 Core write/project/recall smoke。
 
 ## 会话来源目录
 
@@ -173,12 +175,14 @@ docker-compose up --build -d
 没有真实 embedding provider 时，可以先用 dev profile 验证 Core 布线：
 
 ```bash
-MEMORY_XX_DEV_EMBEDDING_DIMS=384 \
+MEMORY_XX_DEV_EMBEDDING_DIMS=4096 \
 EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
 EMBEDDING_MODEL=memory-xx-dev-embedding \
-EMBEDDING_DIMS=384 \
+EMBEDDING_DIMS=4096 \
 docker-compose --profile dev up --build -d
 ```
+
+Core 数据库 schema 和 Qdrant projector 默认按 4096 维 embedding 校验。低维 dev embedding 只适合单独测试 sidecar，不适合 Core write/project/recall smoke。
 
 如果本机已经有 PostgreSQL、Redis、Qdrant 或其他 memory-xx 实例占用默认端口，可以覆盖 Compose 暴露到宿主机的端口；容器之间的连接仍使用 `postgres:5432`、`redis:6379`、`qdrant:6333` 和默认服务名：
 
