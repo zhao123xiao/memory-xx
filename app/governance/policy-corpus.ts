@@ -376,7 +376,7 @@ export function buildLocalNegativeSamples(runId: string): PolicyCorpusSample[] {
 export function buildHardNegativeSamples(runId: string, count: number): PolicyCorpusSample[] {
   const templates: Array<Record<string, unknown>> = [
     { context: "只是验证 Codex JSONL bridge 到 worker 的临时事件，不需要记住。", source: "conversation_ingest" },
-    { context: "source=unknown, agent_id=klee 的候选需要隔离，不允许 silent approve。", source: "unknown source" },
+    { context: "source=unknown, agent_id=memory-xx 的候选需要隔离，不允许 silent approve。", source: "unknown source" },
     { context: "配置转储：model_provider = \"codexshare\" token=sk_test_placeholder mcp_servers={}.", source: "conversation_ingest" },
     { context: "Auto approval canary marker aac-test. perf-1 hook 验收标识。", source: "conversation_ingest" },
     { context: "通过 conversation ingest 生成待审批候选，不会自动批准。", source: "conversation_ingest" },

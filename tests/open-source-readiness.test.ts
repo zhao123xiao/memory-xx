@@ -504,6 +504,25 @@ test("public sources do not retain memory-xx-next project naming", async () => {
   assert.deepEqual(stale.sort(), []);
 });
 
+test("public runtime defaults use generic memory-xx actor names", async () => {
+  const files = [
+    "app/server/cli.ts",
+    "app/server/http-request-builders.ts",
+    "app/server/http-review-handler.ts",
+    "app/server/http-orchestrator-handler.ts",
+    "app/mcp/mcp-server.ts",
+    "app/skills/builtins/smart-write.ts",
+    "app/governance/policy-corpus.ts",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/\bklee\b/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale, []);
+});
+
 test("public docker profile docs set matching runtime profile", async () => {
   const files = ["docs/quickstart.zh-CN.md", "docs/operations.md", "docs/operations.zh-CN.md"] as const;
   const missing: string[] = [];

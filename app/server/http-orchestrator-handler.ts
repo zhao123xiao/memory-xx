@@ -136,7 +136,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       }
       return await orchestrator.forget_memory({
         requestId: readOptionalTrimmedString(payload.requestId) ?? randomUUID(),
-        actorId: readOptionalTrimmedString(payload.actorId) ?? "klee",
+        actorId: readOptionalTrimmedString(payload.actorId) ?? "memory-xx",
         memoryId: readOptionalTrimmedString(payload.memoryId) ?? readOptionalTrimmedString(payload.memory_id) ?? "",
         mode: payload.mode === "archive" ? "archive" : "tombstone",
       });
@@ -162,7 +162,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       const rawBody = isPlainObject(payload) ? (payload as Record<string, unknown>) : {};
       return await orchestrator.mcp_approve_memory({
         memory_id: String(rawBody.memory_id ?? ""),
-        reviewer_id: String(rawBody.reviewer_id ?? "klee"),
+        reviewer_id: String(rawBody.reviewer_id ?? "memory-xx"),
         reason: typeof rawBody.reason === "string" ? rawBody.reason : undefined,
       });
     }
@@ -170,7 +170,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       const rawBody = isPlainObject(payload) ? (payload as Record<string, unknown>) : {};
       return await orchestrator.mcp_reject_memory({
         memory_id: String(rawBody.memory_id ?? ""),
-        reviewer_id: String(rawBody.reviewer_id ?? "klee"),
+        reviewer_id: String(rawBody.reviewer_id ?? "memory-xx"),
         reason: String(rawBody.reason ?? "rejected via MCP"),
       });
     }

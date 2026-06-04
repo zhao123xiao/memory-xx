@@ -60,7 +60,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
     scopeId: get("--scope-id") ?? "",
     content: get("--content") ?? "",
     title: get("--title"),
-    author: get("--author") ?? "klee",
+    author: get("--author") ?? "memory-xx",
     tags: getList("--tags"),
     lifecycleStatus: get("--lifecycle-status"),
     reviewState: get("--review-state"),

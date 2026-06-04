@@ -130,7 +130,7 @@ export function buildCreateCommandFromBody(body: Record<string, unknown>): Creat
   }
   return {
     requestId: readOptionalTrimmedString(body.requestId) ?? randomUUID(),
-    actorId: readOptionalTrimmedString(body.actorId) ?? "klee",
+    actorId: readOptionalTrimmedString(body.actorId) ?? "memory-xx",
     scopeType,
     scopeId: validated.scopeId.trim(),
     content: validated.content,

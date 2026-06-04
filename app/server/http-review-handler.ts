@@ -79,7 +79,7 @@ export async function handleReview(req: IncomingMessage, res: ServerResponse, ha
       return;
     }
     const requestId = String(payload.requestId ?? randomUUID());
-    const actorId = String(payload.actorId ?? "klee");
+    const actorId = String(payload.actorId ?? "memory-xx");
     const serviceDeps = {
       database: deps.writeDatabase,
       cacheInvalidator: new RecallRuntimeCacheInvalidator(deps.recallCache, { database: deps.writeDatabase }),
