@@ -588,6 +588,7 @@ test("public canary docs keep optional conversation adapters opt-in", async () =
 
   assert.match(canary, /codex_session/u);
   assert.match(canary, /claude_code_session/u);
+  assert.match(canary, /memory:landing-scan -- --json --write-report --required-source=openclaw_session/u);
   assert.match(canary, /--required-source=openclaw_session/u);
   assert.match(quickstart, /OpenClaw 是可选 adapter/u);
 });
