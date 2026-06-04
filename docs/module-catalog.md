@@ -94,7 +94,7 @@ matching dependencies are configured.
 | `code_graph` | `memory:code-graph` |
 | `temporal_decay` | `memory:decay`, `memory:temporal-sweep`, `memory:temporal-policy` |
 | `temporal_consolidation` | `memory:consolidate` |
-| `memory_dreaming` | `run:dream-worker` |
+| `memory_dreaming` | `run:dream-worker`, `smoke:memory-dreaming` |
 | `policy_evaluation` | `memory:policy-corpus`, `memory:policy-eval`, `memory:policy-report`, `memory:debt-plan` |
 | `recall_quality` | `memory:quality`, `memory:intelligence-quality`, `memory:reranker-policy-benchmark`, `memory:p1-evidence`, `memory:recall-repair`, `memory:trace-feedback` |
 | `auto_approval_ops` | `memory:auto-approval`, `memory:auto-approval-ops`, `memory:auto-approval-sweep`, `memory:auto-approval-limit-advisor` |

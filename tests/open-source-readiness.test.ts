@@ -791,8 +791,10 @@ test("public repository includes memory dreaming as a pluggable full-stack modul
     "app/dream/dream-scheduler.ts",
     "app/dream/dream-tasks.ts",
     "scripts/run-dream-worker.ts",
+    "scripts/memory-dreaming-smoke.ts",
     "systemd/memory-xx-dream-worker.service",
     "tests/dream.test.ts",
+    "tests/memory-dreaming-smoke.test.ts",
   ];
   const missing: string[] = [];
   const stale: string[] = [];
@@ -813,10 +815,12 @@ test("public repository includes memory dreaming as a pluggable full-stack modul
   assert.deepEqual(missing, []);
   assert.deepEqual(stale, []);
   assert.equal(packageJson.scripts["run:dream-worker"], "node --import tsx scripts/run-dream-worker.ts");
+  assert.equal(packageJson.scripts["smoke:memory-dreaming"], "node --import tsx scripts/memory-dreaming-smoke.ts");
   assert.match(await readFile("systemd/memory-xx-dream-worker.service", "utf8"), /scripts\/runtime-module-enabled\.ts memory_dreaming/u);
   assert.match(capabilities, /name: "memory_dreaming"/u);
   assert.match(capabilities, /MEMORY_XX_DREAMING_ENABLED/u);
   assert.match(capabilities, /scripts\/run-dream-worker\.ts/u);
+  assert.match(capabilities, /scripts\/memory-dreaming-smoke\.ts/u);
   const dreamWorker = await readFile("scripts/run-dream-worker.ts", "utf8");
   assert.match(dreamWorker, /MEMORY_XX_DREAMING_ENABLED/u);
   assert.doesNotMatch(dreamWorker, /MEMORY_XX_DREAM_ENABLED/u);
@@ -1727,18 +1731,22 @@ test("package exposes public harness entrypoints for unit contract and conversat
   assert.equal(packageJson.scripts["smoke:cache-invalidation"], "node --import tsx scripts/cache-invalidation-smoke.ts");
   assert.equal(packageJson.scripts["smoke:write-ticket"], "node --import tsx scripts/write-ticket-smoke.ts");
   assert.equal(packageJson.scripts["smoke:markdown-projection"], "node --import tsx scripts/markdown-projection-smoke.ts");
+  assert.equal(packageJson.scripts["smoke:memory-dreaming"], "node --import tsx scripts/memory-dreaming-smoke.ts");
   assert.match(readme, /npm run test:unit-contract/u);
   assert.match(readme, /npm run smoke:cache-invalidation/u);
   assert.match(readme, /npm run smoke:write-ticket/u);
   assert.match(readme, /npm run smoke:markdown-projection/u);
+  assert.match(readme, /npm run smoke:memory-dreaming/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
   assert.match(operations, /npm run smoke:cache-invalidation/u);
   assert.match(operations, /npm run smoke:write-ticket/u);
   assert.match(operations, /npm run smoke:markdown-projection/u);
+  assert.match(operations, /npm run smoke:memory-dreaming/u);
   assert.match(operationsZh, /npm run test:conversation-monitor/u);
   assert.match(operationsZh, /npm run smoke:cache-invalidation/u);
   assert.match(operationsZh, /npm run smoke:write-ticket/u);
   assert.match(operationsZh, /npm run smoke:markdown-projection/u);
+  assert.match(operationsZh, /npm run smoke:memory-dreaming/u);
 });
 
 test("package exposes an open-source verification script without runtime env gates", async () => {

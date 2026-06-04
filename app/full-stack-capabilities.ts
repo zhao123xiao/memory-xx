@@ -104,7 +104,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_DREAMING_ENABLED",
     source_paths: ["app/dream/index.ts", "app/dream/dream-worker.ts", "app/dream/dream-scheduler.ts"],
-    script_paths: ["scripts/run-dream-worker.ts"],
+    script_paths: ["scripts/run-dream-worker.ts", "scripts/memory-dreaming-smoke.ts"],
     degraded_behavior: "Background dreaming/promoted insight generation is disabled; explicit write/recall continues.",
   },
   {
