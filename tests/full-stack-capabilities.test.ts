@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import test from "node:test";
 
 import { buildFullStackCapabilitySnapshot, FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
+import { RUNTIME_MODULES } from "../app/runtime-modules";
 
 function exists(path: string): boolean {
   try {
@@ -79,6 +80,39 @@ test("full-stack capability manifest classifies production CLI scripts not model
   ];
 
   assert.deepEqual(expected.filter((script) => !covered.has(script)), []);
+});
+
+test("memory npm scripts are classified by runtime modules or full-stack capability manifest", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const scriptPathPattern = /scripts\/[\w.-]+\.ts/gu;
+  const runtimeCovered = new Set<string>();
+  for (const module of RUNTIME_MODULES) {
+    if (module.source_path?.startsWith("scripts/")) runtimeCovered.add(module.source_path);
+    for (const match of module.command?.matchAll(scriptPathPattern) ?? []) runtimeCovered.add(match[0]);
+  }
+  const capabilityCovered = new Set(FULL_STACK_CAPABILITIES.flatMap((capability) => capability.script_paths));
+  const baseCommands = new Set([
+    "scripts/memory-mode.ts",
+    "scripts/memory-status.ts",
+    "scripts/memory-agent.ts",
+    "scripts/memory-review.ts",
+    "scripts/memory-dashboard.ts",
+    "scripts/generate-report.ts",
+    "scripts/source-mode.ts",
+  ]);
+  const missing: string[] = [];
+  for (const [name, command] of Object.entries(packageJson.scripts)) {
+    if (!name.startsWith("memory:")) continue;
+    for (const match of command.matchAll(scriptPathPattern)) {
+      const script = match[0];
+      if (runtimeCovered.has(script) || capabilityCovered.has(script) || baseCommands.has(script)) continue;
+      missing.push(`${name}:${script}`);
+    }
+  }
+
+  assert.deepEqual(missing.sort(), []);
 });
 
 test("full-stack capability manifest keeps experimental capabilities disabled by default", () => {
