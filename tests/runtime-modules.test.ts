@@ -147,6 +147,39 @@ test("memory mode starts expected services for enhanced profiles", () => {
   assert.equal(enhancedServices.includes("memory-xx-dream-worker.service"), false);
 });
 
+test("systemd profile targets mirror memory mode enhanced and full start plans", () => {
+  const readWants = (file: string): readonly string[] => readFileSync(file, "utf8")
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("Wants="))
+    .map((line) => line.slice("Wants=".length));
+  const profileEnv = {
+    MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "http://127.0.0.1:9000/health",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "http://127.0.0.1:8084/v3/models",
+  };
+
+  const enhancedTargetServices = readWants("systemd/memory-xx-enhanced.target")
+    .filter((service) => service.endsWith(".service"));
+  const fullTargetServices = [
+    ...enhancedTargetServices,
+    ...readWants("systemd/memory-xx-full.target").filter((service) => service.endsWith(".service")),
+  ];
+  const externalSystemdServices = RUNTIME_MODULES
+    .filter((module) => module.kind === "external" && module.startable && module.service)
+    .map((module) => module.service!);
+
+  const enhancedStartServices = buildRuntimeProfileStartServices("enhanced", profileEnv)
+    .filter((service) => service !== "memory-xx-wrapper.service" && service !== "memory-xx-embedding-proxy.service" && service !== "memory-xx-qdrant-projector-worker.service");
+  const fullStartServices = buildRuntimeProfileStartServices("full", profileEnv)
+    .filter((service) => service !== "memory-xx-wrapper.service" && service !== "memory-xx-embedding-proxy.service" && service !== "memory-xx-qdrant-projector-worker.service");
+
+  assert.deepEqual(enhancedTargetServices.filter((service) => !externalSystemdServices.includes(service)).sort(), [...enhancedStartServices].sort());
+  assert.deepEqual([...new Set(fullTargetServices)].filter((service) => !externalSystemdServices.includes(service)).sort(), [...fullStartServices].sort());
+  assert.deepEqual(enhancedTargetServices.filter((service) => externalSystemdServices.includes(service)).sort(), [
+    "memory-xx-embedding-upstream.service",
+    "memory-xx-reranker-upstream.service",
+  ]);
+});
+
 test("memory mode skips dependency-bound enhanced services until their upstream is configured", () => {
   const enhancedServices = buildRuntimeProfileStartServices("enhanced", {
     MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "",

@@ -82,11 +82,11 @@ MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1 TMPDIR=/tmp node --import tsx scripts/t
 
 `systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter、mem0 extractor、conversation monitor、control panel 等 user service/timer 模板。
 
-`memory-xx.target` 默认只拉起 Core 在线链路：wrapper、Qdrant projector worker 和 embedding proxy。fastpath、lexical sidecar、reranker、Mem0 extractor、conversation monitor、control panel 等模块需要按环境显式开启，避免公开用户缺少本地模型或 LLM endpoint 时影响 Core 运行。
+`memory-xx.target` 默认只拉起 Core 在线链路：wrapper、Qdrant projector worker 和 embedding proxy。fastpath、lexical sidecar、reranker、Mem0 extractor、conversation monitor、control panel 等模块需要按环境显式开启，避免公开用户缺少本地模型或 LLM endpoint 时影响 Core 运行。需要 systemd 服务组时可以启用 `memory-xx-enhanced.target` 或 `memory-xx-full.target`，各 unit 仍会通过 `MEMORY_XX_*_ENABLED` 开关安全退出或降级。
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp systemd/memory-xx*.service systemd/memory-xx*.timer systemd/memory-xx.target ~/.config/systemd/user/
+cp systemd/memory-xx*.service systemd/memory-xx*.timer systemd/memory-xx*.target ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now memory-xx.target
 TMPDIR=/tmp npm run memory:up -- --mode enhanced

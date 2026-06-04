@@ -159,8 +159,9 @@ systemd service names use stable `memory-xx-*.service` units.
 
 `systemd/memory-xx.target` starts only the Core online chain by default:
 wrapper, Qdrant projector worker, and embedding proxy. Start enhanced/full
-modules with `memory:up -- --mode enhanced`, `memory:up -- --mode full`, or
-explicit individual systemd units after their model/API dependencies are ready.
+modules with `memory:up -- --mode enhanced`, `memory:up -- --mode full`,
+`memory-xx-enhanced.target`, `memory-xx-full.target`, or explicit individual
+systemd units after their model/API dependencies are ready.
 
 ## P1/P2 Production Closure
 

@@ -938,6 +938,45 @@ test("public systemd default target starts only core services", async () => {
   }
 });
 
+test("public systemd profile targets expose enhanced and full pluggable service groups", async () => {
+  const enhancedTarget = await readFile("systemd/memory-xx-enhanced.target", "utf8");
+  const fullTarget = await readFile("systemd/memory-xx-full.target", "utf8");
+
+  assert.match(enhancedTarget, /^Wants=memory-xx\.target$/mu);
+  for (const service of [
+    "memory-xx-embedding-upstream.service",
+    "memory-xx-qdrant-proxy.service",
+    "memory-xx-fastpath.service",
+    "memory-xx-lexical-sidecar.service",
+    "memory-xx-reranker-upstream.service",
+    "memory-xx-reranker-adapter.service",
+    "memory-xx-mem0-extractor.service",
+    "memory-xx-conversation-monitor-worker.service",
+    "memory-xx-control-panel.service",
+  ]) {
+    assert.match(enhancedTarget, new RegExp(`^Wants=${service.replaceAll(".", "\\.")}$`, "mu"));
+  }
+
+  assert.match(fullTarget, /^Wants=memory-xx-enhanced\.target$/mu);
+  for (const service of [
+    "memory-xx-markdown-projection.service",
+    "memory-xx-dream-worker.service",
+    "memory-xx-cache-invalidation-worker.service",
+    "memory-xx-write-ticket-worker.service",
+    "memory-xx-maintenance.service",
+    "memory-xx-consolidation.service",
+    "memory-xx-detect.service",
+    "memory-xx-auto-repair.service",
+    "memory-xx-repair-report.service",
+    "memory-xx-landing-scan.service",
+    "memory-xx-canary-7d-report.service",
+    "memory-xx-quality-runner.service",
+    "memory-xx-governance-report.service",
+  ]) {
+    assert.match(fullTarget, new RegExp(`^Wants=${service.replaceAll(".", "\\.")}$`, "mu"));
+  }
+});
+
 test("current public runtime services do not use experimental next suffixes", async () => {
   const files = [
     "app/runtime-modules.ts",
@@ -946,6 +985,8 @@ test("current public runtime services do not use experimental next suffixes", as
     "scripts/control-panel/summary.ts",
     "scripts/memory-doctor.ts",
     "systemd/memory-xx.target",
+    "systemd/memory-xx-enhanced.target",
+    "systemd/memory-xx-full.target",
     "docs/module-catalog.md",
     "docs/runtime-profiles.md",
   ];

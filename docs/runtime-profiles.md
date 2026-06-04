@@ -155,8 +155,9 @@ projector, and embedding proxy so a default user install does not accidentally
 pull environment-specific enhanced/full modules such as reranker, Mem0,
 conversation monitor, or the control panel.
 
-Use `TMPDIR=/tmp npm run memory:up -- --mode enhanced` or start individual
-`systemd/` units to opt into enhanced modules. Use `--mode full` only when the
+Use `TMPDIR=/tmp npm run memory:up -- --mode enhanced`, enable
+`memory-xx-enhanced.target`, or start individual `systemd/` units to opt into
+enhanced modules. Use `memory-xx-full.target` or `--mode full` only when the
 local model/API dependencies and operations modules for the full stack are
 configured.
 
