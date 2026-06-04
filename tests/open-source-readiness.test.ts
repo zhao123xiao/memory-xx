@@ -265,6 +265,23 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
 });
 
+test("docker compose includes enhanced expected services in the enhanced profile", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const enhancedExpectedServices = [
+    "memory-xx-qdrant-proxy",
+    "memory-xx-fastpath",
+    "memory-xx-lexical-sidecar",
+    "memory-xx-reranker-adapter",
+    "memory-xx-mem0-extractor",
+    "memory-xx-conversation-monitor",
+    "memory-xx-control-panel",
+  ];
+
+  for (const service of enhancedExpectedServices) {
+    assert.match(composeServiceBlock(compose, service), /profiles:\s*\n\s+- enhanced\s*\n\s+- full/u, service);
+  }
+});
+
 test("docker compose full profile includes enhanced services required by full runtime", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
   const fullRequiredEnhancedServices = [
@@ -297,6 +314,26 @@ test("docker compose pluggable profile services honor runtime module switches", 
     assert.match(compose, new RegExp(`^  ${service}:$`, "mu"), `missing compose service ${service}`);
     assert.match(compose, new RegExp(`scripts/runtime-module-enabled\\.ts ${moduleName}`, "u"), `missing runtime switch for ${service}`);
     assert.equal(compose.includes(`${envName}: \${${envName}:-0}`), true, `missing disabled default env for ${service}`);
+  }
+});
+
+test("docker compose wrapper receives pluggable runtime module switches", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const wrapper = composeServiceBlock(compose, "memory-xx");
+  const envNames = [
+    "MEMORY_XX_QDRANT_PROXY_ENABLED",
+    "MEMORY_XX_FASTPATH_ENABLED",
+    "MEMORY_XX_LEXICAL_SIDECAR_ENABLED",
+    "MEMORY_XX_RERANKER_UPSTREAM_ENABLED",
+    "MEMORY_XX_RERANKER_ADAPTER_ENABLED",
+    "MEMORY_XX_LLM_UPSTREAM_ENABLED",
+    "MEMORY_XX_MEM0_EXTRACTOR_ENABLED",
+    "MEMORY_XX_CONVERSATION_MONITOR_ENABLED",
+    "MEMORY_XX_CONTROL_PANEL_ENABLED",
+  ];
+
+  for (const envName of envNames) {
+    assert.equal(wrapper.includes(`${envName}: \${${envName}:-0}`), true, envName);
   }
 });
 

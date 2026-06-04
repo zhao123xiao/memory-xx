@@ -21,6 +21,15 @@ services:
       MEMORY_XX_FASTPATH_URL: http://memory-xx-fastpath:5200
       MEMORY_XX_RERANKER_ADAPTER_URL: http://memory-xx-reranker-adapter:8085
       MEMORY_INTELLIGENCE_MEM0_URL: http://memory-xx-mem0-extractor:5220
+      MEMORY_XX_QDRANT_PROXY_ENABLED: ${MEMORY_XX_QDRANT_PROXY_ENABLED:-0}
+      MEMORY_XX_FASTPATH_ENABLED: ${MEMORY_XX_FASTPATH_ENABLED:-0}
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: ${MEMORY_XX_LEXICAL_SIDECAR_ENABLED:-0}
+      MEMORY_XX_RERANKER_UPSTREAM_ENABLED: ${MEMORY_XX_RERANKER_UPSTREAM_ENABLED:-0}
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
+      MEMORY_XX_LLM_UPSTREAM_ENABLED: ${MEMORY_XX_LLM_UPSTREAM_ENABLED:-0}
+      MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
+      MEMORY_XX_CONVERSATION_MONITOR_ENABLED: ${MEMORY_XX_CONVERSATION_MONITOR_ENABLED:-0}
+      MEMORY_XX_CONTROL_PANEL_ENABLED: ${MEMORY_XX_CONTROL_PANEL_ENABLED:-0}
     depends_on:
       postgres:
         condition: service_healthy
@@ -255,6 +264,7 @@ services:
   memory-xx-mem0-extractor:
     build: .
     profiles:
+      - enhanced
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts mem0_extractor || exit 0; exec python3 sidecars/mem0-extractor/extractor.py"]
     ports:
@@ -277,6 +287,7 @@ services:
   memory-xx-conversation-monitor:
     build: .
     profiles:
+      - enhanced
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts conversation_monitor || exit 0; exec node --import tsx scripts/run-conversation-monitor-worker.ts"]
     environment:

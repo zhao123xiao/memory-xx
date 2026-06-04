@@ -133,6 +133,39 @@ test("compose profile live smoke accepts disabled profile containers that exit c
   assert.deepEqual(report.blocking_runtime_modules, []);
 });
 
+test("compose profile live smoke requires enabled runtime service containers to be running", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+    ],
+    healthPayload: {
+      runtime_profile: "enhanced",
+      runtime_modules: {
+        mode: "enhanced",
+        states: {
+          wrapper: { state: "enabled", blocks_profile: false, service: "memory-xx-wrapper.service" },
+          postgres: { state: "enabled", blocks_profile: false },
+          redis: { state: "enabled", blocks_profile: false },
+          qdrant: { state: "enabled", blocks_profile: false },
+          embedding_proxy: { state: "enabled", blocks_profile: false, service: "memory-xx-embedding-proxy.service" },
+          projector: { state: "enabled", blocks_profile: false, service: "memory-xx-qdrant-projector-worker.service" },
+          fastpath: { state: "enabled", blocks_profile: false, service: "memory-xx-fastpath.service" },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.missing_enabled_services, ["fastpath:memory-xx-fastpath"]);
+  assert.equal(report.blockers.includes("missing_enabled_service:fastpath:memory-xx-fastpath"), true);
+});
+
 test("compose profile live smoke retries transient Docker health starting state", async () => {
   let attempts = 0;
   const report = await buildComposeProfileLiveSmokeReport({

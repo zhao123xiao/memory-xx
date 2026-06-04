@@ -78,6 +78,8 @@ export interface ComposeProfileLiveSmokeReport {
   readonly profile: MemoryRuntimeProfile;
   readonly required_services: readonly string[];
   readonly missing_services: readonly string[];
+  readonly missing_enabled_services: readonly string[];
+  readonly stopped_enabled_services: readonly string[];
   readonly unhealthy_services: readonly string[];
   readonly exited_nonzero_services: readonly string[];
   readonly exited_zero_services: readonly string[];
@@ -172,6 +174,19 @@ function buildComposeProfileLiveSmokeReportFromState(
   const byService = new Map(services.map((service) => [service.Service ?? "", service]));
 
   const missingServices = CORE_LONG_RUNNING_SERVICES.filter((service) => !byService.has(service));
+  const enabledRuntimeServices = Object.entries(runtimeStates)
+    .map(([name, value]) => ({ name, state: readRecord(value) }))
+    .filter(({ state }) => readString(state.state) === "enabled")
+    .map(({ name, state }) => ({ module: name, service: systemdServiceToComposeService(readString(state.service)) }))
+    .filter((item): item is { module: string; service: string } => Boolean(item.service))
+    .filter((item) => !CORE_LONG_RUNNING_SERVICES.includes(item.service as typeof CORE_LONG_RUNNING_SERVICES[number]));
+  const missingEnabledServices = enabledRuntimeServices
+    .filter((item) => !byService.has(item.service))
+    .map((item) => `${item.module}:${item.service}`);
+  const stoppedEnabledServices = enabledRuntimeServices
+    .map((item) => ({ ...item, state: byService.get(item.service)?.State }))
+    .filter((item) => item.state && readString(item.state) !== "running")
+    .map((item) => `${item.module}:${item.service}:${item.state}`);
   const unhealthyServices = services
     .filter((service) => readString(service.Health) && readString(service.Health) !== "healthy")
     .map((service) => `${service.Service ?? "unknown"}:${service.Health}`);
@@ -192,6 +207,8 @@ function buildComposeProfileLiveSmokeReportFromState(
   const profileMismatch = Boolean(runtimeMode && runtimeMode !== profile);
   const blockers = [
     ...missingServices.map((service) => `missing_service:${service}`),
+    ...missingEnabledServices.map((service) => `missing_enabled_service:${service}`),
+    ...stoppedEnabledServices.map((service) => `stopped_enabled_service:${service}`),
     ...unhealthyServices.map((service) => `unhealthy_service:${service}`),
     ...longRunningStoppedServices.map((service) => `long_running_service_stopped:${service}`),
     ...exitedNonZeroServices.map((service) => `exited_nonzero_service:${service}`),
@@ -204,6 +221,8 @@ function buildComposeProfileLiveSmokeReportFromState(
     profile,
     required_services: [...CORE_LONG_RUNNING_SERVICES],
     missing_services: missingServices,
+    missing_enabled_services: missingEnabledServices,
+    stopped_enabled_services: stoppedEnabledServices,
     unhealthy_services: unhealthyServices,
     exited_nonzero_services: exitedNonZeroServices,
     exited_zero_services: exitedZeroServices,
@@ -211,6 +230,11 @@ function buildComposeProfileLiveSmokeReportFromState(
     profile_mismatch: profileMismatch,
     blockers,
   };
+}
+
+function systemdServiceToComposeService(service: string | null): string | null {
+  if (!service?.endsWith(".service")) return null;
+  return service.slice(0, -".service".length).replace(/-wrapper$/u, "");
 }
 
 function parseServices(compose: string): readonly ComposeService[] {
