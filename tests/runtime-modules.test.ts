@@ -33,6 +33,7 @@ test("runtime module registry describes full-stack pluggable modules", () => {
     "reranker_adapter",
     "mem0_extractor",
     "conversation_monitor",
+    "memory_dreaming",
     "control_panel",
   ]) {
     assert.ok(modules.has(name), `missing module ${name}`);
@@ -108,6 +109,7 @@ test("memory mode starts expected services for enhanced profiles", () => {
   assert.ok(enhancedServices.includes("memory-xx-mem0-extractor.service"));
   assert.ok(enhancedServices.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(enhancedServices.includes("memory-xx-control-panel.service"));
+  assert.equal(enhancedServices.includes("memory-xx-dream-worker.service"), false);
 });
 
 test("memory mode start plan skips full modules disabled by kill switches", () => {
@@ -118,6 +120,7 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
     MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
     MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
     MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
+    MEMORY_XX_DREAMING_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
     MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
     MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
@@ -147,6 +150,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
     MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
     MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
     MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
+    MEMORY_XX_DREAMING_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
   });
 
@@ -155,6 +159,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
   assert.ok(services.includes("memory-xx-reranker-adapter-next.service"));
   assert.ok(services.includes("memory-xx-mem0-extractor.service"));
   assert.ok(services.includes("memory-xx-conversation-monitor-worker.service"));
+  assert.ok(services.includes("memory-xx-dream-worker.service"));
   assert.ok(services.includes("memory-xx-control-panel.service"));
 });
 
@@ -167,6 +172,7 @@ test("memory mode payload separates enabled start services from disabled cleanup
       MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
       MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
       MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
+      MEMORY_XX_DREAMING_ENABLED: "0",
       MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
     },
     unitState: () => "inactive",
@@ -176,7 +182,9 @@ test("memory mode payload separates enabled start services from disabled cleanup
   assert.equal(payload.mode, "full");
   assert.equal(payload.start_services.includes("memory-xx-fastpath.service"), false);
   assert.equal(payload.start_services.includes("memory-xx-control-panel.service"), false);
+  assert.equal(payload.start_services.includes("memory-xx-dream-worker.service"), false);
   assert.equal(payload.stop_services.includes("memory-xx-fastpath.service"), true);
+  assert.equal(payload.stop_services.includes("memory-xx-dream-worker.service"), true);
   assert.equal(payload.stop_services.includes("memory-xx-control-panel.service"), true);
 });
 

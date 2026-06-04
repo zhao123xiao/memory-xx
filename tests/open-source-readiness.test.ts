@@ -70,7 +70,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /scripts\/run-markdown-projection-worker\.ts/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts markdown_projection/u);
   assert.match(compose, /scripts\/run-dream-worker\.ts/u);
-  assert.match(compose, /scripts\/capability-enabled\.ts memory_dreaming/u);
+  assert.match(compose, /scripts\/runtime-module-enabled\.ts memory_dreaming/u);
   assert.match(compose, /MEMORY_XX_DREAMING_ENABLED: \$\{MEMORY_XX_DREAMING_ENABLED:-0\}/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
@@ -266,7 +266,7 @@ test("public repository includes memory dreaming as a pluggable full-stack modul
   assert.deepEqual(missing, []);
   assert.deepEqual(stale, []);
   assert.equal(packageJson.scripts["run:dream-worker"], "node --import tsx scripts/run-dream-worker.ts");
-  assert.match(await readFile("systemd/memory-xx-dream-worker.service", "utf8"), /scripts\/capability-enabled\.ts memory_dreaming/u);
+  assert.match(await readFile("systemd/memory-xx-dream-worker.service", "utf8"), /scripts\/runtime-module-enabled\.ts memory_dreaming/u);
   assert.match(capabilities, /name: "memory_dreaming"/u);
   assert.match(capabilities, /MEMORY_XX_DREAMING_ENABLED/u);
   assert.match(capabilities, /scripts\/run-dream-worker\.ts/u);

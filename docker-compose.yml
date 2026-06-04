@@ -226,7 +226,7 @@ services:
     build: .
     profiles:
       - full
-    command: ["sh", "-lc", "node --import tsx scripts/capability-enabled.ts memory_dreaming || exit 0; exec node --import tsx scripts/run-dream-worker.ts"]
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts memory_dreaming || exit 0; exec node --import tsx scripts/run-dream-worker.ts"]
     environment:
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
