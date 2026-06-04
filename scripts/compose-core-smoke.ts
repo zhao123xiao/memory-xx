@@ -45,6 +45,7 @@ export interface ComposeCoreSmokeReport {
   readonly missing_services: readonly string[];
   readonly wrapper_missing_depends_on: readonly string[];
   readonly profile_leaks: readonly string[];
+  readonly duplicate_environment_keys: readonly string[];
   readonly core_environment: Readonly<Record<string, string>>;
   readonly blockers: readonly string[];
 }
@@ -67,10 +68,12 @@ export async function buildComposeCoreSmokeReport(composeFile = "docker-compose.
     const block = byName.get(service)?.body;
     return block ? !/^\s{4}profiles:\s*$/mu.test(block) : false;
   });
+  const duplicateEnvironmentKeys = findDuplicateEnvironmentKeys(services);
   const blockers = [
     ...missingServices.map((service) => `missing_service:${service}`),
     ...wrapperMissingDependsOn.map((service) => `wrapper_missing_depends_on:${service}`),
     ...profileLeaks.map((service) => `enhanced/full services must stay behind profiles:${service}`),
+    ...duplicateEnvironmentKeys.map((key) => `duplicate_environment_key:${key}`),
     ...(coreEnvironment.MEMORY_XX_RUNTIME_PROFILE === "${MEMORY_XX_RUNTIME_PROFILE:-core}"
       ? []
       : ["memory-xx_runtime_profile_default_not_core"]),
@@ -86,6 +89,7 @@ export async function buildComposeCoreSmokeReport(composeFile = "docker-compose.
     missing_services: missingServices,
     wrapper_missing_depends_on: wrapperMissingDependsOn,
     profile_leaks: profileLeaks,
+    duplicate_environment_keys: duplicateEnvironmentKeys,
     core_environment: coreEnvironment,
     blockers,
   };
@@ -114,6 +118,35 @@ function parseServices(compose: string): readonly ComposeService[] {
 function parseEnvironment(serviceBody: string): Readonly<Record<string, string>> {
   return Object.fromEntries([...serviceBody.matchAll(/^\s{6}([A-Z0-9_]+):\s*(.+)$/gmu)]
     .map((match) => [match[1], match[2].replace(/^"|"$/gu, "")]));
+}
+
+function findDuplicateEnvironmentKeys(services: readonly ComposeService[]): readonly string[] {
+  const duplicated: string[] = [];
+  for (const service of services) {
+    const keys = parseEnvironmentKeys(service.body);
+    const seen = new Set<string>();
+    for (const key of keys) {
+      if (seen.has(key)) duplicated.push(`${service.name}:${key}`);
+      seen.add(key);
+    }
+  }
+  return duplicated;
+}
+
+function parseEnvironmentKeys(serviceBody: string): readonly string[] {
+  const lines = serviceBody.split(/\r?\n/u);
+  const keys: string[] = [];
+  let inEnvironment = false;
+  for (const line of lines) {
+    if (/^\s{4}environment:\s*$/u.test(line)) {
+      inEnvironment = true;
+      continue;
+    }
+    if (inEnvironment && /^\s{4}[A-Za-z0-9_-]+:/u.test(line)) break;
+    const match = inEnvironment ? /^\s{6}([A-Z0-9_]+):/u.exec(line) : null;
+    if (match) keys.push(match[1]);
+  }
+  return keys;
 }
 
 function parseMapKeys(serviceBody: string, section: string): readonly string[] {
