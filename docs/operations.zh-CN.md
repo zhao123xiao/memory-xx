@@ -98,5 +98,7 @@ Docker Compose 的增强/full 启动需要同步设置 wrapper runtime profile�
 
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
-MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full up --build -d
+MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
 ```
+
+`full` 会包含 enhanced 服务，并再启动 Mem0 extractor、conversation monitor、cache invalidation worker、maintenance、consolidation、detect、auto-repair、repair report、landing scan、canary report 等 full 模块。这些模块仍受各自 `MEMORY_XX_*_ENABLED=0` 开关控制，未启用时应安全退出或保持降级状态。

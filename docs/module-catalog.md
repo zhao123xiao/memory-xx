@@ -33,8 +33,8 @@ This catalog is the public map for hot-pluggable runtime modules and CLI-only fu
 | `repair_report` | gate | expected: full | `MEMORY_XX_REPAIR_REPORT_ENABLED` | `memory-xx-repair-report.service` | Daily repair reporting is disabled; operators must inspect Doctor and repair output manually. |
 | `landing_scan` | gate | expected: full | `MEMORY_XX_LANDING_SCAN_ENABLED` | `memory-xx-landing-scan.service` | Production landing evidence is not refreshed automatically. |
 | `canary_7d_report` | gate | expected: full | `MEMORY_XX_CANARY_7D_REPORT_ENABLED` | `memory-xx-canary-7d-report.service` | 7-day canary evidence is not refreshed automatically. |
-| `quality_runner` | gate | required: full | `MEMORY_XX_QUALITY_RUNNER_ENABLED` | - | Recall quality has not completed release validation. |
-| `governance_report` | gate | required: full | `MEMORY_XX_GOVERNANCE_REPORT_ENABLED` | - | Governance backlog has not completed release validation. |
+| `quality_runner` | gate | required: full | `MEMORY_XX_QUALITY_RUNNER_ENABLED` | `memory-xx-quality-runner.service` | Recall quality has not completed release validation. |
+| `governance_report` | gate | required: full | `MEMORY_XX_GOVERNANCE_REPORT_ENABLED` | `memory-xx-governance-report.service` | Governance backlog has not completed release validation. |
 
 ## Full-Stack Capabilities
 

@@ -60,6 +60,18 @@ test("runtime module dependencies resolve to registry entries", () => {
   assert.deepEqual(unresolved, []);
 });
 
+test("full release validation gates expose startable public services", () => {
+  const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
+
+  for (const name of ["quality_runner", "governance_report"]) {
+    const module = modules.get(name);
+    assert.equal(module?.kind, "gate");
+    assert.equal(module?.startable, true);
+    assert.match(module?.service ?? "", /^memory-xx-.+\.service$/u);
+    assert.match(module?.command ?? "", /^TMPDIR=\/tmp npm run memory:/u);
+  }
+});
+
 test("runtime module env switches are documented in public env examples", () => {
   const envExample = [
     readFileSync(".env.example", "utf8"),

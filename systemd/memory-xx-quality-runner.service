@@ -1,0 +1,16 @@
+[Unit]
+Description=Run memory-xx recall quality gate
+After=network-online.target memory-xx-wrapper.service memory-xx-qdrant-projector-worker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
+Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_RUNTIME_DIR=%h/services/memory-xx/.runtime
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts quality_runner
+ExecStart=/usr/bin/npm run memory:quality -- --suite all
+StandardOutput=append:%h/services/memory-xx/.runtime/quality-runner.log
+StandardError=append:%h/services/memory-xx/.runtime/quality-runner.error.log

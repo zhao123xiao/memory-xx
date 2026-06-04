@@ -188,6 +188,8 @@ test("docker compose does not let non-wrapper services inherit wrapper healthche
     "memory-xx-repair-report",
     "memory-xx-landing-scan",
     "memory-xx-canary-7d-report",
+    "memory-xx-quality-runner",
+    "memory-xx-governance-report",
   ];
 
   for (const [service, healthUrl] of ownHealthchecks) {
@@ -393,6 +395,8 @@ test("docker compose exposes full-stack operations modules with runtime switches
     ["memory-xx-repair-report", "repair_report"],
     ["memory-xx-landing-scan", "landing_scan"],
     ["memory-xx-canary-7d-report", "canary_7d_report"],
+    ["memory-xx-quality-runner", "quality_runner"],
+    ["memory-xx-governance-report", "governance_report"],
   ] as const;
 
   for (const [service, moduleName] of modules) {
@@ -484,7 +488,7 @@ test("public docs and config templates use memory-xx env and API names", async (
 });
 
 test("public docker profile docs set matching runtime profile", async () => {
-  const files = ["docs/quickstart.zh-CN.md", "docs/operations.md"] as const;
+  const files = ["docs/quickstart.zh-CN.md", "docs/operations.md", "docs/operations.zh-CN.md"] as const;
   const missing: string[] = [];
   for (const file of files) {
     const content = await readFile(file, "utf8");
@@ -802,6 +806,8 @@ test("public systemd gate units are directly installable without project-root pl
   const units = [
     "systemd/memory-xx-landing-scan.service",
     "systemd/memory-xx-canary-7d-report.service",
+    "systemd/memory-xx-quality-runner.service",
+    "systemd/memory-xx-governance-report.service",
   ];
   const stale: string[] = [];
   for (const unit of units) {
