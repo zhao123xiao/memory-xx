@@ -64,6 +64,21 @@ test("docker compose includes the core Qdrant projector worker", async () => {
   assert.match(compose, /qdrant:\s*\n\s+condition: service_started/u);
 });
 
+test("public compose core smoke is exposed as an open-source verification entrypoint", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
+  const script = await readFile("scripts/compose-core-smoke.ts", "utf8");
+
+  assert.equal(packageJson.scripts["smoke:compose-core"], "node --import tsx scripts/compose-core-smoke.ts");
+  assert.match(readme, /npm run smoke:compose-core/u);
+  assert.match(quickstart, /npm run smoke:compose-core/u);
+  assert.match(script, /memory-xx-qdrant-projector-worker/u);
+  assert.match(script, /enhanced\/full services must stay behind profiles/u);
+});
+
 test("docker compose exposes pluggable enhanced and full-stack services as profiles", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 

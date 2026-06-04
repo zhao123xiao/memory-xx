@@ -149,6 +149,7 @@ TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
 默认 Compose 启动 Core 路径：wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis、Qdrant。
 
 ```bash
+TMPDIR=/tmp npm run smoke:compose-core
 docker-compose up --build -d
 ```
 

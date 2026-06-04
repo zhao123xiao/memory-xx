@@ -87,7 +87,7 @@ matching dependencies are configured.
 | `embedding_calibration` | `memory:embedding-calibrate` |
 | `local_embedding_generation` | `memory:generate-local-embeddings`, `generate:embeddings`, `memory:local-qwen8b-benchmark` |
 | `backup_and_restore` | `memory:backup` |
-| `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles` |
+| `platform_doctor` | `memory:platform-doctor`, `memory:doctor`, `smoke:runtime-profiles`, `smoke:compose-core` |
 | `trusted_agent_tools` | `memory:trusted-agent` |
 | `qdrant_reconciliation` | `memory:qdrant-reconcile`, `memory:fix-qdrant-replay`, `replay:qdrant-outbox`, `memory:outbox-recovery`, `memory:qdrant-alias`, `memory:qdrant-collection-audit` |
 | `conversation_ops` | `memory:conversation-sources`, `memory:conversation-monitor-report` |
