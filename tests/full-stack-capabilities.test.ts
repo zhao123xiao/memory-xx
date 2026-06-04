@@ -122,6 +122,7 @@ test("module catalog documents base operational npm entrypoints", () => {
     "run:conversation-monitor-worker",
     "run:markdown-projection-worker",
     "run:dream-worker",
+    "memory:dev-embedding-upstream",
     "conversation:codex-bridge",
     "import:staging",
   ];

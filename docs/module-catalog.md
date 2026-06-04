@@ -15,6 +15,7 @@ operations, or run worker entrypoints directly.
 | Review and agent operations | `memory:agent`, `memory:review`, `memory:approve`, `memory:reject`, `memory:archive` |
 | Operator views | `memory:control-panel`, `memory:dashboard`, `memory:report`, `memory:source-mode` |
 | Worker entrypoints | `run:cache-invalidation-worker`, `run:write-ticket-worker`, `run:conversation-monitor-worker`, `run:markdown-projection-worker`, `run:dream-worker` |
+| Development smoke upstreams | `memory:dev-embedding-upstream` |
 | Import and bridge utilities | `conversation:codex-bridge`, `import:staging` |
 
 ## Runtime Modules
