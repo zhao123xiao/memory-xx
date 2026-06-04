@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 
-const host = process.env.EMBEDDING_PROXY_HOST || "127.0.0.1";
+const host = process.env.MEMORY_XX_EMBEDDING_PROXY_HOST || process.env.EMBEDDING_PROXY_HOST || "127.0.0.1";
 const port = Number.parseInt(process.env.MEMORY_XX_EMBEDDING_PROXY_PORT || process.env.EMBEDDING_PROXY_PORT || "5221", 10);
 const upstreamBase = (process.env.MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE || process.env.EMBEDDING_PROXY_UPSTREAM_BASE || process.env.EMBEDDING_API_BASE || "").replace(/\/+$/, "");
 const upstreamModel = (process.env.MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL || process.env.EMBEDDING_PROXY_UPSTREAM_MODEL || "").trim();

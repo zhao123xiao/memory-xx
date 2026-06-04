@@ -163,6 +163,22 @@ test("public sidecar sources use memory-xx names and avoid runtime artifacts", a
   await assert.rejects(() => fs.stat("sidecars/mem0-extractor/__pycache__"), /ENOENT/u);
 });
 
+test("compose host bind env vars are honored by sidecar sources", async () => {
+  const bindings = [
+    ["MEMORY_XX_EMBEDDING_PROXY_HOST", "sidecars/embedding-proxy/embedding-proxy.mjs"],
+    ["MEMORY_XX_QDRANT_PROXY_HOST", "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"],
+    ["MEMORY_XX_RERANKER_ADAPTER_HOST", "sidecars/reranker-adapter/reranker-adapter.mjs"],
+    ["MEMORY_XX_MEM0_EXTRACTOR_HOST", "sidecars/mem0-extractor/extractor.py"],
+  ] as const;
+  const missing: string[] = [];
+  for (const [envName, source] of bindings) {
+    const content = await readFile(source, "utf8");
+    if (!content.includes(envName)) missing.push(`${source}:${envName}`);
+  }
+
+  assert.deepEqual(missing, []);
+});
+
 test("public systemd sidecar units point at repo-local sidecar sources", async () => {
   const units = [
     "systemd/memory-xx-embedding-proxy-next.service",
