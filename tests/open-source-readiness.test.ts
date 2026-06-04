@@ -604,6 +604,21 @@ test("public docs explain wrapper activation switches for optional sidecars", as
   }
 });
 
+test("public runtime profile smoke is exposed as an offline open-source verification entrypoint", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const runtimeProfiles = await readFile("docs/runtime-profiles.md", "utf8");
+  const script = await readFile("scripts/runtime-profile-smoke.ts", "utf8");
+
+  assert.equal(packageJson.scripts["smoke:runtime-profiles"], "node --import tsx scripts/runtime-profile-smoke.ts");
+  assert.match(readme, /npm run smoke:runtime-profiles/u);
+  assert.match(runtimeProfiles, /npm run smoke:runtime-profiles/u);
+  assert.match(script, /buildRuntimeModuleSnapshot/u);
+  assert.match(script, /FULL_STACK_CAPABILITIES/u);
+});
+
 test("public functional smoke script is portable and auth-aware", async () => {
   const script = await readFile("scripts/functional-test-memory-xx.sh", "utf8");
 

@@ -15,6 +15,7 @@ import {
   buildRuntimeProfileStopServices,
 } from "../scripts/memory-mode";
 import { classifyDoctorComponentProfileState } from "../scripts/memory-doctor";
+import { buildRuntimeProfileSmokeReport } from "../scripts/runtime-profile-smoke";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -344,6 +345,21 @@ test("runtime module snapshot exposes compact health payload names and states", 
   assert.equal(snapshot.states.fastpath?.blocks_profile, false);
   assert.equal(snapshot.states.mem0_extractor?.state, "missing_dependency");
   assert.equal(snapshot.states.mem0_extractor?.source_path, "sidecars/mem0-extractor/extractor.py");
+});
+
+test("offline runtime profile smoke proves disabled pluggable modules do not block profile validation", () => {
+  const report = buildRuntimeProfileSmokeReport(new Date("2026-06-04T00:00:00.000Z"));
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.profiles.map((profile) => `${profile.profile}:${profile.status}`), [
+    "core:pass",
+    "enhanced:pass",
+    "full:pass",
+  ]);
+  assert.equal(report.profiles.find((profile) => profile.profile === "core")?.required_modules.includes("embedding_proxy"), true);
+  assert.equal(report.profiles.find((profile) => profile.profile === "full")?.disabled_non_blocking.includes("fastpath"), true);
+  assert.equal(report.full_stack_capabilities.missing_switch.length, 0);
+  assert.equal(report.full_stack_capabilities.missing_degraded_behavior.length, 0);
 });
 
 test("startable runtime modules have matching public systemd units", () => {

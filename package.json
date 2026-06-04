@@ -29,6 +29,7 @@
     "open-source:export": "node --import tsx scripts/open-source-export.ts",
     "check:db-invariants": "node --import tsx scripts/check-db-invariants.ts",
     "check:migrations": "node --import tsx scripts/check-migration-order.ts",
+    "smoke:runtime-profiles": "node --import tsx scripts/runtime-profile-smoke.ts",
     "memory:freeze-m0": "node --import tsx scripts/freeze-m0.ts",
     "memory:capacity-smoke": "node --import tsx scripts/capacity-smoke.ts",
     "test": "node --import tsx --test tests/*.test.ts tests/coordination/*.test.ts",
