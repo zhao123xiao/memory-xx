@@ -145,7 +145,8 @@ checks the unit and HTTP contract layer, while `L19` exercises the conversation
 monitor path from JSONL spool ingestion through recall. The cache invalidation,
 write ticket, markdown projection, memory dreaming, full ops, policy ops,
 knowledge graph, Qdrant reconciliation, recall quality, temporal ops, backup
-ops, runtime observability, trusted agent, embedding ops, and local embedding generation
+ops, runtime observability, trusted agent, embedding ops, local embedding generation,
+and governance ops
 smokes validate durable background workers, enhanced graph modules, projection
 repair status, recall/reranker quality surfaces, and temporal governance
 against live PostgreSQL, Redis, Qdrant, the configured embedding provider,
@@ -176,7 +177,9 @@ manifest status and runs a small calibration probe only; it does not switch
 aliases, roll back generations, or run local bulk vector jobs.
 `smoke:local-embedding-generation` runs the estimate-only path with a one-record
 limit and concurrency 1; it does not create Qdrant collections, write points, or
-update the embedding manifest:
+update the embedding manifest. `smoke:governance-ops` runs pending/report/scan
+surfaces only; it does not apply governance actions, freeze/revert actions, run
+cleanup, or modify memory records:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -196,6 +199,7 @@ TMPDIR=/tmp npm run smoke:runtime-observability
 TMPDIR=/tmp npm run smoke:trusted-agent
 TMPDIR=/tmp npm run smoke:embedding-ops
 TMPDIR=/tmp npm run smoke:local-embedding-generation
+TMPDIR=/tmp npm run smoke:governance-ops
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in

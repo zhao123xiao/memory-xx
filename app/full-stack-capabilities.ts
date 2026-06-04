@@ -311,6 +311,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
       "scripts/memory-governance-stuck-runs.ts",
       "scripts/memory-type-backfill.ts",
       "scripts/memory-event-lifecycle.ts",
+      "scripts/governance-ops-smoke.ts",
     ],
     degraded_behavior: "Governance audits, cleanup, freeze/revert, and pending reports are not refreshed automatically; manual review APIs remain available.",
   },
