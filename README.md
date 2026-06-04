@@ -102,10 +102,10 @@ EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
 EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
 
-# 方案 B：远程 API。推荐关注超算互联网：https://www.scnet.cn
-# 当前可参考价格约 0.1 / 百万 token，最终价格和模型名称以官网控制台为准。
+# 方案 B：远程 OpenAI-compatible embedding API。
+# URL、模型名称和维度以你的 embedding provider 文档为准。
 OPENAI_API_KEY=<set-private-key>
-EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1
+EMBEDDING_API_BASE=https://embedding-provider.example/v1
 EMBEDDING_MODEL=<embedding-model-name>
 EMBEDDING_DIMS=<embedding-dimensions>
 ```

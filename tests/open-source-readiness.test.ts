@@ -221,10 +221,20 @@ test("README documents required session roots and API embedding option", async (
   assert.match(readme, /MEMORY_XX_CODEX_SESSION_ROOTS/u);
   assert.match(readme, /MEMORY_XX_CLAUDE_SESSION_ROOTS/u);
   assert.match(readme, /MEMORY_XX_OPENCLAW_SESSION_ROOTS/u);
-  assert.match(readme, /https:\/\/www\.scnet\.cn/u);
-  assert.match(readme, /0\.1\s*\/\s*百万\s*token/u);
+  assert.match(readme, /https:\/\/embedding-provider\.example\/v1/u);
+  assert.doesNotMatch(readme, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
   assert.match(readme, /MEMORY_XX_SCOPE_POLICY_MODE=single_user/u);
   assert.match(readme, /sidecar/u);
+});
+
+test("public quickstart and env template keep embedding provider vendor-neutral", async () => {
+  const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
+  const envExample = await readFile(".env.example", "utf8");
+
+  assert.match(quickstart, /https:\/\/embedding-provider\.example\/v1/u);
+  assert.doesNotMatch(quickstart, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
+  assert.match(envExample, /^EMBEDDING_API_BASE=https:\/\/embedding-provider\.example\/v1$/mu);
+  assert.doesNotMatch(envExample, /scnet\.cn/u);
 });
 
 test("public repository includes source entries for pluggable full-stack sidecars", async () => {

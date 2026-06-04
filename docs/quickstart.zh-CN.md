@@ -59,14 +59,14 @@ EMBEDDING_DIMS=4096
 
 ```bash
 OPENAI_API_KEY=<set-private-key>
-EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1
+EMBEDDING_API_BASE=https://embedding-provider.example/v1
 EMBEDDING_MODEL=<embedding-model-name>
 EMBEDDING_DIMS=<embedding-dimensions>
 ```
 
 主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；部分离线脚本也支持 `EMBEDDING_API_KEY`，如需运行这些脚本可同步设置。
 
-推荐关注超算互联网：https://www.scnet.cn 。当前可参考价格约 0.1 / 百万 token，最终价格、可用模型和维度以官网控制台为准。
+远程 embedding provider 可以使用任何 OpenAI-compatible API；价格、可用模型、输出维度和速率限制以 provider 文档为准。
 
 ## 会话来源目录
 

@@ -265,7 +265,7 @@ function recommend(cells: readonly CellReport[]): Record<string, unknown> {
 async function main(): Promise<void> {
   const apiKey = env("EMBEDDING_PROXY_UPSTREAM_API_KEY", env("OPENAI_API_KEY", env("EMBEDDING_API_KEY")));
   if (!apiKey) throw new Error("OPENAI_API_KEY or EMBEDDING_PROXY_UPSTREAM_API_KEY is required");
-  const base = env("EMBEDDING_PROXY_UPSTREAM_BASE", env("EMBEDDING_API_BASE", "https://api.scnet.cn/api/llm/v1")).replace(/\/+$/u, "");
+  const base = env("EMBEDDING_PROXY_UPSTREAM_BASE", env("EMBEDDING_API_BASE", "https://embedding-provider.example/v1")).replace(/\/+$/u, "");
   const url = `${base}/embeddings`;
   const model = env("EMBEDDING_MODEL", "Qwen3-Embedding-8B");
   const dims = intEnv("EMBEDDING_DIMS", 4096);

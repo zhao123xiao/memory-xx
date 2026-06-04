@@ -396,7 +396,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
   const databaseUrl = process.env.MEMORY_XX_DATABASE_URL?.trim() ?? "";
   const databaseSchema = process.env.MEMORY_XX_DATABASE_SCHEMA?.trim() ?? "public";
   const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
-  const embeddingApiBase = process.env.EMBEDDING_API_BASE?.trim() ?? "https://api.scnet.cn/api/llm/v1";
+  const embeddingApiBase = process.env.EMBEDDING_API_BASE?.trim() ?? "https://embedding-provider.example/v1";
   const redisHealth = await recallCache.getHealthSnapshot();
   const embeddingProviderConfig = loadEmbeddingProviderRequestConfig();
   let embeddingGeneration: WrapperHealthSnapshot["embedding_generation"];

@@ -6,8 +6,8 @@
  * the content_embedding column.
  *
  * Usage:
- *   EMBEDDING_API_KEY=sk-xxx \
- *   EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1 \
+ *   OPENAI_API_KEY=sk-xxx \
+ *   EMBEDDING_API_BASE=https://embedding-provider.example/v1 \
  *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
  *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
@@ -27,10 +27,10 @@ interface EmbeddingConfig {
 }
 
 function loadEmbeddingConfig(): EmbeddingConfig {
-  const apiKey = process.env.EMBEDDING_API_KEY?.trim();
-  if (!apiKey) throw new Error("EMBEDDING_API_KEY is required");
+  const apiKey = process.env.OPENAI_API_KEY?.trim() || process.env.EMBEDDING_API_KEY?.trim();
+  if (!apiKey) throw new Error("OPENAI_API_KEY or EMBEDDING_API_KEY is required");
 
-  const apiBase = process.env.EMBEDDING_API_BASE?.trim() || "https://api.scnet.cn/api/llm/v1";
+  const apiBase = process.env.EMBEDDING_API_BASE?.trim() || "https://embedding-provider.example/v1";
   const model = process.env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B";
   const dims = parseInt(process.env.EMBEDDING_DIMS?.trim() || "4096", 10);
 
