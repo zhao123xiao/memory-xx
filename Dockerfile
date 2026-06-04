@@ -19,6 +19,7 @@ RUN apt-get update \
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist/ dist/
+COPY docker-compose.yml ./
 COPY tsconfig.json ./
 COPY wrapper-entry.mjs ./
 COPY app/ app/

@@ -351,6 +351,12 @@ test("Dockerfile runtime installs locked production dependencies without ad-hoc 
   assert.doesNotMatch(dockerfile, /npm install --no-save tsx/u);
 });
 
+test("Dockerfile includes compose file needed by public compose smoke", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+
+  assert.match(dockerfile, /COPY docker-compose\.yml \.\//u);
+});
+
 test("public env examples use the same default wrapper port", async () => {
   const fs = await import("node:fs/promises");
   const rootEnv = await fs.readFile(".env.example", "utf8");
