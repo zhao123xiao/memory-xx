@@ -192,13 +192,27 @@ test("public docker profile docs set matching runtime profile", async () => {
 test("public systemd bundle provides the unit name used by scripts", async () => {
   const fs = await import("node:fs/promises");
   const wrapper = await fs.readFile("systemd/memory-xx-wrapper.service", "utf8");
+  const projector = await fs.readFile("systemd/memory-xx-qdrant-projector-worker.service", "utf8");
 
-  assert.match(wrapper, /^Description=OpenClaw memory-xx wrapper$/mu);
+  assert.match(wrapper, /^Description=memory-xx wrapper$/mu);
+  assert.match(projector, /^Description=memory-xx Qdrant projector worker$/mu);
   assert.match(wrapper, /ExecStart=.*wrapper-entry\.mjs/u);
   await assert.rejects(
     () => fs.stat("systemd/openclaw-memory-xx-wrapper.service"),
     /ENOENT/u
   );
+});
+
+test("public env templates use memory-xx config paths rather than OpenClaw-owned paths", async () => {
+  const files = [
+    "configs/memory-xx-wrapper.env.example",
+    "configs/memory-xx-qdrant-projector-worker.env.example",
+  ];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    assert.match(content, /\.config\/memory-xx\//u);
+    assert.doesNotMatch(content, /\.config\/openclaw\//u);
+  }
 });
 
 test("README documents required session roots and API embedding option", async () => {
