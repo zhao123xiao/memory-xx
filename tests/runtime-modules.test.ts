@@ -117,6 +117,7 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
     MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
     MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
     MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
     MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
     MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
@@ -145,6 +146,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
     MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
     MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
     MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
     MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
   });
 
@@ -164,6 +166,7 @@ test("memory mode payload separates enabled start services from disabled cleanup
       MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
       MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
       MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+      MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: "0",
       MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
     },
     unitState: () => "inactive",

@@ -13,6 +13,7 @@
     "run:qdrant-projector-worker": "node --import tsx scripts/run-qdrant-projector-worker.ts",
     "run:write-ticket-worker": "node --import tsx scripts/run-write-ticket-worker.ts",
     "run:conversation-monitor-worker": "node --import tsx scripts/run-conversation-monitor-worker.ts",
+    "run:markdown-projection-worker": "node --import tsx scripts/run-markdown-projection-worker.ts",
     "conversation:codex-bridge": "node --import tsx scripts/codex-conversation-bridge.ts",
     "check:qdrant-projector-worker-health": "node --import tsx scripts/check-qdrant-projector-worker-health.ts",
     "replay:qdrant-outbox": "node --import tsx scripts/replay-qdrant-outbox.ts",

@@ -54,6 +54,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
     "memory-xx-conversation-monitor",
+    "memory-xx-markdown-projection",
     "memory-xx-cache-invalidation-worker",
     "memory-xx-control-panel",
   ]) {
@@ -65,6 +66,8 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /sidecars\/fastpath\/fastpath\.mjs/u);
   assert.match(compose, /sidecars\/lexical-sidecar\/lexical-sidecar\.mjs/u);
   assert.match(compose, /scripts\/run-conversation-monitor-worker\.ts/u);
+  assert.match(compose, /scripts\/run-markdown-projection-worker\.ts/u);
+  assert.match(compose, /scripts\/runtime-module-enabled\.ts markdown_projection/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
   assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
@@ -200,6 +203,8 @@ test("public repository includes markdown projection as a pluggable full-stack m
     "app/source-mode.ts",
     "scripts/source-mode.ts",
     "scripts/run-projection-shadow-r3.ts",
+    "scripts/run-markdown-projection-worker.ts",
+    "systemd/memory-xx-markdown-projection.service",
     "tests/projection-foundation.test.ts",
   ];
   const missing: string[] = [];
@@ -222,8 +227,10 @@ test("public repository includes markdown projection as a pluggable full-stack m
   assert.deepEqual(stale, []);
   assert.equal(packageJson.scripts["memory:source-mode"], "node --import tsx scripts/source-mode.ts");
   assert.equal(packageJson.scripts["shadow:projection"], "node --import tsx scripts/run-projection-shadow-r3.ts");
+  assert.equal(packageJson.scripts["run:markdown-projection-worker"], "node --import tsx scripts/run-markdown-projection-worker.ts");
   assert.match(runtimeModules, /name: "markdown_projection"/u);
   assert.match(runtimeModules, /MEMORY_XX_MARKDOWN_PROJECTION_ENABLED/u);
+  assert.match(runtimeModules, /startable: true/u);
 });
 
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
@@ -291,6 +298,7 @@ test("public systemd sidecar units point at repo-local sidecar sources", async (
 test("public systemd worker and control units point at repo-local source scripts", async () => {
   const units = [
     ["systemd/memory-xx-conversation-monitor-worker.service", "scripts/run-conversation-monitor-worker.ts"],
+    ["systemd/memory-xx-markdown-projection.service", "scripts/run-markdown-projection-worker.ts"],
     ["systemd/memory-xx-control-panel.service", "scripts/memory-control-panel.ts"],
   ] as const;
   const stale: string[] = [];

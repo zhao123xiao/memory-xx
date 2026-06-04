@@ -204,6 +204,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  memory-xx-markdown-projection:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts markdown_projection || exit 0; exec node --import tsx scripts/run-markdown-projection-worker.ts"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_PROJECTION_ROOT_DIR: /app/memory_projection
+      MEMORY_XX_MARKDOWN_PROJECTION_STATUS_FILE: /app/.runtime/markdown-projection.status.json
+      MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: ${MEMORY_XX_MARKDOWN_PROJECTION_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   memory-xx-cache-invalidation-worker:
     build: .
     profiles:

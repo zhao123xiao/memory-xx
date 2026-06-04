@@ -29,7 +29,10 @@ Markdown projection is modeled as `markdown_projection`: PostgreSQL remains the
 source of truth, while generated Markdown files are read-only review/export
 views. Enable it with `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` and set
 `MEMORY_XX_PROJECTION_ROOT_DIR` when you want projections outside the default
-`memory_projection/` directory.
+`memory_projection/` directory. The module can be run with
+`TMPDIR=/tmp npm run run:markdown-projection-worker`, the
+`memory-xx-markdown-projection.service` systemd unit, or the
+`memory-xx-markdown-projection` Docker Compose full-profile service.
 
 Operations modules are modeled separately from sidecars. `maintenance_orchestrator`,
 `cache_invalidation_worker`, `temporal_consolidation`, `runtime_issue_detection`, `auto_repair`,
