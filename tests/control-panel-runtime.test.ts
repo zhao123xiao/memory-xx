@@ -21,9 +21,24 @@ import {
   resetRuntimeSettings,
   updateRuntimeSettingsBatch,
 } from "../scripts/control-panel/settings";
+import { createControlPanelHandler } from "../scripts/control-panel/routes";
 import { buildRuntimeObservabilityRows } from "../scripts/control-panel/runtime-observability-rows";
 import { buildRuntimeObservabilityRetentionPlan } from "../scripts/control-panel/runtime-observability-retention";
+import { resolvePanelHost } from "../scripts/control-panel/utils";
 import { buildComponentStatusesFromRuntimeModules } from "../app/runtime-module-components";
+
+function createMockResponse(): { statusCode: number; body: string; res: any } {
+  const output = { statusCode: 0, body: "", res: undefined as any };
+  output.res = {
+    writeHead(status: number) {
+      output.statusCode = status;
+    },
+    end(payload: string) {
+      output.body = payload;
+    },
+  };
+  return output;
+}
 
 function withRuntimeDir<T>(fn: () => T): T {
   const previous = process.env.MEMORY_XX_RUNTIME_DIR;
@@ -60,6 +75,38 @@ test("runtime registry exposes typed, sourced, safety-labeled settings", () => w
     }
   }
 }));
+
+test("control panel exposes unauthenticated health for compose healthchecks", async () => {
+  const handler = createControlPanelHandler({
+    panelToken: "panel-token",
+    dbSchema: "memory_xx",
+    html: () => "",
+    flowsHtml: () => "",
+    buildSummary: async () => ({}),
+    buildRecentFlows: async () => ({}),
+    buildWriteFlow: async () => ({}),
+    buildRecallFlow: async () => ({}),
+    buildConversationRecent: async () => ({}),
+    buildConversationBatch: async () => ({}),
+    buildConversationSession: async () => ({}),
+    buildGraphSummary: async () => ({}),
+    buildGraphNeighborhood: async () => ({}),
+    buildGraphMemoryDetails: async () => ({}),
+    buildCodeGraphFromUrl: () => ({}),
+    readAutoApprovalRuntimeControls: () => ({}),
+  });
+  const response = createMockResponse();
+
+  await handler({ method: "GET", url: "/health", headers: {} } as any, response.res);
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(JSON.parse(response.body), { ok: true, service: "memory-xx-control-panel" });
+});
+
+test("control panel bind host is configurable for container port publishing", () => {
+  assert.equal(resolvePanelHost({ MEMORY_XX_CONTROL_PANEL_HOST: "0.0.0.0" } as NodeJS.ProcessEnv), "0.0.0.0");
+  assert.equal(resolvePanelHost({} as NodeJS.ProcessEnv), "127.0.0.1");
+});
 
 test("batch update rejects readonly env settings and previews restart requirements", () => withRuntimeDir(() => {
   assert.throws(

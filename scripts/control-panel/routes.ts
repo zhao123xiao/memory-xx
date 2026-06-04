@@ -108,6 +108,10 @@ export function createControlPanelHandler(deps: ControlPanelRouteDeps): (req: In
       sendHtml(res, deps.html());
       return;
     }
+    if (req.method === "GET" && url.pathname === "/health") {
+      sendJson(res, 200, { ok: true, service: "memory-xx-control-panel" });
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/flows") {
       sendHtml(res, deps.flowsHtml());
       return;

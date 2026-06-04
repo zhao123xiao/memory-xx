@@ -15,7 +15,7 @@ import {
   buildRuntimeProfileStopServices,
 } from "../scripts/memory-mode";
 import { classifyDoctorComponentProfileState } from "../scripts/memory-doctor";
-import { buildRuntimeProfileSmokeReport, buildRuntimeProfileLiveSmokeReport } from "../scripts/runtime-profile-smoke";
+import { buildRuntimeProfileSmokeReport, buildRuntimeProfileLiveSmokeReport, buildRuntimeProfileSmokeAuthHeaders } from "../scripts/runtime-profile-smoke";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -509,6 +509,23 @@ test("live runtime profile smoke compares wrapper health module state with the p
   assert.ok(report.health.missing_runtime_modules.includes("qdrant_proxy"));
   assert.ok(report.health.missing_full_stack_capabilities.includes("knowledge_ingest"));
   assert.deepEqual(report.health.blocking_runtime_modules, []);
+});
+
+test("live runtime profile smoke sends configured wrapper auth token", () => {
+  assert.deepEqual(buildRuntimeProfileSmokeAuthHeaders({
+    MEMORY_XX_ADMIN_TOKEN: "admin-token",
+    MEMORY_XX_API_TOKEN: "api-token",
+  }), {
+    Authorization: "Bearer admin-token",
+  });
+
+  assert.deepEqual(buildRuntimeProfileSmokeAuthHeaders({
+    MEMORY_XX_API_TOKEN: "api-token",
+  }), {
+    Authorization: "Bearer api-token",
+  });
+
+  assert.deepEqual(buildRuntimeProfileSmokeAuthHeaders({}), {});
 });
 
 test("startable runtime modules have matching public systemd units", () => {

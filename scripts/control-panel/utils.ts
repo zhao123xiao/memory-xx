@@ -4,6 +4,10 @@ export function resolvePanelPort(env: NodeJS.ProcessEnv = process.env): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5310;
 }
 
+export function resolvePanelHost(env: NodeJS.ProcessEnv = process.env): string {
+  return env.MEMORY_XX_CONTROL_PANEL_HOST?.trim() || "127.0.0.1";
+}
+
 export function quoteIdent(value: string): string {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
     throw new Error(`unsafe_identifier:${value}`);

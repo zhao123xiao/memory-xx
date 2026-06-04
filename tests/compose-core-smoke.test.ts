@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { buildComposeCoreSmokeReport } from "../scripts/compose-core-smoke";
+import { buildComposeCoreSmokeReport, buildComposeProfileLiveSmokeReport } from "../scripts/compose-core-smoke";
 
 test("compose core smoke validates core service topology and profile isolation", async () => {
   const report = await buildComposeCoreSmokeReport("docker-compose.yml");
@@ -62,4 +62,111 @@ services:
   assert.equal(report.ok, false);
   assert.deepEqual(report.duplicate_environment_keys, ["memory-xx:MEMORY_XX_RUNTIME_PROFILE"]);
   assert.equal(report.blockers.includes("duplicate_environment_key:memory-xx:MEMORY_XX_RUNTIME_PROFILE"), true);
+});
+
+test("compose profile live smoke fails on unhealthy or crashed profile containers", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-fastpath", State: "exited", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-lexical-sidecar", State: "exited", Health: "", ExitCode: 1 }),
+    ],
+    healthPayload: {
+      runtime_profile: "enhanced",
+      runtime_modules: {
+        mode: "enhanced",
+        states: {
+          wrapper: { blocks_profile: false },
+          postgres: { blocks_profile: false },
+          redis: { blocks_profile: false },
+          qdrant: { blocks_profile: false },
+          embedding_proxy: { blocks_profile: false },
+          projector: { blocks_profile: false },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.missing_services, []);
+  assert.deepEqual(report.unhealthy_services, []);
+  assert.deepEqual(report.exited_nonzero_services, ["memory-xx-lexical-sidecar:1"]);
+  assert.equal(report.blockers.includes("exited_nonzero_service:memory-xx-lexical-sidecar:1"), true);
+});
+
+test("compose profile live smoke accepts disabled profile containers that exit cleanly", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-fastpath", State: "exited", Health: "", ExitCode: 0 }),
+    ],
+    healthPayload: {
+      runtime_profile: "enhanced",
+      runtime_modules: {
+        mode: "enhanced",
+        states: {
+          wrapper: { blocks_profile: false },
+          postgres: { blocks_profile: false },
+          redis: { blocks_profile: false },
+          qdrant: { blocks_profile: false },
+          embedding_proxy: { blocks_profile: false },
+          projector: { blocks_profile: false },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.exited_zero_services, ["memory-xx-fastpath"]);
+  assert.deepEqual(report.blocking_runtime_modules, []);
+});
+
+test("compose profile live smoke retries transient Docker health starting state", async () => {
+  let attempts = 0;
+  const report = await buildComposeProfileLiveSmokeReport({
+    waitMs: 50,
+    pollIntervalMs: 1,
+    composePsJsonLines: async () => {
+      attempts += 1;
+      const health = attempts === 1 ? "starting" : "healthy";
+      return [
+        JSON.stringify({ Service: "memory-xx", State: "running", Health: health, ExitCode: 0 }),
+        JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+        JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+        JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+        JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+        JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      ];
+    },
+    healthPayload: {
+      runtime_profile: "enhanced",
+      runtime_modules: {
+        mode: "enhanced",
+        states: {
+          wrapper: { blocks_profile: false },
+          postgres: { blocks_profile: false },
+          redis: { blocks_profile: false },
+          qdrant: { blocks_profile: false },
+          embedding_proxy: { blocks_profile: false },
+          projector: { blocks_profile: false },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(attempts, 2);
 });

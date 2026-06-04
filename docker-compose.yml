@@ -233,6 +233,7 @@ services:
       - "${MEMORY_XX_CONTROL_PANEL_HOST_PORT:-5310}:5310"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_CONTROL_PANEL_HOST: 0.0.0.0
       MEMORY_XX_CONTROL_PANEL_PORT: "5310"
       MEMORY_XX_PROJECT_ROOT: /app
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx

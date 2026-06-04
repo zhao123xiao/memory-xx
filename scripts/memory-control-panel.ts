@@ -29,6 +29,7 @@ import {
   readControlPanelRuntimeSettingsSync,
 } from "./control-panel/settings.js";
 import {
+  resolvePanelHost,
   resolvePanelPort,
 } from "./control-panel/utils.js";
 import { config } from "./test-harness/config.js";
@@ -81,8 +82,9 @@ async function main(): Promise<void> {
     });
   });
   const listenPort = resolvePanelPort();
-  server.listen(listenPort, "127.0.0.1", () => {
-    process.stdout.write(`memory-xx control panel: http://127.0.0.1:${listenPort}/\n`);
+  const listenHost = resolvePanelHost();
+  server.listen(listenPort, listenHost, () => {
+    process.stdout.write(`memory-xx control panel: http://${listenHost}:${listenPort}/\n`);
   });
 }
 

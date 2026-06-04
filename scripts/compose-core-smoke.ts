@@ -1,4 +1,10 @@
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { promisify } from "node:util";
+
+import { parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../app/runtime-profiles";
+
+const execFileAsync = promisify(execFile);
 
 const REQUIRED_CORE_SERVICES = [
   "memory-xx",
@@ -38,6 +44,15 @@ const PROFILED_SERVICES = [
   "memory-xx-canary-7d-report",
 ] as const;
 
+const CORE_LONG_RUNNING_SERVICES = [
+  "memory-xx",
+  "memory-xx-embedding-proxy",
+  "memory-xx-qdrant-projector-worker",
+  "postgres",
+  "redis",
+  "qdrant",
+] as const;
+
 export interface ComposeCoreSmokeReport {
   readonly ok: boolean;
   readonly compose_file: string;
@@ -50,10 +65,40 @@ export interface ComposeCoreSmokeReport {
   readonly blockers: readonly string[];
 }
 
+export interface ComposeProfileLiveSmokeOptions {
+  readonly composePsJsonLines?: readonly string[] | (() => Promise<readonly string[]>);
+  readonly healthPayload?: HealthPayload;
+  readonly healthUrl?: string;
+  readonly waitMs?: number;
+  readonly pollIntervalMs?: number;
+}
+
+export interface ComposeProfileLiveSmokeReport {
+  readonly ok: boolean;
+  readonly profile: MemoryRuntimeProfile;
+  readonly required_services: readonly string[];
+  readonly missing_services: readonly string[];
+  readonly unhealthy_services: readonly string[];
+  readonly exited_nonzero_services: readonly string[];
+  readonly exited_zero_services: readonly string[];
+  readonly blocking_runtime_modules: readonly string[];
+  readonly profile_mismatch: boolean;
+  readonly blockers: readonly string[];
+}
+
 interface ComposeService {
   readonly name: string;
   readonly body: string;
 }
+
+interface ComposePsService {
+  readonly Service?: string;
+  readonly State?: string;
+  readonly Health?: string;
+  readonly ExitCode?: number;
+}
+
+type HealthPayload = Record<string, unknown>;
 
 export async function buildComposeCoreSmokeReport(composeFile = "docker-compose.yml"): Promise<ComposeCoreSmokeReport> {
   const compose = await readFile(composeFile, "utf8");
@@ -91,6 +136,79 @@ export async function buildComposeCoreSmokeReport(composeFile = "docker-compose.
     profile_leaks: profileLeaks,
     duplicate_environment_keys: duplicateEnvironmentKeys,
     core_environment: coreEnvironment,
+    blockers,
+  };
+}
+
+export async function buildComposeProfileLiveSmokeReport(
+  options: ComposeProfileLiveSmokeOptions = {}
+): Promise<ComposeProfileLiveSmokeReport> {
+  const healthPayload = options.healthPayload ?? await fetchHealth(options.healthUrl ?? defaultHealthUrl());
+  const waitMs = Math.max(0, options.waitMs ?? 0);
+  const pollIntervalMs = Math.max(1, options.pollIntervalMs ?? 1000);
+  const deadline = Date.now() + waitMs;
+  let report = buildComposeProfileLiveSmokeReportFromState(healthPayload, parseComposePsJsonLines(await readComposePsJsonLines(options)));
+  while (!report.ok && report.unhealthy_services.some((service) => service.endsWith(":starting")) && Date.now() < deadline) {
+    await sleep(Math.min(pollIntervalMs, Math.max(1, deadline - Date.now())));
+    report = buildComposeProfileLiveSmokeReportFromState(healthPayload, parseComposePsJsonLines(await readComposePsJsonLines(options)));
+  }
+  return report;
+}
+
+async function readComposePsJsonLines(options: ComposeProfileLiveSmokeOptions): Promise<readonly string[]> {
+  if (typeof options.composePsJsonLines === "function") return await options.composePsJsonLines();
+  if (options.composePsJsonLines) return options.composePsJsonLines;
+  return await dockerComposePsJsonLines();
+}
+
+function buildComposeProfileLiveSmokeReportFromState(
+  healthPayload: HealthPayload,
+  services: readonly ComposePsService[]
+): ComposeProfileLiveSmokeReport {
+  const profile = parseMemoryRuntimeProfile(readString(healthPayload.runtime_profile) ?? undefined);
+  const runtimeModules = readRecord(healthPayload.runtime_modules);
+  const runtimeMode = readString(runtimeModules.mode);
+  const runtimeStates = readRecord(runtimeModules.states);
+  const byService = new Map(services.map((service) => [service.Service ?? "", service]));
+
+  const missingServices = CORE_LONG_RUNNING_SERVICES.filter((service) => !byService.has(service));
+  const unhealthyServices = services
+    .filter((service) => readString(service.Health) && readString(service.Health) !== "healthy")
+    .map((service) => `${service.Service ?? "unknown"}:${service.Health}`);
+  const exitedNonZeroServices = services
+    .filter((service) => readString(service.State) === "exited" && Number(service.ExitCode ?? 0) !== 0)
+    .map((service) => `${service.Service ?? "unknown"}:${service.ExitCode ?? "unknown"}`);
+  const exitedZeroServices = services
+    .filter((service) => readString(service.State) === "exited" && Number(service.ExitCode ?? 0) === 0)
+    .map((service) => service.Service ?? "unknown");
+  const longRunningStoppedServices = CORE_LONG_RUNNING_SERVICES
+    .map((service) => byService.get(service))
+    .filter((service): service is ComposePsService => Boolean(service))
+    .filter((service) => readString(service.State) !== "running")
+    .map((service) => `${service.Service ?? "unknown"}:${service.State ?? "unknown"}`);
+  const blockingRuntimeModules = Object.entries(runtimeStates)
+    .filter(([, value]) => readBoolean(readRecord(value).blocks_profile) === true)
+    .map(([name]) => name);
+  const profileMismatch = Boolean(runtimeMode && runtimeMode !== profile);
+  const blockers = [
+    ...missingServices.map((service) => `missing_service:${service}`),
+    ...unhealthyServices.map((service) => `unhealthy_service:${service}`),
+    ...longRunningStoppedServices.map((service) => `long_running_service_stopped:${service}`),
+    ...exitedNonZeroServices.map((service) => `exited_nonzero_service:${service}`),
+    ...blockingRuntimeModules.map((module) => `blocking_runtime_module:${module}`),
+    ...(profileMismatch ? [`runtime_profile_mismatch:${runtimeMode}:${profile}`] : []),
+  ];
+
+  return {
+    ok: blockers.length === 0,
+    profile,
+    required_services: [...CORE_LONG_RUNNING_SERVICES],
+    missing_services: missingServices,
+    unhealthy_services: unhealthyServices,
+    exited_nonzero_services: exitedNonZeroServices,
+    exited_zero_services: exitedZeroServices,
+    blocking_runtime_modules: blockingRuntimeModules,
+    profile_mismatch: profileMismatch,
     blockers,
   };
 }
@@ -167,7 +285,14 @@ function parseMapKeys(serviceBody: string, section: string): readonly string[] {
 
 async function main(): Promise<void> {
   const composeFile = readArgValue("--file") ?? "docker-compose.yml";
-  const report = await buildComposeCoreSmokeReport(composeFile);
+  const live = process.argv.includes("--live");
+  const report = live
+    ? await buildComposeProfileLiveSmokeReport({
+      healthUrl: readArgValue("--url"),
+      waitMs: readPositiveIntArg("--wait-ms") ?? 0,
+      pollIntervalMs: readPositiveIntArg("--poll-interval-ms") ?? 1000,
+    })
+    : await buildComposeCoreSmokeReport(composeFile);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (!report.ok) process.exitCode = 1;
 }
@@ -180,7 +305,61 @@ function readArgValue(name: string): string | undefined {
   return undefined;
 }
 
+function readPositiveIntArg(name: string): number | undefined {
+  const raw = readArgValue(name);
+  const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 const entrypoint = process.argv[1] ?? "";
 if (entrypoint.endsWith("scripts/compose-core-smoke.ts") || entrypoint.endsWith("scripts\\compose-core-smoke.ts")) {
   void main();
+}
+
+async function dockerComposePsJsonLines(): Promise<readonly string[]> {
+  const { stdout } = await execFileAsync("docker", ["compose", "ps", "--all", "--format", "json"], {
+    maxBuffer: 1024 * 1024 * 10,
+  });
+  return stdout.split(/\r?\n/u).filter((line) => line.trim());
+}
+
+function parseComposePsJsonLines(lines: readonly string[]): readonly ComposePsService[] {
+  return lines
+    .map((line) => JSON.parse(line) as ComposePsService)
+    .filter((service) => typeof service.Service === "string" && service.Service.trim());
+}
+
+async function fetchHealth(url: string): Promise<HealthPayload> {
+  const response = await fetch(url, {
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`health request failed: HTTP ${response.status}`);
+  }
+  return await response.json() as HealthPayload;
+}
+
+function buildAuthHeaders(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const token = env.MEMORY_XX_ADMIN_TOKEN?.trim() || env.MEMORY_XX_API_TOKEN?.trim() || "";
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function defaultHealthUrl(): string {
+  return process.env.MEMORY_XX_WRAPPER_HEALTH_URL?.trim() || "http://127.0.0.1:5100/health";
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -47,6 +47,7 @@ interface RuntimeProfileLiveSmokeReport extends RuntimeProfileSmokeReport {
 }
 
 type HealthPayload = Record<string, unknown>;
+type AuthHeaders = Record<string, string>;
 
 const PROFILES: readonly MemoryRuntimeProfile[] = ["core", "enhanced", "full"];
 
@@ -172,8 +173,15 @@ export function buildRuntimeProfileLiveSmokeReport(health: HealthPayload, now = 
   };
 }
 
+export function buildRuntimeProfileSmokeAuthHeaders(env: RuntimeEnv = process.env): AuthHeaders {
+  const token = env.MEMORY_XX_ADMIN_TOKEN?.trim() || env.MEMORY_XX_API_TOKEN?.trim() || "";
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function fetchHealth(url: string): Promise<HealthPayload> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: buildRuntimeProfileSmokeAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error(`health request failed: HTTP ${response.status}`);
   }
