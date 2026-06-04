@@ -140,6 +140,21 @@ test("configured external upstreams require a health URL when enabled", () => {
   assert.equal(byName.get("llm_upstream")?.reason, "health_url_unconfigured");
 });
 
+test("runtime module snapshot resolves upstream health URLs from injected env", () => {
+  const snapshot = buildRuntimeModuleSnapshot("full", {
+    MEMORY_XX_EMBEDDING_UPSTREAM_HEALTH_URL: "http://embedding.example/v1/models",
+    MEMORY_XX_LLM_UPSTREAM_ENABLED: "1",
+    MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: "http://llm.example/v1/models",
+    MEMORY_XX_RERANKER_UPSTREAM_ENABLED: "1",
+    MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: "http://reranker.example/v1/models",
+  });
+
+  assert.equal(snapshot.states.embedding_upstream?.health_url, "http://embedding.example/v1/models");
+  assert.equal(snapshot.states.llm_upstream?.state, "enabled");
+  assert.equal(snapshot.states.llm_upstream?.health_url, "http://llm.example/v1/models");
+  assert.equal(snapshot.states.reranker_upstream?.health_url, "http://reranker.example/v1/models");
+});
+
 test("runtime module snapshot exposes compact health payload names and states", () => {
   const snapshot = buildRuntimeModuleSnapshot("enhanced", {
     MEMORY_XX_FASTPATH_ENABLED: "0",

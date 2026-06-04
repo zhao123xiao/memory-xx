@@ -13,6 +13,8 @@ export interface RuntimeModule {
   readonly default_enabled?: boolean;
   readonly service?: string;
   readonly health_url?: string;
+  readonly health_url_env?: string;
+  readonly health_url_env_fallbacks?: readonly string[];
   readonly require_health_url_when_enabled?: boolean;
   readonly source_path?: string;
   readonly command?: string;
@@ -81,6 +83,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     kind: "core",
     service: "memory-xx-wrapper.service",
     health_url: DEFAULT_WRAPPER_HEALTH_URL,
+    health_url_env: "MEMORY_XX_WRAPPER_HEALTH_URL",
     required_in: ["core", "enhanced", "full"],
     default_enabled: true,
     startable: true,
@@ -118,6 +121,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_EMBEDDING_PROXY_SOURCE_AVAILABLE",
     service: "memory-xx-embedding-proxy-next.service",
     health_url: DEFAULT_EMBEDDING_PROXY_HEALTH_URL,
+    health_url_env: "MEMORY_XX_EMBEDDING_PROXY_HEALTH_URL",
     source_path: "sidecars/embedding-proxy/embedding-proxy.mjs",
     dependencies: ["embedding_upstream"],
     required_in: ["core", "enhanced", "full"],
@@ -131,7 +135,8 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     kind: "external",
     env_enabled: "MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED",
     service: "memory-xx-embedding-upstream.service",
-    health_url: process.env.MEMORY_XX_EMBEDDING_UPSTREAM_HEALTH_URL?.trim() || "http://127.0.0.1:8082/v3/models",
+    health_url: "http://127.0.0.1:8082/v3/models",
+    health_url_env: "MEMORY_XX_EMBEDDING_UPSTREAM_HEALTH_URL",
     required_in: [],
     expected_in: ["core", "enhanced", "full"],
     default_enabled: true,
@@ -156,6 +161,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_QDRANT_PROXY_SOURCE_AVAILABLE",
     service: "memory-xx-qdrant-proxy-next.service",
     health_url: DEFAULT_QDRANT_PROXY_HEALTH_URL,
+    health_url_env: "MEMORY_XX_QDRANT_PROXY_HEALTH_URL",
     source_path: "sidecars/qdrant-proxy/qdrant-collection-proxy.mjs",
     dependencies: ["qdrant"],
     required_in: [],
@@ -173,6 +179,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_FASTPATH_SOURCE_AVAILABLE",
     service: "memory-xx-fastpath.service",
     health_url: DEFAULT_FASTPATH_HEALTH_URL,
+    health_url_env: "MEMORY_XX_FASTPATH_HEALTH_URL",
     source_path: "sidecars/fastpath/fastpath.mjs",
     dependencies: ["postgres", "redis", "qdrant", "embedding_proxy"],
     required_in: ["full"],
@@ -190,6 +197,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_LEXICAL_SIDECAR_SOURCE_AVAILABLE",
     service: "memory-xx-lexical-sidecar.service",
     health_url: DEFAULT_LEXICAL_HEALTH_URL,
+    health_url_env: "MEMORY_XX_LEXICAL_HEALTH_URL",
     source_path: "sidecars/lexical-sidecar/lexical-sidecar.mjs",
     dependencies: ["postgres"],
     required_in: ["full"],
@@ -205,7 +213,8 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     kind: "external",
     env_enabled: "MEMORY_XX_RERANKER_UPSTREAM_ENABLED",
     service: "memory-xx-reranker-upstream.service",
-    health_url: process.env.MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL?.trim() || "http://127.0.0.1:8084/v3/models",
+    health_url: "http://127.0.0.1:8084/v3/models",
+    health_url_env: "MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL",
     required_in: ["full"],
     expected_in: ["enhanced"],
     default_enabled: false,
@@ -221,6 +230,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_RERANKER_ADAPTER_SOURCE_AVAILABLE",
     service: "memory-xx-reranker-adapter-next.service",
     health_url: DEFAULT_RERANKER_HEALTH_URL,
+    health_url_env: "MEMORY_XX_RERANKER_HEALTH_URL",
     source_path: "sidecars/reranker-adapter/reranker-adapter.mjs",
     dependencies: ["reranker_upstream"],
     required_in: ["full"],
@@ -235,7 +245,8 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     label: "OpenAI-compatible LLM upstream",
     kind: "external",
     env_enabled: "MEMORY_XX_LLM_UPSTREAM_ENABLED",
-    health_url: process.env.MEMORY_XX_LLM_UPSTREAM_HEALTH_URL?.trim() || process.env.MEMORY_XX_MEM0_BASE_URL?.trim() || process.env.MEMORY_INTELLIGENCE_BASE_URL?.trim(),
+    health_url_env: "MEMORY_XX_LLM_UPSTREAM_HEALTH_URL",
+    health_url_env_fallbacks: ["MEMORY_XX_MEM0_BASE_URL", "MEMORY_INTELLIGENCE_BASE_URL"],
     require_health_url_when_enabled: true,
     required_in: ["full"],
     expected_in: ["enhanced"],
@@ -250,6 +261,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_source_available: "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE",
     service: "memory-xx-mem0-extractor.service",
     health_url: DEFAULT_MEM0_EXTRACTOR_HEALTH_URL,
+    health_url_env: "MEMORY_XX_MEM0_EXTRACTOR_HEALTH_URL",
     source_path: "sidecars/mem0-extractor/extractor.py",
     dependencies: ["llm_upstream"],
     required_in: ["full"],
@@ -281,6 +293,7 @@ export const RUNTIME_MODULES: readonly RuntimeModule[] = [
     env_enabled: "MEMORY_XX_CONTROL_PANEL_ENABLED",
     service: "memory-xx-control-panel.service",
     health_url: DEFAULT_CONTROL_PANEL_HEALTH_URL,
+    health_url_env: "MEMORY_XX_CONTROL_PANEL_HEALTH_URL",
     source_path: "scripts/memory-control-panel.ts",
     dependencies: ["wrapper"],
     required_in: ["full"],
@@ -360,7 +373,8 @@ export function resolveRuntimeModuleState(
     };
   }
 
-  if (module.require_health_url_when_enabled && !module.health_url?.trim()) {
+  const healthUrl = resolveRuntimeModuleHealthUrl(module, env);
+  if (module.require_health_url_when_enabled && !healthUrl) {
     return {
       module,
       state: "missing_dependency",
@@ -397,7 +411,7 @@ export function buildRuntimeModuleSnapshot(
       label: resolved.module.label,
       kind: resolved.module.kind,
       service: resolved.module.service,
-      health_url: resolved.module.health_url,
+      health_url: resolveRuntimeModuleHealthUrl(resolved.module, env),
       require_health_url_when_enabled: resolved.module.require_health_url_when_enabled,
       source_path: resolved.module.source_path,
       env_enabled: resolved.module.env_enabled,
@@ -415,6 +429,15 @@ export function buildRuntimeModuleSnapshot(
     optional_modules: plan.optional_modules.map((module) => module.name),
     states,
   };
+}
+
+export function resolveRuntimeModuleHealthUrl(module: RuntimeModule, env: RuntimeEnv = process.env): string | undefined {
+  for (const name of [module.health_url_env, ...(module.health_url_env_fallbacks ?? [])]) {
+    if (!name) continue;
+    const value = env[name]?.trim();
+    if (value) return value;
+  }
+  return module.health_url?.trim() || undefined;
 }
 
 function readEnabled(module: RuntimeModule, profileDefault: boolean, env: RuntimeEnv): boolean {
