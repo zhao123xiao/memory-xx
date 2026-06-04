@@ -123,6 +123,23 @@ test("docker compose keeps core long-running services restartable", async () => 
   assert.match(composeServiceBlock(compose, "memory-xx-migrate"), /restart: "no"/u);
 });
 
+test("docker compose pluggable services expose host ports through environment overrides", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const expectedPorts = new Map([
+    ["memory-xx-fastpath", "${MEMORY_XX_FASTPATH_HOST_PORT:-5200}:5200"],
+    ["memory-xx-lexical-sidecar", "${MEMORY_XX_LEXICAL_HOST_PORT:-5210}:5210"],
+    ["memory-xx-qdrant-proxy", "${MEMORY_XX_QDRANT_PROXY_HOST_PORT:-6334}:6334"],
+    ["memory-xx-reranker-adapter", "${MEMORY_XX_RERANKER_ADAPTER_HOST_PORT:-8085}:8085"],
+    ["memory-xx-control-panel", "${MEMORY_XX_CONTROL_PANEL_HOST_PORT:-5310}:5310"],
+    ["memory-xx-mem0-extractor", "${MEMORY_XX_MEM0_EXTRACTOR_HOST_PORT:-5220}:5220"],
+  ]);
+
+  for (const [service, mapping] of expectedPorts) {
+    const block = composeServiceBlock(compose, service);
+    assert.ok(block.includes(mapping), `${service} should use ${mapping}`);
+  }
+});
+
 test("docker compose does not let non-wrapper services inherit wrapper healthcheck", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
   const ownHealthchecks = new Map([

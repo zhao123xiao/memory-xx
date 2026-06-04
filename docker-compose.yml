@@ -126,7 +126,7 @@ services:
       - enhanced
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts fastpath || exit 0; exec node sidecars/fastpath/fastpath.mjs"]
     ports:
-      - "5200:5200"
+      - "${MEMORY_XX_FASTPATH_HOST_PORT:-5200}:5200"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_FASTPATH_ADDR: 0.0.0.0:5200
@@ -156,7 +156,7 @@ services:
       - enhanced
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts lexical_sidecar || exit 0; exec node sidecars/lexical-sidecar/lexical-sidecar.mjs"]
     ports:
-      - "5210:5210"
+      - "${MEMORY_XX_LEXICAL_HOST_PORT:-5210}:5210"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_LEXICAL_ADDR: 0.0.0.0:5210
@@ -179,7 +179,7 @@ services:
       - enhanced
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts qdrant_proxy || exit 0; exec node sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"]
     ports:
-      - "6334:6334"
+      - "${MEMORY_XX_QDRANT_PROXY_HOST_PORT:-6334}:6334"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_QDRANT_PROXY_HOST: 0.0.0.0
@@ -204,7 +204,7 @@ services:
       - enhanced
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts reranker_adapter || exit 0; exec node sidecars/reranker-adapter/reranker-adapter.mjs"]
     ports:
-      - "8085:8085"
+      - "${MEMORY_XX_RERANKER_ADAPTER_HOST_PORT:-8085}:8085"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_RERANKER_ADAPTER_HOST: 0.0.0.0
@@ -225,7 +225,7 @@ services:
       - enhanced
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts control_panel || exit 0; exec node --import tsx scripts/memory-control-panel.ts"]
     ports:
-      - "5310:5310"
+      - "${MEMORY_XX_CONTROL_PANEL_HOST_PORT:-5310}:5310"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_CONTROL_PANEL_PORT: "5310"
@@ -252,7 +252,7 @@ services:
       - full
     command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts mem0_extractor || exit 0; exec python3 sidecars/mem0-extractor/extractor.py"]
     ports:
-      - "5220:5220"
+      - "${MEMORY_XX_MEM0_EXTRACTOR_HOST_PORT:-5220}:5220"
     environment:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_MEM0_EXTRACTOR_HOST: 0.0.0.0
