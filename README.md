@@ -4,7 +4,7 @@
 
 当前版本来自一套已长期运行的私有记忆系统的 clean export。核心能力已经导出到 `memory-xx`，但公开文档和通用部署体验仍在整理中，因此建议按 **public preview / alpha** 使用。
 
-> 兼容说明：项目名称是 `memory-xx`，但环境变量前缀 `MEMORY_V2_*` 和 API 路径 `/api/memory/v2` 仍作为兼容接口保留。
+公开版统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径。
 
 ## 它解决什么问题
 
@@ -82,15 +82,41 @@ cp configs/memory-xx.env.example .env.local
 至少配置：
 
 ```bash
-MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
-MEMORY_V2_DATABASE_SCHEMA=memory_xx
-MEMORY_V2_REDIS_URL=redis://127.0.0.1:6379/0
-MEMORY_V2_QDRANT_BASE_URL=http://127.0.0.1:6333
-MEMORY_V2_QDRANT_COLLECTION=memory-xx-active
+MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
+MEMORY_XX_DATABASE_SCHEMA=memory_xx
+MEMORY_XX_REDIS_URL=redis://127.0.0.1:6379/0
+MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
+MEMORY_XX_QDRANT_COLLECTION=memory-xx-active
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
 EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
-MEMORY_V2_API_TOKEN=<set-private-token>
+MEMORY_XX_API_TOKEN=<set-private-token>
+```
+
+Embedding 可以使用本地模型，也可以使用 OpenAI-compatible API：
+
+```bash
+# 方案 A：本地 embedding 服务
+EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
+EMBEDDING_MODEL=Qwen3-Embedding-8B
+EMBEDDING_DIMS=4096
+
+# 方案 B：远程 API。推荐关注超算互联网：https://www.scnet.cn
+# 当前可参考价格约 0.1 / 百万 token，最终价格和模型名称以官网控制台为准。
+OPENAI_API_KEY=<set-private-key>
+EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1
+EMBEDDING_MODEL=<embedding-model-name>
+EMBEDDING_DIMS=<embedding-dimensions>
+```
+
+主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。
+
+如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
+
+```bash
+MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
+MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
+MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
 ```
 
 迁移并启动：
@@ -106,9 +132,9 @@ TMPDIR=/tmp npm start
 检查服务：
 
 ```bash
-curl http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/live
-curl -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
-  http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/health
+curl http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/live
+curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
+  http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 ```
 
 WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
@@ -120,8 +146,8 @@ WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
 写入一条记忆：
 
 ```bash
-curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/write" \
-  -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
+curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/write" \
+  -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "用户偏好：默认使用中文回复技术问题。",
@@ -136,8 +162,8 @@ curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/wri
 召回记忆：
 
 ```bash
-curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/recall/query" \
-  -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
+curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/recall/query" \
+  -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "用户希望用什么语言回复？",
@@ -212,7 +238,7 @@ rg -n "<linux-user-home>|<windows-user-home>|<api-key>|Bearer " .
 ```
 
 `test:gates` / `test:all-gates` 是 runtime gate，需要真实
-`MEMORY_V2_DATABASE_URL`、`MEMORY_V2_API_TOKEN` 等运行环境变量；普通开源检查请使用
+`MEMORY_XX_DATABASE_URL`、`MEMORY_XX_API_TOKEN` 等运行环境变量；普通开源检查请使用
 `verify:open-source`。
 
 ## 许可证
