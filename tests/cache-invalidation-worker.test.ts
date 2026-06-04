@@ -39,3 +39,28 @@ test("cache invalidation worker writes status file when startup dependencies fai
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("cache invalidation worker defaults status file to MEMORY_XX_RUNTIME_DIR", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "memory-xx-cache-worker-runtime-"));
+  try {
+    const statusFile = path.join(dir, "cache-invalidation-worker.status.json");
+    const result = spawnSync(process.execPath, ["--import", "tsx", "scripts/run-cache-invalidation-worker.ts", "--dry-run"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        TMPDIR: "/tmp",
+        MEMORY_XX_RUNTIME_DIR: dir,
+        MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE: "",
+        MEMORY_XX_DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:9/memory_xx",
+        MEMORY_XX_REDIS_URL: "redis://127.0.0.1:9/0",
+      },
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.equal(existsSync(statusFile), true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

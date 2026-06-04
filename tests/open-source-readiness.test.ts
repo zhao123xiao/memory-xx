@@ -149,8 +149,10 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /scripts\/runtime-module-enabled\.ts memory_dreaming/u);
   assert.match(compose, /MEMORY_XX_DREAMING_ENABLED: \$\{MEMORY_XX_DREAMING_ENABLED:-0\}/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
+  assert.match(compose, /MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE: \/app\/\.runtime\/cache-invalidation-worker\.status\.json/u);
   assert.match(compose, /scripts\/runtime-module-enabled\.ts write_ticket_worker/u);
   assert.match(compose, /scripts\/run-write-ticket-worker\.ts/u);
+  assert.match(compose, /MEMORY_XX_WRITE_TICKET_WORKER_STATUS_FILE: \/app\/\.runtime\/write-ticket-worker\.status\.json/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
   assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
@@ -551,6 +553,7 @@ test("public systemd worker and control units point at repo-local source scripts
     ["systemd/memory-xx-markdown-projection.service", "scripts/run-markdown-projection-worker.ts"],
     ["systemd/memory-xx-dream-worker.service", "scripts/run-dream-worker.ts"],
     ["systemd/memory-xx-control-panel.service", "scripts/memory-control-panel.ts"],
+    ["systemd/memory-xx-cache-invalidation-worker.service", "scripts/run-cache-invalidation-worker.ts"],
     ["systemd/memory-xx-write-ticket-worker.service", "scripts/run-write-ticket-worker.ts"],
   ] as const;
   const stale: string[] = [];
@@ -566,6 +569,10 @@ test("public systemd worker and control units point at repo-local source scripts
   }
 
   assert.deepEqual(stale, []);
+  assert.match(await readFile("systemd/memory-xx-cache-invalidation-worker.service", "utf8"), /MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE=%h\/services\/memory-xx\/\.runtime\/cache-invalidation-worker\.status\.json/u);
+  assert.match(await readFile("systemd/memory-xx-write-ticket-worker.service", "utf8"), /MEMORY_XX_WRITE_TICKET_WORKER_STATUS_FILE=%h\/services\/memory-xx\/\.runtime\/write-ticket-worker\.status\.json/u);
+  assert.match(await readFile("systemd/memory-xx-dream-worker.service", "utf8"), /MEMORY_XX_DREAM_STATUS_FILE=%h\/services\/memory-xx\/\.runtime\/dream-worker\.status\.json/u);
+  assert.match(await readFile("systemd/memory-xx-markdown-projection.service", "utf8"), /MEMORY_XX_MARKDOWN_PROJECTION_STATUS_FILE=%h\/services\/memory-xx\/\.runtime\/markdown-projection\.status\.json/u);
 });
 
 test("public systemd default target starts only core services", async () => {

@@ -9,7 +9,9 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_RUNTIME_DIR=%h/services/memory-xx/.runtime
+Environment=MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE=%h/services/memory-xx/.runtime/cache-invalidation-worker.status.json
 ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts cache_invalidation_worker
 ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/run-cache-invalidation-worker.ts
-StandardOutput=append:%h/services/memory-xx/cache-invalidation-worker.log
-StandardError=append:%h/services/memory-xx/cache-invalidation-worker.error.log
+StandardOutput=append:%h/services/memory-xx/.runtime/cache-invalidation-worker.log
+StandardError=append:%h/services/memory-xx/.runtime/cache-invalidation-worker.error.log

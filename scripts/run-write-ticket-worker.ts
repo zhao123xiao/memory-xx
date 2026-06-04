@@ -2,7 +2,7 @@ import { processPendingWriteTickets } from "../app/api/intelligence/handlers";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../app/runtime-control-settings";
 import { initRuntime } from "../app/server/runtime";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 function runtimePositiveInt(key: string, envName: string, fallback: number): number {
   const raw = process.env[envName]?.trim();
@@ -13,8 +13,9 @@ function runtimePositiveInt(key: string, envName: string, fallback: number): num
 }
 
 function statusFilePath(): string {
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   return process.env.MEMORY_XX_WRITE_TICKET_WORKER_STATUS_FILE?.trim() ||
-    `${process.cwd()}/.runtime/write-ticket-worker.status.json`;
+    join(runtimeDir, "write-ticket-worker.status.json");
 }
 
 function workerId(): string {

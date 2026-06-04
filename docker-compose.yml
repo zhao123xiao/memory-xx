@@ -299,6 +299,7 @@ services:
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
       MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE: /app/.runtime/cache-invalidation-worker.status.json
       MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED: ${MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED:-0}
     depends_on:
       postgres:
@@ -318,6 +319,7 @@ services:
       MEMORY_XX_RUNTIME_DIR: /app/.runtime
       MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_WRITE_TICKET_WORKER_STATUS_FILE: /app/.runtime/write-ticket-worker.status.json
       MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: ${MEMORY_XX_WRITE_TICKET_WORKER_ENABLED:-0}
       MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS: ${MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS:-1000}
       MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE: ${MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE:-10}

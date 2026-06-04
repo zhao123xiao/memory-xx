@@ -6,7 +6,7 @@ import {
 } from "../app/db";
 import { RecallRuntimeCacheInvalidator, RedisRecallCache, loadMemoryRedisConfig } from "../app/cache";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../app/runtime-control-settings";
 
 activatePendingRuntimeControlsSync([
@@ -43,8 +43,9 @@ function retryDelaySeconds(attempts: number): number {
 }
 
 function statusFilePath(): string {
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   return process.env.MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
-    `${process.cwd()}/.runtime/cache-invalidation-worker.status.json`;
+    join(runtimeDir, "cache-invalidation-worker.status.json");
 }
 
 function workerId(): string {

@@ -9,6 +9,8 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_RUNTIME_DIR=%h/services/memory-xx/.runtime
+Environment=MEMORY_XX_DREAM_STATUS_FILE=%h/services/memory-xx/.runtime/dream-worker.status.json
 ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts memory_dreaming
 ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/run-dream-worker.ts
 Restart=always
