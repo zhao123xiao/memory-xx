@@ -86,3 +86,10 @@ TMPDIR=/tmp npm run memory:doctor -- --json
 ```
 
 如果当前 shell 无法访问 `systemd --user` bus，timer probe warning 不一定代表 memory-xx 主链路不可用。
+
+Docker Compose 的增强/full 启动需要同步设置 wrapper runtime profile，否则 sidecar 已启动但 `/health`、Doctor 和控制面板仍会按 Core 口径解释模块状态：
+
+```bash
+MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
+MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full up --build -d
+```

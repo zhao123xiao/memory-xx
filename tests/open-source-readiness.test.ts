@@ -53,6 +53,8 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /sidecars\/lexical-sidecar\/lexical-sidecar\.mjs/u);
   assert.match(compose, /scripts\/run-conversation-monitor-worker\.ts/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
+  assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
+  assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
 });
 
 test("Dockerfile includes source needed by public pluggable modules", async () => {
@@ -94,6 +96,22 @@ test("public docs and config templates use memory-xx env and API names", async (
   }
 
   assert.deepEqual(stale, []);
+});
+
+test("public docker profile docs set matching runtime profile", async () => {
+  const files = ["docs/quickstart.zh-CN.md", "docs/operations.md"] as const;
+  const missing: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (!/MEMORY_XX_RUNTIME_PROFILE=enhanced\s+docker-compose --profile enhanced up/u.test(content)) {
+      missing.push(`${file}:enhanced`);
+    }
+    if (!/MEMORY_XX_RUNTIME_PROFILE=full\s+docker-compose --profile enhanced --profile full up/u.test(content)) {
+      missing.push(`${file}:full`);
+    }
+  }
+
+  assert.deepEqual(missing, []);
 });
 
 test("public systemd bundle provides the unit name used by scripts", async () => {

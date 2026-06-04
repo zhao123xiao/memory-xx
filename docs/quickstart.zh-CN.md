@@ -155,8 +155,8 @@ docker-compose up --build -d
 增强模块通过 profile 启动：
 
 ```bash
-docker-compose --profile enhanced up --build -d
-docker-compose --profile full up --build -d
+MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
+MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile enhanced --profile full up --build -d
 ```
 
 `enhanced` 会额外启动 fastpath、lexical sidecar、Qdrant proxy、reranker adapter 和本地控制面板；`full` 会再启动 Mem0 extractor 和 conversation monitor。模型上游仍需要按本机环境配置，例如 `EMBEDDING_PROXY_UPSTREAM_BASE`、`OPENAI_API_KEY`、reranker downstream URL 和 Mem0/LLM 参数。
