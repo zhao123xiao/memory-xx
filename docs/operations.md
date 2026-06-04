@@ -144,8 +144,8 @@ TMPDIR=/tmp npm run test:conversation-monitor
 ```
 
 `memory:mode` probes Postgres, Redis, Qdrant, and local/Windows embedding
-dependencies but does not start those external processes. Existing systemd
-service names are preserved, including historical `*-next` names.
+dependencies but does not start those external processes. Current public
+systemd service names use stable `memory-xx-*.service` units.
 
 `systemd/memory-xx.target` starts only the Core online chain by default:
 wrapper, Qdrant projector worker, and embedding proxy. Start enhanced/full
@@ -390,10 +390,9 @@ Log level controlled by `MEMORY_XX_LOG_LEVEL` (error/warn/info/debug).
 
 ## Historical `*-next` Residue
 
-Some service names still contain `next` for compatibility, for example
-`memory-xx-embedding-proxy-next.service`. Do not rename them during routine
-performance work. Old `wrapper-next.*` and `qdrant-projector-worker-next.*`
-logs can be archived without deletion:
+Current public service names no longer use the experimental `*-next` suffix.
+Old `wrapper-next.*`, `qdrant-projector-worker-next.*`, and sidecar `*-next.*`
+logs can still be archived without deletion:
 
 ```bash
 TMPDIR=/tmp npm run memory:archive-next-residue

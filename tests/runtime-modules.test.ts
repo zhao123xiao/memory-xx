@@ -135,12 +135,12 @@ test("memory mode starts expected services for enhanced profiles", () => {
 
   assert.deepEqual(coreServices, [
     "memory-xx-wrapper.service",
-    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-embedding-proxy.service",
     "memory-xx-qdrant-projector-worker.service",
   ]);
   assert.ok(enhancedServices.includes("memory-xx-fastpath.service"));
   assert.ok(enhancedServices.includes("memory-xx-lexical-sidecar.service"));
-  assert.ok(enhancedServices.includes("memory-xx-reranker-adapter-next.service"));
+  assert.ok(enhancedServices.includes("memory-xx-reranker-adapter.service"));
   assert.ok(enhancedServices.includes("memory-xx-mem0-extractor.service"));
   assert.ok(enhancedServices.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(enhancedServices.includes("memory-xx-control-panel.service"));
@@ -157,7 +157,7 @@ test("memory mode skips dependency-bound enhanced services until their upstream 
   });
 
   assert.equal(enhancedServices.includes("memory-xx-mem0-extractor.service"), false);
-  assert.equal(enhancedServices.includes("memory-xx-reranker-adapter-next.service"), false);
+  assert.equal(enhancedServices.includes("memory-xx-reranker-adapter.service"), false);
 });
 
 test("remote embedding providers keep core start plan independent of local upstream manager", () => {
@@ -168,7 +168,7 @@ test("remote embedding providers keep core start plan independent of local upstr
 
   assert.deepEqual(coreServices, [
     "memory-xx-wrapper.service",
-    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-embedding-proxy.service",
     "memory-xx-qdrant-projector-worker.service",
   ]);
 });
@@ -190,9 +190,9 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
 
   assert.deepEqual(services, [
     "memory-xx-wrapper.service",
-    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-embedding-proxy.service",
     "memory-xx-qdrant-projector-worker.service",
-    "memory-xx-qdrant-proxy-next.service",
+    "memory-xx-qdrant-proxy.service",
     "memory-xx-cache-invalidation-worker.service",
     "memory-xx-maintenance.service",
     "memory-xx-consolidation.service",
@@ -252,7 +252,7 @@ test("memory mode stop plan keeps disabled profile services stoppable", () => {
 
   assert.ok(services.includes("memory-xx-fastpath.service"));
   assert.ok(services.includes("memory-xx-lexical-sidecar.service"));
-  assert.ok(services.includes("memory-xx-reranker-adapter-next.service"));
+  assert.ok(services.includes("memory-xx-reranker-adapter.service"));
   assert.ok(services.includes("memory-xx-mem0-extractor.service"));
   assert.ok(services.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(services.includes("memory-xx-dream-worker.service"));

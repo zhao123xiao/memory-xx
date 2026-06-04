@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
-EnvironmentFile=-%h/services/memory-xx/.env.fastpath-next
+EnvironmentFile=-%h/services/memory-xx/.env.fastpath
 Environment=MEMORY_XX_FASTPATH_ADDR=:5200
 Environment=MEMORY_XX_WRAPPER_URL=http://127.0.0.1:5100
 Environment=MEMORY_XX_FASTPATH_REDIS_CACHE_ENABLED=true

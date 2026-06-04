@@ -25,14 +25,14 @@ operations, or run worker entrypoints directly.
 | `postgres` | external | required: core/enhanced/full | - | - | Writes, review state, and recall ledger access fail. |
 | `redis` | external | required: core/enhanced/full | - | - | Cache and coordination are bypassed; throughput and latency degrade. |
 | `qdrant` | external | required: core/enhanced/full | - | - | Vector recall and current projection are unavailable. |
-| `embedding_proxy` | sidecar | required: core/enhanced/full | `MEMORY_XX_EMBEDDING_PROXY_ENABLED` | `memory-xx-embedding-proxy-next.service` | New query/write vectors fall back to cached/old results or non-vector paths. |
+| `embedding_proxy` | sidecar | required: core/enhanced/full | `MEMORY_XX_EMBEDDING_PROXY_ENABLED` | `memory-xx-embedding-proxy.service` | New query/write vectors fall back to cached/old results or non-vector paths. |
 | `embedding_upstream` | external | expected: core/enhanced/full | `MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED` | `memory-xx-embedding-upstream.service` | Embedding proxy is online but cannot generate new vectors. |
 | `projector` | worker | required: core/enhanced/full | - | `memory-xx-qdrant-projector-worker.service` | Committed writes wait in outbox and Qdrant freshness lags. |
-| `qdrant_proxy` | sidecar | expected: enhanced/full | `MEMORY_XX_QDRANT_PROXY_ENABLED` | `memory-xx-qdrant-proxy-next.service` | Collection blue/green routing is disabled; wrapper talks directly to Qdrant. |
+| `qdrant_proxy` | sidecar | expected: enhanced/full | `MEMORY_XX_QDRANT_PROXY_ENABLED` | `memory-xx-qdrant-proxy.service` | Collection blue/green routing is disabled; wrapper talks directly to Qdrant. |
 | `fastpath` | sidecar | required: full; expected: enhanced | `MEMORY_XX_FASTPATH_ENABLED` | `memory-xx-fastpath.service` | Recall falls back to the Node wrapper path with higher latency. |
 | `lexical_sidecar` | sidecar | required: full; expected: enhanced | `MEMORY_XX_LEXICAL_SIDECAR_ENABLED` | `memory-xx-lexical-sidecar.service` | Exact keyword and hybrid recall quality degrade; vector/PostgreSQL fallback remains available. |
 | `reranker_upstream` | external | required: full; expected: enhanced | `MEMORY_XX_RERANKER_UPSTREAM_ENABLED` | `memory-xx-reranker-upstream.service` | Reranker adapter is online but cannot call a model. |
-| `reranker_adapter` | sidecar | required: full; expected: enhanced | `MEMORY_XX_RERANKER_ADAPTER_ENABLED` | `memory-xx-reranker-adapter-next.service` | Model reranking is skipped and local rank fusion is used. |
+| `reranker_adapter` | sidecar | required: full; expected: enhanced | `MEMORY_XX_RERANKER_ADAPTER_ENABLED` | `memory-xx-reranker-adapter.service` | Model reranking is skipped and local rank fusion is used. |
 | `llm_upstream` | external | required: full; expected: enhanced | `MEMORY_XX_LLM_UPSTREAM_ENABLED` | - | Mem0 extraction and LLM-backed intelligence use built-in heuristics or remain disabled. |
 | `mem0_extractor` | sidecar | required: full; expected: enhanced | `MEMORY_XX_MEM0_EXTRACTOR_ENABLED` | `memory-xx-mem0-extractor.service` | Smart extraction falls back to built-in heuristics or manual write paths. |
 | `conversation_monitor` | worker | required: full; expected: enhanced | `MEMORY_XX_CONVERSATION_MONITOR_ENABLED` | `memory-xx-conversation-monitor-worker.service` | Session ingestion is disabled; direct HTTP/MCP memory operations continue. |

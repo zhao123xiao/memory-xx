@@ -728,9 +728,9 @@ test("compose host bind env vars are honored by sidecar sources", async () => {
 
 test("public systemd sidecar units point at repo-local sidecar sources", async () => {
   const units = [
-    "systemd/memory-xx-embedding-proxy-next.service",
-    "systemd/memory-xx-qdrant-proxy-next.service",
-    "systemd/memory-xx-reranker-adapter-next.service",
+    "systemd/memory-xx-embedding-proxy.service",
+    "systemd/memory-xx-qdrant-proxy.service",
+    "systemd/memory-xx-reranker-adapter.service",
     "systemd/memory-xx-mem0-extractor.service",
     "systemd/memory-xx-fastpath.service",
     "systemd/memory-xx-lexical-sidecar.service",
@@ -784,7 +784,7 @@ test("public systemd default target starts only core services", async () => {
   for (const coreService of [
     "memory-xx-wrapper.service",
     "memory-xx-qdrant-projector-worker.service",
-    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-embedding-proxy.service",
   ]) {
     assert.match(target, new RegExp(`^Wants=${coreService.replaceAll(".", "\\.")}$`, "mu"));
   }
@@ -793,9 +793,9 @@ test("public systemd default target starts only core services", async () => {
     "memory-xx-embedding-upstream.service",
     "memory-xx-fastpath.service",
     "memory-xx-lexical-sidecar.service",
-    "memory-xx-reranker-adapter-next.service",
+    "memory-xx-reranker-adapter.service",
     "memory-xx-reranker-upstream.service",
-    "memory-xx-qdrant-proxy-next.service",
+    "memory-xx-qdrant-proxy.service",
     "memory-xx-mem0-extractor.service",
     "memory-xx-conversation-monitor-worker.service",
     "memory-xx-cache-invalidation-worker.service",
@@ -804,6 +804,28 @@ test("public systemd default target starts only core services", async () => {
   ]) {
     assert.doesNotMatch(target, new RegExp(`^Wants=${pluggableService.replaceAll(".", "\\.")}$`, "mu"));
   }
+});
+
+test("current public runtime services do not use experimental next suffixes", async () => {
+  const files = [
+    "app/runtime-modules.ts",
+    "scripts/control-panel/service-controls.ts",
+    "scripts/control-panel/runtime-snapshot.ts",
+    "scripts/control-panel/summary.ts",
+    "scripts/memory-doctor.ts",
+    "systemd/memory-xx.target",
+    "docs/module-catalog.md",
+    "docs/runtime-profiles.md",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/memory-xx-(embedding-proxy|qdrant-proxy|reranker-adapter)-next\.service/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
 });
 
 test("public systemd pluggable units honor runtime module kill switches", async () => {

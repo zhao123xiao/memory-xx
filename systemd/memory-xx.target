@@ -2,7 +2,7 @@
 Description=memory-xx production service group
 Wants=memory-xx-wrapper.service
 Wants=memory-xx-qdrant-projector-worker.service
-Wants=memory-xx-embedding-proxy-next.service
+Wants=memory-xx-embedding-proxy.service
 After=network-online.target
 
 [Install]

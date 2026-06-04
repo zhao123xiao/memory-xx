@@ -109,6 +109,7 @@ const DENYLIST_TOP_LEVEL = new Set([
 
 const DENYLIST_FILE_NAMES = new Set([
   ".env",
+  ".env.fastpath",
   ".env.fastpath-next",
   "P0-BASELINE.md",
   "P0-data-backup.sql",

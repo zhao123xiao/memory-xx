@@ -143,9 +143,9 @@ or stop those external dependencies.
 
 ## Service Policy
 
-Existing service names are preserved, including historical `*-next` names such
-as `memory-xx-embedding-proxy-next.service`. Runtime profiles classify those
-services; they do not rename them.
+Current public service names use stable `memory-xx-*.service` units. Historical
+`*-next` names are treated only as migration residue; runtime profiles classify
+the stable units and do not require legacy aliases.
 
 `systemd/memory-xx.target` is intentionally Core-only. It starts wrapper,
 projector, and embedding proxy so a default user install does not accidentally

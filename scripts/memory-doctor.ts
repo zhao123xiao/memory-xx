@@ -842,7 +842,7 @@ function remediationPlan(blockers: readonly string[]): string[] {
     actions.push("Lower embedding concurrency or rely on query embedding cache; confirm no recent embedding 429 before release.");
   }
   if (blockers.includes("embedding_proxy_recent_429")) {
-    actions.push("Run TMPDIR=/tmp npm run memory:embedding-calibrate, then apply the recommended proxy interval/concurrency and restart memory-xx-embedding-proxy-next.service.");
+    actions.push("Run TMPDIR=/tmp npm run memory:embedding-calibrate, then apply the recommended proxy interval/concurrency and restart memory-xx-embedding-proxy.service.");
   }
   if (blockers.includes("embedding_upstream_unavailable")) {
     actions.push("Run systemctl --user start memory-xx-embedding-upstream.service; it starts <windows-drive>\\ovms\\run-embedding.bat on Windows GPU and verifies http://127.0.0.1:8082/v3 embeddings, then rerun TMPDIR=/tmp npm run memory:doctor -- --target embedding-ready --plan.");
@@ -901,7 +901,7 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
       url,
       latency_ms: Date.now() - started,
       error: error instanceof Error ? error.message : String(error),
-      remediation: "Start <windows-drive>\\ovms\\run-embedding.bat, then restart/verify memory-xx-embedding-proxy-next.service.",
+      remediation: "Start <windows-drive>\\ovms\\run-embedding.bat, then restart/verify memory-xx-embedding-proxy.service.",
     };
   }
 }
@@ -1450,7 +1450,7 @@ async function main(): Promise<void> {
   }
   const wrapperStartedAt = userServiceStartedAt("memory-xx-wrapper.service");
   const fastpathStartedAt = userServiceStartedAt("memory-xx-fastpath.service");
-  const embeddingProxyStartedAt = userServiceStartedAt("memory-xx-embedding-proxy-next.service");
+  const embeddingProxyStartedAt = userServiceStartedAt("memory-xx-embedding-proxy.service");
   checks.logs = {
     since: {
       wrapper_started_at: wrapperStartedAt ? new Date(wrapperStartedAt).toISOString() : null,
