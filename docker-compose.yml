@@ -54,6 +54,11 @@ services:
       MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY: ${EMBEDDING_PROXY_UPSTREAM_API_KEY:-${OPENAI_API_KEY:-changeme}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5221/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-dev-embedding-upstream:
     build: .
@@ -68,6 +73,11 @@ services:
       MEMORY_XX_DEV_EMBEDDING_MODEL: ${MEMORY_XX_DEV_EMBEDDING_MODEL:-memory-xx-dev-embedding}
       MEMORY_XX_DEV_EMBEDDING_DIMS: ${MEMORY_XX_DEV_EMBEDDING_DIMS:-${EMBEDDING_DIMS:-4096}}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5222/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-migrate:
     build: .
@@ -79,6 +89,8 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-qdrant-projector-worker:
     build: .
@@ -105,6 +117,8 @@ services:
       memory-xx-embedding-proxy:
         condition: service_started
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
   memory-xx-fastpath:
     build: .
@@ -130,6 +144,11 @@ services:
       qdrant:
         condition: service_started
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5200/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-lexical-sidecar:
     build: .
@@ -148,6 +167,11 @@ services:
       postgres:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5210/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-qdrant-proxy:
     build: .
@@ -168,6 +192,11 @@ services:
       qdrant:
         condition: service_started
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:6334/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-reranker-adapter:
     build: .
@@ -184,6 +213,11 @@ services:
       MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://host.docker.internal:8084/v3/models}
       MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8085/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-control-panel:
     build: .
@@ -206,6 +240,11 @@ services:
       memory-xx:
         condition: service_started
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5310/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-mem0-extractor:
     build: .
@@ -223,6 +262,11 @@ services:
       MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-}}
       MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5220/health', timeout=5).status < 300 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   memory-xx-conversation-monitor:
     build: .
@@ -247,6 +291,8 @@ services:
       postgres:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      disable: true
 
   memory-xx-markdown-projection:
     build: .
@@ -266,6 +312,8 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-dream-worker:
     build: .
@@ -286,6 +334,8 @@ services:
       memory-xx:
         condition: service_started
     restart: on-failure
+    healthcheck:
+      disable: true
 
   memory-xx-cache-invalidation-worker:
     build: .
@@ -307,6 +357,8 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      disable: true
 
   memory-xx-write-ticket-worker:
     build: .
@@ -328,6 +380,8 @@ services:
       postgres:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      disable: true
 
   memory-xx-maintenance:
     build: .
@@ -356,6 +410,8 @@ services:
       qdrant:
         condition: service_started
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-consolidation:
     build: .
@@ -373,6 +429,8 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-detect:
     build: .
@@ -398,6 +456,8 @@ services:
       qdrant:
         condition: service_started
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-auto-repair:
     build: .
@@ -421,6 +481,8 @@ services:
       qdrant:
         condition: service_started
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-repair-report:
     build: .
@@ -446,6 +508,8 @@ services:
       qdrant:
         condition: service_started
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-landing-scan:
     build: .
@@ -467,6 +531,8 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      disable: true
 
   memory-xx-canary-7d-report:
     build: .
@@ -486,6 +552,8 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      disable: true
 
   postgres:
     image: pgvector/pgvector:pg16

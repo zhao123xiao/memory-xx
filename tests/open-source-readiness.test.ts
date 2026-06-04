@@ -123,6 +123,46 @@ test("docker compose keeps core long-running services restartable", async () => 
   assert.match(composeServiceBlock(compose, "memory-xx-migrate"), /restart: "no"/u);
 });
 
+test("docker compose does not let non-wrapper services inherit wrapper healthcheck", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const ownHealthchecks = new Map([
+    ["memory-xx-embedding-proxy", "http://127.0.0.1:5221/health"],
+    ["memory-xx-dev-embedding-upstream", "http://127.0.0.1:5222/health"],
+    ["memory-xx-fastpath", "http://127.0.0.1:5200/health"],
+    ["memory-xx-lexical-sidecar", "http://127.0.0.1:5210/health"],
+    ["memory-xx-qdrant-proxy", "http://127.0.0.1:6334/health"],
+    ["memory-xx-reranker-adapter", "http://127.0.0.1:8085/health"],
+    ["memory-xx-control-panel", "http://127.0.0.1:5310/health"],
+    ["memory-xx-mem0-extractor", "http://127.0.0.1:5220/health"],
+  ]);
+  const healthcheckDisabled = [
+    "memory-xx-migrate",
+    "memory-xx-qdrant-projector-worker",
+    "memory-xx-conversation-monitor",
+    "memory-xx-markdown-projection",
+    "memory-xx-dream-worker",
+    "memory-xx-cache-invalidation-worker",
+    "memory-xx-write-ticket-worker",
+    "memory-xx-maintenance",
+    "memory-xx-consolidation",
+    "memory-xx-detect",
+    "memory-xx-auto-repair",
+    "memory-xx-repair-report",
+    "memory-xx-landing-scan",
+    "memory-xx-canary-7d-report",
+  ];
+
+  for (const [service, healthUrl] of ownHealthchecks) {
+    const block = composeServiceBlock(compose, service);
+    assert.match(block, /healthcheck:\s*\n\s+test:/u, service);
+    assert.ok(block.includes(healthUrl), service);
+    assert.doesNotMatch(block, /127\.0\.0\.1:5100\/live/u, service);
+  }
+  for (const service of healthcheckDisabled) {
+    assert.match(composeServiceBlock(compose, service), /healthcheck:\s*\n\s+disable: true/u, service);
+  }
+});
+
 test("docker compose service environments do not duplicate keys", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 
