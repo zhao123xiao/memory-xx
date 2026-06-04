@@ -28,6 +28,9 @@ fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 info() { echo "[INFO] $1"; }
 
+HTTP_STATUS=000
+HTTP_STATUS_FILE="${LOG_DIR}/last-http-status"
+
 # python-based HTTP POST helper (avoids shell quoting issues)
 http_post() {
   python3 -c "
@@ -35,7 +38,7 @@ import json, os, subprocess, sys
 path = '$1'
 body = json.loads('''$2''')
 headers = ['-H', 'Content-Type: application/json']
-token = os.environ.get('MEMORY_XX_API_TOKEN', '').strip()
+token = os.environ.get('MEMORY_XX_ADMIN_TOKEN', '').strip() or os.environ.get('MEMORY_XX_API_TOKEN', '').strip()
 if token:
     headers += ['-H', f'Authorization: Bearer {token}']
 r = subprocess.run(['curl', '-s', '-X', 'POST', '${WRAPPER}' + path,
@@ -48,8 +51,25 @@ out = r.stdout
 parts = out.rsplit('\nHTTP_CODE:', 1)
 print(parts[0] if parts else out)
 code = parts[1] if len(parts) > 1 else '000'
-print(code, file=sys.stderr)
+open('${HTTP_STATUS_FILE}', 'w', encoding='utf-8').write(code.strip())
 "
+}
+
+http_ok() {
+  HTTP_STATUS="$(cat "$HTTP_STATUS_FILE" 2>/dev/null || printf '000')"
+  [[ "$HTTP_STATUS" =~ ^2[0-9][0-9]$ ]]
+}
+
+wait_for_wrapper() {
+  local timeout="${MEMORY_XX_FUNCTIONAL_WAIT_SECONDS:-30}"
+  for i in $(seq 1 "$timeout"); do
+    if curl -sS -m 2 "${WRAPPER}/live" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  fail "Wrapper 未在 ${timeout}s 内就绪: ${WRAPPER}/live"
+  return 1
 }
 
 qdrant_scroll() {
@@ -76,19 +96,24 @@ print(json.dumps({
         'actorId': 'ftest',
         'scopeType': 'workspace',
         'scopeId': 'functional-test',
-        'content': '这是一条真实性测试记录，验证从 write 到 Qdrant 再到 recall 的完整链路。',
+        'content': '这是一条真实性测试记录 (${TEST_PREFIX})，验证从 write 到 Qdrant 再到 recall 的完整链路。',
         'title': '${title}',
         'summary': None,
         'metadata': {'tags': ['ftest', 'm1']},
-        'dedupeKey': None,
-        'lifecycleStatus': 'candidate',
-        'reviewState': 'pending',
+        'dedupeKey': 'm1:' + '${TEST_PREFIX}',
+        'lifecycleStatus': 'approved',
+        'reviewState': 'not_required',
         'sources': [],
         'relations': []
     }
 }))")"
 
   local resp; resp="$(http_post "/api/memory/xx/orchestrator/write-memory" "$body")"
+  if ! http_ok; then
+    fail "$label: write HTTP $HTTP_STATUS"
+    echo "RESP: $resp"
+    return 1
+  fi
   local mem_id; mem_id="$(echo "$resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('write',{}).get('memoryId','') or d.get('error',''))" 2>/dev/null)"
   [[ -z "$mem_id" || "$mem_id" == *"error"* ]] && { fail "$label: 未返回 memory_id: $mem_id"; echo "RESP: $resp"; return 1; }
   pass "$label: write 成功 memory_id=$mem_id"
@@ -107,7 +132,10 @@ print(json.dumps({
     fi
     info "  重试 $i/10..."
   done
-  [[ "$found" -eq 0 ]] && warn "$label: Qdrant 未在 20s 内出现（projector 可能积压）"
+  if [[ "$found" -eq 0 ]]; then
+    fail "$label: Qdrant 未在 20s 内出现"
+    return 1
+  fi
 
   # recall 验证
   local recall_body; recall_body="$(python3 -c "
@@ -118,12 +146,18 @@ print(json.dumps({
     'limit': 5
 }))")"
   local recall_resp; recall_resp="$(http_post "/api/memory/xx/recall/query" "$recall_body")"
+  if ! http_ok; then
+    fail "$label: recall HTTP $HTTP_STATUS"
+    echo "RESP: $recall_resp"
+    return 1
+  fi
   local hits; hits="$(echo "$recall_resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null)"
   local vec_hits; vec_hits="$(echo "$recall_resp" | python3 -c "import json,sys; print(d.get('audit',{}).get('vector_hits','?') if d.get('audit') else '?')" 2>/dev/null)"
   if [[ "$hits" -gt 0 ]]; then
     pass "$label: recall hits=$hits vec_hits=$vec_hits"
   else
-    warn "$label: recall hits=0"
+    fail "$label: recall hits=0"
+    return 1
   fi
 
   echo "$mem_id" > "${LOG_DIR}/last_test_memory_id"
@@ -246,32 +280,35 @@ main() {
   echo "Wrapper: $WRAPPER"
   echo "========================================"
   echo ""
+  wait_for_wrapper || return 1
 
+  local status=0
   case "$MODULE" in
-    m1) test_m1 ;;
-    m2) test_m2 ;;
-    m3) test_m3 ;;
-    m4) test_m4 ;;
-    m5) test_m5 ;;
-    m6) test_m6 ;;
+    m1) test_m1 || status=1 ;;
+    m2) test_m2 || status=1 ;;
+    m3) test_m3 || status=1 ;;
+    m4) test_m4 || status=1 ;;
+    m5) test_m5 || status=1 ;;
+    m6) test_m6 || status=1 ;;
     all)
-      test_m1
+      test_m1 || status=1
       echo ""
-      test_m2
+      test_m2 || status=1
       echo ""
-      test_m3
+      test_m3 || status=1
       echo ""
-      test_m4
+      test_m4 || status=1
       echo ""
-      test_m5
+      test_m5 || status=1
       echo ""
-      test_m6
+      test_m6 || status=1
       ;;
     *) echo "未知模块: $MODULE"; echo "用法: $0 [m1|m2|m3|m4|m5|m6|all]"; exit 1 ;;
   esac
 
   echo ""
   info "测试完成，结果已记录到 ${LOG_DIR}/test-log.txt"
+  return "$status"
 }
 
 main

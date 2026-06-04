@@ -4,26 +4,26 @@ import { describe, it, beforeEach } from "node:test";
 import { HttpQdrantPointWriter } from "../app/qdrant-sync/qdrant-point-writer";
 
 function createMockFetch() {
-  let lastCall: { url: string; init: RequestInit } | null = null;
-  let callCount = 0;
+  const calls: Array<{ url: string; init: RequestInit }> = [];
 
   const mockFetch = async (input: string | URL | Request, init?: RequestInit) => {
-    lastCall = { url: String(input), init: init ?? {} };
-    callCount++;
+    calls.push({ url: String(input), init: init ?? {} });
     return { ok: true, status: 200 } as Response;
   };
 
   return {
     fetch: mockFetch as typeof fetch,
     get lastCall() {
-      return lastCall;
+      return calls.at(-1) ?? null;
     },
     get callCount() {
-      return callCount;
+      return calls.length;
+    },
+    get calls() {
+      return calls;
     },
     reset() {
-      lastCall = null;
-      callCount = 0;
+      calls.length = 0;
     }
   };
 }
@@ -216,5 +216,31 @@ describe("HttpQdrantPointWriter", () => {
         return true;
       }
     );
+  });
+
+  it("creates missing collection with vector dimension from first point and retries upsert", async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      calls.push({ url: String(input), init: init ?? {} });
+      if (calls.length === 1) return { ok: false, status: 404 } as Response;
+      return { ok: true, status: 200, text: async () => "" } as Response;
+    };
+    const writer = createWriter({
+      baseUrl: "http://localhost:6333",
+      collectionName: "test-col",
+      fetchImpl
+    });
+
+    await writer.upsert([{ id: "pt-1", vector: [0.1, 0.2, 0.3], payload: { memory_id: "mem-1" } }] as any);
+
+    assert.equal(calls.length, 3);
+    assert.match(calls[0]?.url ?? "", /\/collections\/test-col\/points\?wait=true$/u);
+    assert.match(calls[1]?.url ?? "", /\/collections\/test-col$/u);
+    assert.equal(calls[1]?.init.method, "PUT");
+    assert.deepEqual(JSON.parse(String(calls[1]?.init.body)), {
+      vectors: { size: 3, distance: "Cosine" },
+      on_disk_payload: true
+    });
+    assert.match(calls[2]?.url ?? "", /\/collections\/test-col\/points\?wait=true$/u);
   });
 });

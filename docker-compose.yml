@@ -13,6 +13,7 @@ services:
       MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
       MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
       MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-${MEMORY_XX_API_TOKEN:-changeme}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
       EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen3-Embedding-8B}
@@ -27,6 +28,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      memory-xx-migrate:
+        condition: service_completed_successfully
       memory-xx-embedding-proxy:
         condition: service_started
       memory-xx-qdrant-projector-worker:
@@ -63,8 +66,19 @@ services:
       MEMORY_XX_DEV_EMBEDDING_HOST: 0.0.0.0
       MEMORY_XX_DEV_EMBEDDING_PORT: "5222"
       MEMORY_XX_DEV_EMBEDDING_MODEL: ${MEMORY_XX_DEV_EMBEDDING_MODEL:-memory-xx-dev-embedding}
-      MEMORY_XX_DEV_EMBEDDING_DIMS: ${MEMORY_XX_DEV_EMBEDDING_DIMS:-${EMBEDDING_DIMS:-384}}
+      MEMORY_XX_DEV_EMBEDDING_DIMS: ${MEMORY_XX_DEV_EMBEDDING_DIMS:-${EMBEDDING_DIMS:-4096}}
     restart: unless-stopped
+
+  memory-xx-migrate:
+    build: .
+    command: ["node", "--import", "tsx", "scripts/migrate.ts"]
+    environment:
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   memory-xx-qdrant-projector-worker:
     build: .
@@ -84,6 +98,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      memory-xx-migrate:
+        condition: service_completed_successfully
       qdrant:
         condition: service_started
       memory-xx-embedding-proxy:

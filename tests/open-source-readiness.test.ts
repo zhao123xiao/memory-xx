@@ -63,7 +63,7 @@ test("docker compose keeps embedding provider defaults vendor-neutral", async ()
   assert.match(compose, /^  memory-xx-dev-embedding-upstream:$/mu);
   assert.match(compose, /profiles:\s*\n\s+- dev/u);
   assert.match(compose, /sidecars\/dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
-  assert.match(compose, /MEMORY_XX_DEV_EMBEDDING_DIMS: \$\{MEMORY_XX_DEV_EMBEDDING_DIMS:-\$\{EMBEDDING_DIMS:-384\}\}/u);
+  assert.match(compose, /MEMORY_XX_DEV_EMBEDDING_DIMS: \$\{MEMORY_XX_DEV_EMBEDDING_DIMS:-\$\{EMBEDDING_DIMS:-4096\}\}/u);
   assert.equal(packageJson.scripts["memory:dev-embedding-upstream"], "node sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs");
   assert.match(sidecarReadme, /dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
   assert.match(sidecarReadme, /npm run memory:dev-embedding-upstream/u);
@@ -76,6 +76,10 @@ test("docker compose includes the core Qdrant projector worker", async () => {
   assert.match(compose, /^  memory-xx-qdrant-projector-worker:$/mu);
   assert.match(compose, /scripts\/run-qdrant-projector-worker\.ts/u);
   assert.match(compose, /MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE: \/app\/\.runtime\/qdrant-projector-worker\.status\.json/u);
+  assert.match(compose, /^  memory-xx-migrate:$/mu);
+  assert.match(compose, /command: \["node", "--import", "tsx", "scripts\/migrate\.ts"\]/u);
+  assert.match(compose, /memory-xx-migrate:\s*\n\s+condition: service_completed_successfully/u);
+  assert.match(compose, /^  memory-xx:[\s\S]*?MEMORY_XX_ADMIN_TOKEN: \$\{MEMORY_XX_ADMIN_TOKEN:-\$\{MEMORY_XX_API_TOKEN:-changeme\}\}[\s\S]*?^    depends_on:/mu);
   assert.match(compose, /memory-xx-embedding-proxy:\s*\n\s+condition: service_started/u);
   assert.match(compose, /qdrant:\s*\n\s+condition: service_started/u);
 });
