@@ -33,6 +33,27 @@ function composeServiceBlock(compose: string, service: string): string {
   return next < 0 ? compose.slice(start) : compose.slice(start, start + 1 + next);
 }
 
+function composeServiceNames(compose: string): string[] {
+  return [...compose.matchAll(/^  ([a-z0-9-]+):$/gmu)].map((match) => match[1]).filter(Boolean);
+}
+
+function duplicatedComposeEnvironmentKeys(compose: string): string[] {
+  const duplicated: string[] = [];
+  for (const service of composeServiceNames(compose)) {
+    const block = composeServiceBlock(compose, service);
+    const envStart = block.indexOf("    environment:\n");
+    if (envStart < 0) continue;
+    const envBlock = block.slice(envStart + "    environment:\n".length).split(/\n    [a-z_]+:/u)[0] ?? "";
+    const keys = [...envBlock.matchAll(/^\s{6}([A-Z0-9_]+):/gmu)].map((match) => match[1]).filter(Boolean);
+    const seen = new Set<string>();
+    for (const key of keys) {
+      if (seen.has(key)) duplicated.push(`${service}:${key}`);
+      seen.add(key);
+    }
+  }
+  return duplicated;
+}
+
 test("open-source preaudit ignores local ignored build and runtime artifacts", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "memory-xx-preaudit-"));
   await writeFile(path.join(root, "README.md"), "# memory-xx\n", "utf8");
@@ -100,6 +121,12 @@ test("docker compose keeps core long-running services restartable", async () => 
     assert.match(composeServiceBlock(compose, service), /restart: unless-stopped/u, service);
   }
   assert.match(composeServiceBlock(compose, "memory-xx-migrate"), /restart: "no"/u);
+});
+
+test("docker compose service environments do not duplicate keys", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+
+  assert.deepEqual(duplicatedComposeEnvironmentKeys(compose), []);
 });
 
 test("public compose core smoke is exposed as an open-source verification entrypoint", async () => {
