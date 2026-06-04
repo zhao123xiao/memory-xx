@@ -94,6 +94,20 @@ test("module catalog documents public npm entrypoints for full-stack capabilitie
   assert.deepEqual(missing.sort(), []);
 });
 
+test("module catalog documents full-stack capability dependencies", () => {
+  const catalog = readFileSync("docs/module-catalog.md", "utf8");
+  const missing: string[] = [];
+
+  for (const capability of FULL_STACK_CAPABILITIES) {
+    for (const dependency of capability.dependencies ?? []) {
+      const rowPattern = new RegExp(`\\| \`${capability.name}\` \\|[^\\n]*\`${dependency}\``, "u");
+      if (!rowPattern.test(catalog)) missing.push(`${capability.name}->${dependency}`);
+    }
+  }
+
+  assert.deepEqual(missing.sort(), []);
+});
+
 test("full-stack capability manifest classifies production CLI scripts not modeled as services", () => {
   const covered = new Set(FULL_STACK_CAPABILITIES.flatMap((capability) => capability.script_paths));
   const expected = [
@@ -239,6 +253,40 @@ test("enabled full-stack capabilities expose missing dependency state instead of
   assert.equal(snapshot.states.recall_quality?.reason, "dependency_unavailable:fastpath:disabled");
   assert.deepEqual(snapshot.states.recall_quality?.dependencies, ["fastpath", "lexical_sidecar", "reranker_adapter"]);
   assert.ok(snapshot.missing_dependency.includes("recall_quality"));
+});
+
+test("environment-bound capabilities declare dependencies and degrade when those dependencies are off", () => {
+  const snapshot = buildFullStackCapabilitySnapshot({
+    MEMORY_XX_EMBEDDING_CALIBRATION_ENABLED: "1",
+    MEMORY_XX_LOCAL_EMBEDDING_GENERATION_ENABLED: "1",
+    MEMORY_XX_QDRANT_RECONCILE_ENABLED: "1",
+    MEMORY_XX_CONVERSATION_OPS_ENABLED: "1",
+    MEMORY_XX_RELEASE_GOVERNANCE_GATES_ENABLED: "1",
+    MEMORY_XX_EMBEDDING_PROXY_ENABLED: "0",
+    MEMORY_XX_QDRANT_PROXY_ENABLED: "0",
+    MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_LANDING_SCAN_ENABLED: "0",
+  });
+
+  assert.equal(snapshot.states.embedding_calibration?.state, "missing_dependency");
+  assert.equal(snapshot.states.embedding_calibration?.reason, "dependency_unavailable:embedding_proxy:disabled");
+  assert.deepEqual(snapshot.states.embedding_calibration?.dependencies, ["embedding_proxy"]);
+
+  assert.equal(snapshot.states.local_embedding_generation?.state, "missing_dependency");
+  assert.equal(snapshot.states.local_embedding_generation?.reason, "dependency_unavailable:embedding_proxy:disabled");
+  assert.deepEqual(snapshot.states.local_embedding_generation?.dependencies, ["embedding_proxy", "qdrant"]);
+
+  assert.equal(snapshot.states.qdrant_reconciliation?.state, "missing_dependency");
+  assert.equal(snapshot.states.qdrant_reconciliation?.reason, "dependency_unavailable:qdrant_proxy:disabled");
+  assert.deepEqual(snapshot.states.qdrant_reconciliation?.dependencies, ["qdrant", "projector", "qdrant_proxy"]);
+
+  assert.equal(snapshot.states.conversation_ops?.state, "missing_dependency");
+  assert.equal(snapshot.states.conversation_ops?.reason, "dependency_unavailable:conversation_monitor:disabled");
+  assert.deepEqual(snapshot.states.conversation_ops?.dependencies, ["conversation_monitor"]);
+
+  assert.equal(snapshot.states.release_governance_gates?.state, "missing_dependency");
+  assert.equal(snapshot.states.release_governance_gates?.reason, "dependency_unavailable:landing_scan:disabled");
+  assert.deepEqual(snapshot.states.release_governance_gates?.dependencies, ["landing_scan", "canary_7d_report", "recall_quality"]);
 });
 
 test("full-stack capability dependencies resolve against runtime modules and capabilities", () => {

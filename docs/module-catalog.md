@@ -38,32 +38,32 @@ This catalog is the public map for hot-pluggable runtime modules and CLI-only fu
 
 ## Full-Stack Capabilities
 
-| Name | Profile | Maturity | Env switch | Degraded behavior |
-| --- | --- | --- | --- | --- |
-| `knowledge_ingest` | enhanced | beta | `MEMORY_XX_KNOWLEDGE_INGEST_ENABLED` | Long-form documents are not ingested automatically; short memory write/recall continues. |
-| `memory_knowledge_graph` | enhanced | beta | `MEMORY_XX_MEMORY_GRAPH_ENABLED` | Graph evidence and graph recall boosts are skipped; vector and lexical recall remain available. |
-| `code_graph` | enhanced | beta | `MEMORY_XX_CODE_GRAPH_ENABLED` | Repository symbol/import/call graph views are unavailable; memory graph and recall continue. |
-| `temporal_decay` | full | beta | `MEMORY_XX_TEMPORAL_DECAY_ENABLED` | Temporal decay scoring and archive candidate generation are not run automatically. |
-| `temporal_consolidation` | full | beta | `MEMORY_XX_CONSOLIDATION_ENABLED` | Duplicate/episode consolidation suggestions are not produced automatically. |
-| `memory_dreaming` | full | experimental | `MEMORY_XX_DREAMING_ENABLED` | Background dreaming/promoted insight generation is disabled; explicit write/recall continues. |
-| `policy_evaluation` | full | beta | `MEMORY_XX_POLICY_EVAL_ENABLED` | Policy evaluation reports are not refreshed automatically; runtime policy still executes. |
-| `recall_quality` | full | beta | `MEMORY_XX_RECALL_QUALITY_ENABLED` | Release quality evidence is not refreshed automatically; recall still uses configured runtime paths. |
-| `auto_approval_ops` | full | beta | `MEMORY_XX_AUTO_APPROVAL_ENABLED` | Pending memories remain reviewable manually; automatic approvals and sweeps do not run. |
-| `auto_update_ops` | full | beta | `MEMORY_XX_AUTO_UPDATE_ENABLED` | Supersede/update candidates are not applied automatically; normal write and manual review continue. |
-| `embedding_manifest` | enhanced | stable | `MEMORY_XX_EMBEDDING_MANIFEST_ENABLED` | Embedding generation validation is skipped; wrapper still uses the configured provider and Qdrant collection. |
-| `embedding_calibration` | full | beta | `MEMORY_XX_EMBEDDING_CALIBRATION_ENABLED` | Embedding timeout/concurrency recommendations are not refreshed automatically. |
-| `local_embedding_generation` | full | beta | `MEMORY_XX_LOCAL_EMBEDDING_GENERATION_ENABLED` | Bulk local vector regeneration is disabled; online writes still use the configured embedding provider. |
-| `backup_and_restore` | full | beta | `MEMORY_XX_BACKUP_ENABLED` | Automated backup planning is unavailable; database-native backups can still be run externally. |
-| `platform_doctor` | enhanced | stable | `MEMORY_XX_PLATFORM_DOCTOR_ENABLED` | Automated environment diagnosis is unavailable; health endpoints and explicit checks still work. |
-| `trusted_agent_tools` | enhanced | stable | `MEMORY_XX_TRUSTED_AGENT_TOOLS_ENABLED` | Token and scope grant provisioning must be handled manually; strict scope enforcement remains available. |
-| `qdrant_reconciliation` | full | beta | `MEMORY_XX_QDRANT_RECONCILE_ENABLED` | Projection repair is not run automatically; vector freshness may lag while Postgres remains authoritative. |
-| `conversation_ops` | enhanced | beta | `MEMORY_XX_CONVERSATION_OPS_ENABLED` | Conversation source diagnostics and monitor reports are unavailable; direct memory APIs continue. |
-| `governance_operations` | full | beta | `MEMORY_XX_GOVERNANCE_OPS_ENABLED` | Governance audits, cleanup, freeze/revert, and pending reports are not refreshed automatically; manual review APIs remain available. |
-| `runtime_observability_retention` | full | beta | `MEMORY_XX_RUNTIME_OBSERVABILITY_RETENTION_ENABLED` | Runtime traces and observability artifacts are not compacted automatically; online memory operations continue. |
-| `write_ticket_maintenance` | full | beta | `MEMORY_XX_WRITE_TICKET_MAINTENANCE_ENABLED` | Expired write tickets are not swept or archived automatically; new writes still use the normal idempotency path. |
-| `deployment_packaging` | full | beta | `MEMORY_XX_DEPLOYMENT_PACKAGING_ENABLED` | Deployment bundle, migration preflight, and memory-specific secrets audit must be run manually or by external tooling. |
-| `release_governance_gates` | full | beta | `MEMORY_XX_RELEASE_GOVERNANCE_GATES_ENABLED` | Release gates, landing/canary evidence, and capacity checks are not refreshed automatically; Core operations continue. |
-| `self_improvement_ops` | full | experimental | `MEMORY_XX_SELF_IMPROVEMENT_ENABLED` | Report-only self-improvement proposals and Graphiti shadow export are disabled; normal governance and review continue. |
+| Name | Profile | Maturity | Env switch | Dependencies | Degraded behavior |
+| --- | --- | --- | --- | --- | --- |
+| `knowledge_ingest` | enhanced | beta | `MEMORY_XX_KNOWLEDGE_INGEST_ENABLED` | - | Long-form documents are not ingested automatically; short memory write/recall continues. |
+| `memory_knowledge_graph` | enhanced | beta | `MEMORY_XX_MEMORY_GRAPH_ENABLED` | - | Graph evidence and graph recall boosts are skipped; vector and lexical recall remain available. |
+| `code_graph` | enhanced | beta | `MEMORY_XX_CODE_GRAPH_ENABLED` | - | Repository symbol/import/call graph views are unavailable; memory graph and recall continue. |
+| `temporal_decay` | full | beta | `MEMORY_XX_TEMPORAL_DECAY_ENABLED` | - | Temporal decay scoring and archive candidate generation are not run automatically. |
+| `temporal_consolidation` | full | beta | `MEMORY_XX_CONSOLIDATION_ENABLED` | - | Duplicate/episode consolidation suggestions are not produced automatically. |
+| `memory_dreaming` | full | experimental | `MEMORY_XX_DREAMING_ENABLED` | - | Background dreaming/promoted insight generation is disabled; explicit write/recall continues. |
+| `policy_evaluation` | full | beta | `MEMORY_XX_POLICY_EVAL_ENABLED` | - | Policy evaluation reports are not refreshed automatically; runtime policy still executes. |
+| `recall_quality` | full | beta | `MEMORY_XX_RECALL_QUALITY_ENABLED` | `fastpath`, `lexical_sidecar`, `reranker_adapter` | Release quality evidence is not refreshed automatically; recall still uses configured runtime paths. |
+| `auto_approval_ops` | full | beta | `MEMORY_XX_AUTO_APPROVAL_ENABLED` | - | Pending memories remain reviewable manually; automatic approvals and sweeps do not run. |
+| `auto_update_ops` | full | beta | `MEMORY_XX_AUTO_UPDATE_ENABLED` | - | Supersede/update candidates are not applied automatically; normal write and manual review continue. |
+| `embedding_manifest` | enhanced | stable | `MEMORY_XX_EMBEDDING_MANIFEST_ENABLED` | - | Embedding generation validation is skipped; wrapper still uses the configured provider and Qdrant collection. |
+| `embedding_calibration` | full | beta | `MEMORY_XX_EMBEDDING_CALIBRATION_ENABLED` | `embedding_proxy` | Embedding timeout/concurrency recommendations are not refreshed automatically. |
+| `local_embedding_generation` | full | beta | `MEMORY_XX_LOCAL_EMBEDDING_GENERATION_ENABLED` | `embedding_proxy`, `qdrant` | Bulk local vector regeneration is disabled; online writes still use the configured embedding provider. |
+| `backup_and_restore` | full | beta | `MEMORY_XX_BACKUP_ENABLED` | - | Automated backup planning is unavailable; database-native backups can still be run externally. |
+| `platform_doctor` | enhanced | stable | `MEMORY_XX_PLATFORM_DOCTOR_ENABLED` | - | Automated environment diagnosis is unavailable; health endpoints and explicit checks still work. |
+| `trusted_agent_tools` | enhanced | stable | `MEMORY_XX_TRUSTED_AGENT_TOOLS_ENABLED` | - | Token and scope grant provisioning must be handled manually; strict scope enforcement remains available. |
+| `qdrant_reconciliation` | full | beta | `MEMORY_XX_QDRANT_RECONCILE_ENABLED` | `qdrant`, `projector`, `qdrant_proxy` | Projection repair is not run automatically; vector freshness may lag while Postgres remains authoritative. |
+| `conversation_ops` | enhanced | beta | `MEMORY_XX_CONVERSATION_OPS_ENABLED` | `conversation_monitor` | Conversation source diagnostics and monitor reports are unavailable; direct memory APIs continue. |
+| `governance_operations` | full | beta | `MEMORY_XX_GOVERNANCE_OPS_ENABLED` | - | Governance audits, cleanup, freeze/revert, and pending reports are not refreshed automatically; manual review APIs remain available. |
+| `runtime_observability_retention` | full | beta | `MEMORY_XX_RUNTIME_OBSERVABILITY_RETENTION_ENABLED` | - | Runtime traces and observability artifacts are not compacted automatically; online memory operations continue. |
+| `write_ticket_maintenance` | full | beta | `MEMORY_XX_WRITE_TICKET_MAINTENANCE_ENABLED` | - | Expired write tickets are not swept or archived automatically; new writes still use the normal idempotency path. |
+| `deployment_packaging` | full | beta | `MEMORY_XX_DEPLOYMENT_PACKAGING_ENABLED` | - | Deployment bundle, migration preflight, and memory-specific secrets audit must be run manually or by external tooling. |
+| `release_governance_gates` | full | beta | `MEMORY_XX_RELEASE_GOVERNANCE_GATES_ENABLED` | `landing_scan`, `canary_7d_report`, `recall_quality` | Release gates, landing/canary evidence, and capacity checks are not refreshed automatically; Core operations continue. |
+| `self_improvement_ops` | full | experimental | `MEMORY_XX_SELF_IMPROVEMENT_ENABLED` | - | Report-only self-improvement proposals and Graphiti shadow export are disabled; normal governance and review continue. |
 
 ## Full-Stack Capability Commands
 

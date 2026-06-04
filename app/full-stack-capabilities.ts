@@ -191,6 +191,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_EMBEDDING_CALIBRATION_ENABLED",
+    dependencies: ["embedding_proxy"],
     source_paths: ["app/server/embedding-provider.ts", "app/recall/query-embedding-resilience.ts"],
     script_paths: ["scripts/embedding-calibration.ts"],
     degraded_behavior: "Embedding timeout/concurrency recommendations are not refreshed automatically.",
@@ -202,6 +203,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_LOCAL_EMBEDDING_GENERATION_ENABLED",
+    dependencies: ["embedding_proxy", "qdrant"],
     source_paths: ["app/embedding/index.ts", "app/qdrant-sync/projector-embedding-resolver.ts"],
     script_paths: [
       "scripts/generate-local-memory-embeddings.ts",
@@ -250,6 +252,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_QDRANT_RECONCILE_ENABLED",
+    dependencies: ["qdrant", "projector", "qdrant_proxy"],
     source_paths: ["app/qdrant-sync/consistency-reconcile.ts", "app/qdrant-sync/replay-repair.ts", "app/ops/outbox-recovery.ts"],
     script_paths: [
       "scripts/qdrant-reconcile.ts",
@@ -268,6 +271,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_CONVERSATION_OPS_ENABLED",
+    dependencies: ["conversation_monitor"],
     source_paths: ["app/conversation/conversation-source-status.ts", "app/conversation/conversation-monitor-report.ts"],
     script_paths: ["scripts/memory-conversation-sources.ts", "scripts/memory-conversation-monitor-report.ts"],
     degraded_behavior: "Conversation source diagnostics and monitor reports are unavailable; direct memory APIs continue.",
@@ -352,6 +356,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     maturity: "beta",
     default_enabled: false,
     env_enabled: "MEMORY_XX_RELEASE_GOVERNANCE_GATES_ENABLED",
+    dependencies: ["landing_scan", "canary_7d_report", "recall_quality"],
     source_paths: ["app/p0-production-gate.ts", "app/p1-production-gate.ts", "app/cutover-gate.ts", "app/governance/memory-landing-scan.ts", "app/governance/memory-canary-7d-report.ts"],
     script_paths: [
       "scripts/p0-production-gate.ts",
