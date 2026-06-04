@@ -178,6 +178,25 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  memory-xx-cache-invalidation-worker:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts cache_invalidation_worker || exit 0; exec node --import tsx scripts/run-cache-invalidation-worker.ts"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED: ${MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:

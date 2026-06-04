@@ -32,7 +32,7 @@ views. Enable it with `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` and set
 `memory_projection/` directory.
 
 Operations modules are modeled separately from sidecars. `maintenance_orchestrator`,
-`temporal_consolidation`, `runtime_issue_detection`, `auto_repair`,
+`cache_invalidation_worker`, `temporal_consolidation`, `runtime_issue_detection`, `auto_repair`,
 `repair_report`, `landing_scan`, and `canary_7d_report` are full-profile
 modules with their own env switches and systemd units. They are disabled by
 default and can be enabled per environment without affecting Core write/recall.

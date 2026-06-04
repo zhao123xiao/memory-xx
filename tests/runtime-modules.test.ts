@@ -127,6 +127,7 @@ test("memory mode start plan skips full modules disabled by kill switches", () =
     "memory-xx-embedding-proxy-next.service",
     "memory-xx-qdrant-projector-worker.service",
     "memory-xx-qdrant-proxy-next.service",
+    "memory-xx-cache-invalidation-worker.service",
     "memory-xx-maintenance.service",
     "memory-xx-consolidation.service",
     "memory-xx-detect.service",
@@ -338,6 +339,7 @@ test("public full-stack operations services are exposed as runtime modules", () 
   const missing = [
     "memory-xx-auto-repair.service",
     "memory-xx-canary-7d-report.service",
+    "memory-xx-cache-invalidation-worker.service",
     "memory-xx-consolidation.service",
     "memory-xx-detect.service",
     "memory-xx-landing-scan.service",
@@ -348,6 +350,8 @@ test("public full-stack operations services are exposed as runtime modules", () 
   assert.deepEqual(missing, []);
 
   assert.equal(services.get("memory-xx-auto-repair.service")?.env_enabled, "MEMORY_XX_AUTO_REPAIR_ENABLED");
+  assert.equal(services.get("memory-xx-cache-invalidation-worker.service")?.env_enabled, "MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED");
+  assert.equal(services.get("memory-xx-cache-invalidation-worker.service")?.source_path, "scripts/run-cache-invalidation-worker.ts");
   assert.equal(services.get("memory-xx-consolidation.service")?.source_path, "scripts/memory-consolidate.ts");
   assert.equal(services.get("memory-xx-maintenance.service")?.source_path, "scripts/maintenance.ts");
   assert.equal(services.get("memory-xx-landing-scan.service")?.command, "TMPDIR=/tmp npm run memory:landing-scan -- --json --write-report --max-files=200");

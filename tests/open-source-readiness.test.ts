@@ -44,6 +44,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
     "memory-xx-reranker-adapter",
     "memory-xx-mem0-extractor",
     "memory-xx-conversation-monitor",
+    "memory-xx-cache-invalidation-worker",
     "memory-xx-control-panel",
   ]) {
     assert.match(compose, new RegExp(`^  ${service}:`, "mu"), `missing compose service ${service}`);
@@ -54,6 +55,7 @@ test("docker compose exposes pluggable enhanced and full-stack services as profi
   assert.match(compose, /sidecars\/fastpath\/fastpath\.mjs/u);
   assert.match(compose, /sidecars\/lexical-sidecar\/lexical-sidecar\.mjs/u);
   assert.match(compose, /scripts\/run-conversation-monitor-worker\.ts/u);
+  assert.match(compose, /scripts\/runtime-module-enabled\.ts cache_invalidation_worker/u);
   assert.match(compose, /scripts\/memory-control-panel\.ts/u);
   assert.match(compose, /MEMORY_XX_RUNTIME_PROFILE: \$\{MEMORY_XX_RUNTIME_PROFILE:-core\}/u);
   assert.doesNotMatch(compose, /MEMORY_XX_FASTPATH_ENABLED: \$\{MEMORY_XX_FASTPATH_ENABLED:-true\}/u);
@@ -298,6 +300,7 @@ test("public systemd default target starts only core services", async () => {
     "memory-xx-qdrant-proxy-next.service",
     "memory-xx-mem0-extractor.service",
     "memory-xx-conversation-monitor-worker.service",
+    "memory-xx-cache-invalidation-worker.service",
     "memory-xx-control-panel.service",
   ]) {
     assert.doesNotMatch(target, new RegExp(`^Wants=${pluggableService.replaceAll(".", "\\.")}$`, "mu"));
