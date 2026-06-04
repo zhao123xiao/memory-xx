@@ -57,6 +57,30 @@ test("full-stack capability manifest references exported source and CLI paths", 
   assert.deepEqual(missing, []);
 });
 
+test("full-stack capability manifest classifies production CLI scripts not modeled as services", () => {
+  const covered = new Set(FULL_STACK_CAPABILITIES.flatMap((capability) => capability.script_paths));
+  const expected = [
+    "scripts/memory-conversation-sources.ts",
+    "scripts/memory-conversation-monitor-report.ts",
+    "scripts/memory-governance-audit.ts",
+    "scripts/memory-governance-cleanup.ts",
+    "scripts/memory-governance-freeze.ts",
+    "scripts/memory-governance-revert.ts",
+    "scripts/memory-policy-backfill.ts",
+    "scripts/memory-pending-canary-report.ts",
+    "scripts/memory-pending-governance.ts",
+    "scripts/runtime-observability-retention.ts",
+    "scripts/trace-retention.ts",
+    "scripts/sweep-write-ticket-timeouts.ts",
+    "scripts/archive-write-tickets.ts",
+    "scripts/memory-migration-preflight.ts",
+    "scripts/memory-deployment-bundle.ts",
+    "scripts/memory-secrets-audit.ts",
+  ];
+
+  assert.deepEqual(expected.filter((script) => !covered.has(script)), []);
+});
+
 test("full-stack capability manifest keeps experimental capabilities disabled by default", () => {
   const experimentalEnabled = FULL_STACK_CAPABILITIES
     .filter((capability) => capability.maturity === "experimental" && capability.default_enabled)

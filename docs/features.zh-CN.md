@@ -44,7 +44,7 @@
 
 ## 默认安全边界
 
-- 非服务型 full-stack 能力包由 `app/full-stack-capabilities.ts` 声明。它覆盖 Knowledge ingest、Memory knowledge graph、Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation、Recall quality、auto-approval/update ops、embedding manifest/calibration、本地 embedding 生成、backup、platform doctor、trusted agent tooling 和 Qdrant reconciliation 等模块，开源发布门禁会检查这些源码和 CLI 是否随仓库导出。
+- 非服务型 full-stack 能力包由 `app/full-stack-capabilities.ts` 声明。它覆盖 Knowledge ingest、Memory knowledge graph、Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation、Recall quality、auto-approval/update ops、embedding manifest/calibration、本地 embedding 生成、backup、platform doctor、trusted agent tooling、Qdrant reconciliation、conversation ops、governance operations、runtime observability retention、write-ticket maintenance 和 deployment/security packaging 等模块，开源发布门禁会检查这些源码和 CLI 是否随仓库导出。
 - 不默认开放 global 自动写入。
 - 不默认开放 real update/supersede/apply。
 - `candidate_only` 可作为全局 kill switch。

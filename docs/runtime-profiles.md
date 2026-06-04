@@ -43,9 +43,12 @@ Graph, Temporal decay/consolidation, Memory dreaming, Policy evaluation, and
 Recall quality. It also tracks production operations packages such as
 auto-approval/update operations, embedding generation manifest and calibration,
 local embedding generation, backup, platform doctor, trusted agent tooling, and
-Qdrant reconciliation. The open-source release gate checks that their source
-files and CLI scripts are exported even when the capability is disabled by
-default. `/health` exposes the same manifest as
+Qdrant reconciliation. It also classifies production CLI-only operations such as
+conversation source diagnostics, governance audit/cleanup/freeze/revert,
+runtime observability retention, write-ticket sweeps, migration preflight,
+deployment bundle generation, and memory-specific secrets audit. The open-source
+release gate checks that their source files and CLI scripts are exported even
+when the capability is disabled by default. `/health` exposes the same manifest as
 `full_stack_capabilities.states`, including each capability's profile, maturity,
 env switch, exported source/script paths, state, and degraded behavior. A
 disabled capability should not block Core unless a service module in
