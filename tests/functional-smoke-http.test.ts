@@ -29,8 +29,15 @@ test("M1 functional smoke writes an effective recallable memory and fails on mis
   assert.match(script, /'dedupeKey': 'm1:' \+ '\$\{TEST_PREFIX\}'/u);
   assert.match(script, /真实性测试记录 \(\$\{TEST_PREFIX\}\)/u);
   assert.doesNotMatch(script, /'lifecycleStatus': 'candidate'[\s\S]*?'reviewState': 'pending'/u);
+  assert.match(script, /"filter": \{"must": \[\{"key": "memory_id"/u);
+  assert.doesNotMatch(script, /scroll_filter/u);
+  assert.match(script, /payload_memory_id/u);
+  assert.match(script, /Qdrant 命中 memory_id 不匹配/u);
   assert.match(script, /fail "\$label: Qdrant 未在 20s 内出现/u);
   assert.doesNotMatch(script, /warn "\$label: Qdrant 未在 20s 内出现/u);
+  assert.match(script, /recall_has_mem/u);
+  assert.match(script, /recall 未命中新写入 memory_id/u);
+  assert.doesNotMatch(script, /import json,sys; print\(d\.get\('audit'/u);
   assert.match(script, /fail "\$label: recall hits=0"/u);
   assert.doesNotMatch(script, /warn "\$label: recall hits=0"/u);
   assert.match(script, /local status=0/u);

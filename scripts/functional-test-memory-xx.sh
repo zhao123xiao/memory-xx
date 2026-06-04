@@ -75,7 +75,7 @@ wait_for_wrapper() {
 qdrant_scroll() {
   curl -s -X POST "${QDRANT_BASE}/collections/${QDRANT_COLLECTION}/points/scroll" \
     -H "Content-Type: application/json" \
-    -d '{"limit": 1, "scroll_filter": {"must": [{"key": "memory_id", "match": {"value": "'"$1"'"}}]}}' 2>/dev/null
+    -d '{"limit": 1, "with_payload": true, "with_vector": false, "filter": {"must": [{"key": "memory_id", "match": {"value": "'"$1"'"}}]}}' 2>/dev/null
 }
 
 # ─────────────────────────────────────────────
@@ -125,9 +125,15 @@ print(json.dumps({
     sleep 2
     local qresp; qresp="$(qdrant_scroll "$mem_id")"
     local point_id; point_id="$(echo "$qresp" | python3 -c "import json,sys; d=json.load(sys.stdin); pts=d.get('result',{}).get('points',[]); print(pts[0]['id'] if pts else '')" 2>/dev/null)"
+    local payload_memory_id; payload_memory_id="$(echo "$qresp" | python3 -c "import json,sys; d=json.load(sys.stdin); pts=d.get('result',{}).get('points',[]); print(pts[0].get('payload',{}).get('memory_id','') if pts else '')" 2>/dev/null)"
     if [[ -n "$point_id" ]]; then
+      if [[ "$payload_memory_id" != "$mem_id" ]]; then
+        fail "$label: Qdrant 命中 memory_id 不匹配 expected=$mem_id actual=$payload_memory_id point_id=$point_id"
+        echo "RESP: $qresp"
+        return 1
+      fi
       found=1
-      pass "$label: Qdrant 出现 point_id=$point_id (等待 $((i*2))s)"
+      pass "$label: Qdrant 出现 memory_id=$payload_memory_id point_id=$point_id (等待 $((i*2))s)"
       break
     fi
     info "  重试 $i/10..."
@@ -152,8 +158,14 @@ print(json.dumps({
     return 1
   fi
   local hits; hits="$(echo "$recall_resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null)"
-  local vec_hits; vec_hits="$(echo "$recall_resp" | python3 -c "import json,sys; print(d.get('audit',{}).get('vector_hits','?') if d.get('audit') else '?')" 2>/dev/null)"
+  local vec_hits; vec_hits="$(echo "$recall_resp" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('audit',{}).get('vector_hits','?') if d.get('audit') else '?')" 2>/dev/null)"
+  local recall_has_mem; recall_has_mem="$(echo "$recall_resp" | python3 -c "import json,sys; d=json.load(sys.stdin); target='${mem_id}'; print('yes' if any(r.get('memory_id') == target for r in d.get('results',[])) else 'no')" 2>/dev/null)"
   if [[ "$hits" -gt 0 ]]; then
+    if [[ "$recall_has_mem" != "yes" ]]; then
+      fail "$label: recall 未命中新写入 memory_id=$mem_id hits=$hits vec_hits=$vec_hits"
+      echo "RESP: $recall_resp"
+      return 1
+    fi
     pass "$label: recall hits=$hits vec_hits=$vec_hits"
   else
     fail "$label: recall hits=0"

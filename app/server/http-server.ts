@@ -418,6 +418,11 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
   const runtimeProfile = parseMemoryRuntimeProfile();
   const runtimeModules = buildRuntimeModuleSnapshot(runtimeProfile);
   const fullStackCapabilities = buildFullStackCapabilitySnapshot();
+  const embeddingManifestRequired = Boolean(
+    ("configured" in embeddingGeneration && embeddingGeneration.configured) ||
+    process.env.MEMORY_XX_EMBEDDING_MANIFEST_ENABLED === "1" ||
+    process.env.MEMORY_XX_EMBEDDING_MANIFEST_ENABLED === "true"
+  );
 
   const tokenSeparation = inspectTokenSeparation(process.env);
   const configValidation = validateRuntimeConfig(process.env);
@@ -426,8 +431,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
   const governanceHealth = await buildGovernanceHealth();
   const baseOk = runtime !== null &&
     vectorStatus.available &&
-    generationOk &&
-    providerMatchesActiveGeneration !== false &&
+    (!embeddingManifestRequired || (generationOk && providerMatchesActiveGeneration !== false)) &&
     tokenSeparation.ok &&
     configValidation.ok;
   const issues = buildHealthRuntimeIssues({
@@ -436,6 +440,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     vectorReason: vectorStatus.reason,
     generationOk,
     providerMatchesActiveGeneration,
+    embeddingManifestRequired,
     tokenSeparationOk: tokenSeparation.ok,
     configValidationOk: configValidation.ok,
   });

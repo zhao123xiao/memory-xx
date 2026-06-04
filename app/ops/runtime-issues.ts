@@ -147,6 +147,7 @@ export function buildHealthRuntimeIssues(input: {
   readonly vectorReason?: string;
   readonly generationOk: boolean;
   readonly providerMatchesActiveGeneration: boolean | null;
+  readonly embeddingManifestRequired?: boolean;
   readonly tokenSeparationOk: boolean;
   readonly configValidationOk: boolean;
   readonly checkedAt?: string;
@@ -169,7 +170,7 @@ export function buildHealthRuntimeIssues(input: {
       last_checked_at: checkedAt,
     });
   }
-  if (!input.generationOk || input.providerMatchesActiveGeneration === false) {
+  if (input.embeddingManifestRequired !== false && (!input.generationOk || input.providerMatchesActiveGeneration === false)) {
     issues.push({
       id: "embedding_generation_mismatch",
       severity: "critical",
