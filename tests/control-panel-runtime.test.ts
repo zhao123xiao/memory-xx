@@ -50,6 +50,9 @@ test("runtime registry exposes typed, sourced, safety-labeled settings", () => w
     assert.ok(["safe", "guarded", "high-risk"].includes(item.safety));
     assert.ok(["runtime_json", "restart_pending", "env", "default"].includes(item.source));
     assert.ok(["hot_reload", "pending_restart", "read_only_env", "external_service_owned"].includes(item.effect_status));
+    if (item.service) {
+      assert.doesNotMatch(item.service, /^openclaw-.*\.service$/u);
+    }
     if (item.type === "number") {
       assert.equal(typeof item.default_value, "number");
       assert.ok(item.unit, `${item.key} should expose a display unit`);
