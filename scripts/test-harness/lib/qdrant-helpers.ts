@@ -7,7 +7,7 @@ export async function getCollectionInfo(): Promise<{
   vectorSize: number;
 }> {
   const resp = await fetch(`${config.qdrantUrl}/collections/${config.qdrantCollection}`);
-  const data = await resp.json();
+  const data = await resp.json() as any;
   const result = data.result;
   return {
     status: result?.status ?? "unknown",
@@ -30,7 +30,7 @@ export async function scrollPoints(
       signal: AbortSignal.timeout(10000),
     },
   );
-  const data = await resp.json();
+  const data = await resp.json() as any;
   return data.result?.points ?? [];
 }
 
@@ -52,6 +52,6 @@ export async function scrollRandom(limit = 5): Promise<Array<Record<string, unkn
       signal: AbortSignal.timeout(10000),
     },
   );
-  const data = await resp.json();
+  const data = await resp.json() as any;
   return data.result?.points ?? [];
 }

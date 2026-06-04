@@ -15,6 +15,10 @@ import {
   RUNTIME_COMPONENTS,
   type MemoryRuntimeProfile,
 } from "../app/runtime-profiles.js";
+import {
+  resolveRuntimeModuleState,
+  type RuntimeEnv,
+} from "../app/runtime-modules.js";
 import { validateRuntimeConfig } from "../app/runtime-config-validator.js";
 import { buildSystemdUserEnv } from "../app/ops/systemd-user.js";
 
@@ -402,6 +406,41 @@ function runtimeComponent(name: string) {
   return RUNTIME_COMPONENTS.find((component) => component.name === name);
 }
 
+export function classifyDoctorComponentProfileState(
+  name: string,
+  mode: MemoryRuntimeProfile,
+  env: RuntimeEnv = process.env
+): {
+  readonly name: string;
+  readonly role: "required" | "expected" | "optional" | "unknown";
+  readonly enabled: boolean;
+  readonly blocks_profile: boolean;
+  readonly reason?: string;
+} {
+  const component = runtimeComponent(name);
+  if (!component) {
+    return {
+      name,
+      role: "unknown",
+      enabled: false,
+      blocks_profile: false,
+      reason: "component_unknown",
+    };
+  }
+  const resolved = resolveRuntimeModuleState(component, mode, env);
+  return {
+    name,
+    role: componentRequiredInProfile(component, mode)
+      ? "required"
+      : componentExpectedInProfile(component, mode)
+        ? "expected"
+        : "optional",
+    enabled: resolved.enabled,
+    blocks_profile: resolved.blocks_profile,
+    reason: resolved.reason,
+  };
+}
+
 async function inspectDb(): Promise<Record<string, unknown>> {
   const pool = new Pool({ connectionString: config.dbUrl });
   const schema = quoteIdent(config.dbSchema);
@@ -691,15 +730,17 @@ async function inspectServices(
       const response = await httpGet(url, { timeout: 5000 });
       services[name] = { ok: response.status === 200, status: response.status, url, body: name === "wrapper" || name === "embedding_proxy" ? response.body : undefined };
       if (response.status !== 200) {
-        const component = runtimeComponent(name);
-        if (component && componentRequiredInProfile(component, mode)) addUnique(blockers, `service_${name}_degraded`);
+        const componentState = classifyDoctorComponentProfileState(name, mode);
+        if (componentState.blocks_profile) addUnique(blockers, `service_${name}_degraded`);
+        else if (!componentState.enabled) services[name] = { ...(services[name] as Record<string, unknown>), disabled: true, reason: componentState.reason };
         else if (mode === "full" && name === "gateway") addUnique(blockers, "gateway_probe_port_drift");
         else addUnique(warnings, `service_${name}_degraded`);
       }
     } catch (error) {
       services[name] = { ok: false, url, error: error instanceof Error ? error.message : String(error) };
-      const component = runtimeComponent(name);
-      if (component && componentRequiredInProfile(component, mode)) addUnique(blockers, `service_${name}_unreachable`);
+      const componentState = classifyDoctorComponentProfileState(name, mode);
+      if (componentState.blocks_profile) addUnique(blockers, `service_${name}_unreachable`);
+      else if (!componentState.enabled) services[name] = { ...(services[name] as Record<string, unknown>), disabled: true, reason: componentState.reason };
       else if (mode === "full" && name === "gateway") addUnique(blockers, "gateway_probe_port_drift");
       else addUnique(warnings, `service_${name}_unreachable`);
     }
@@ -844,7 +885,7 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
       body: JSON.stringify({ model: model || "Qwen3-Embedding-8B", input: `memory-xx doctor embedding upstream smoke ${randomUUID()}` }),
       signal: AbortSignal.timeout(10000),
     });
-    const body = await response.json().catch(() => ({}));
+    const body = await response.json().catch(() => ({})) as any;
     const actualDims = Array.isArray(body?.data?.[0]?.embedding) ? body.data[0].embedding.length : null;
     return {
       ok: response.ok && (dims ? actualDims === dims : actualDims !== null),
@@ -1091,24 +1132,27 @@ function inspectOpsReadiness(
     } else if (component.name === "projector") {
       ok = component.service ? userServiceActive(component.service) : false;
       detail = ok ? "systemd active" : "systemd inactive";
-    } else if (component.kind === "http") {
+    } else if (component.service && services?.[component.name]) {
       const service = services?.[component.name];
       ok = service?.ok === true;
       detail = service?.status ? `HTTP ${service.status}` : service?.error ?? "unavailable";
-    } else if (component.kind === "systemd") {
+    } else if (component.service) {
       ok = component.service ? userServiceActive(component.service) : false;
       detail = ok ? "systemd active" : "systemd inactive";
     } else if (component.kind === "gate") {
       ok = true;
       detail = component.command ?? "one-shot gate";
     }
-    const required = componentRequiredInProfile(component, mode);
+    const profileState = classifyDoctorComponentProfileState(component.name, mode);
+    const required = profileState.blocks_profile;
     const expected = componentExpectedInProfile(component, mode);
     return {
       name: component.name,
       label: component.label,
       required,
       expected,
+      enabled: profileState.enabled,
+      role: profileState.role,
       ok,
       detail,
       service: component.service,
@@ -1591,7 +1635,9 @@ async function main(): Promise<void> {
   if (!report.ok) process.exitCode = 1;
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}

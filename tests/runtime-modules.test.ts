@@ -14,6 +14,7 @@ import {
   buildRuntimeProfileStartServices,
   buildRuntimeProfileStopServices,
 } from "../scripts/memory-mode";
+import { classifyDoctorComponentProfileState } from "../scripts/memory-doctor";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -173,6 +174,20 @@ test("memory mode payload separates enabled start services from disabled cleanup
   assert.equal(payload.start_services.includes("memory-xx-control-panel.service"), false);
   assert.equal(payload.stop_services.includes("memory-xx-fastpath.service"), true);
   assert.equal(payload.stop_services.includes("memory-xx-control-panel.service"), true);
+});
+
+test("doctor component classification treats disabled full modules as non-blocking", () => {
+  const state = classifyDoctorComponentProfileState("fastpath", "full", {
+    MEMORY_XX_FASTPATH_ENABLED: "0",
+  });
+
+  assert.deepEqual(state, {
+    name: "fastpath",
+    role: "required",
+    enabled: false,
+    blocks_profile: false,
+    reason: "MEMORY_XX_FASTPATH_ENABLED=disabled",
+  });
 });
 
 test("disabled enhanced modules do not block core readiness", () => {
