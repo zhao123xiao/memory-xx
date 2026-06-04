@@ -143,6 +143,16 @@ TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run test:conversation-monitor
 ```
 
+`L7` validates the optional OpenClaw adapter. It is non-blocking by default in
+the public harness so deployments without OpenClaw can still validate Core,
+enhanced, and full memory-xx modules. Require it only for environments where
+OpenClaw is part of the target deployment:
+
+```bash
+TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7 --require-openclaw
+MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1 TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7
+```
+
 `memory:mode` probes Postgres, Redis, Qdrant, and local/Windows embedding
 dependencies but does not start those external processes. Current public
 systemd service names use stable `memory-xx-*.service` units.

@@ -5,11 +5,29 @@ import { config } from "../config.js";
 import { generateRunId, reportTimestamp } from "../lib/run-id.js";
 import type { LayerReport, SummaryReport } from "../report-model.js";
 
-const runId = generateRunId();
-const ts = reportTimestamp();
-const reportDir = `${config.reportDir}/${ts}`;
+export interface HarnessLayerScript {
+  readonly id: string;
+  readonly name: string;
+  readonly script: string;
+  readonly required: boolean;
+}
 
-const LAYER_SCRIPTS: Array<{ id: string; name: string; script: string; required: boolean }> = [
+export interface HarnessLayerOptions {
+  readonly requireOpenClaw?: boolean;
+}
+
+function envFlag(name: string): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+function openClawRequired(options: HarnessLayerOptions): boolean {
+  return options.requireOpenClaw === true || envFlag("MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION");
+}
+
+export function buildHarnessLayerScripts(options: HarnessLayerOptions = {}): readonly HarnessLayerScript[] {
+  const requireOpenClaw = openClawRequired(options);
+  return [
   { id: "L0", name: "Static Gates",            script: "layers/L0-static-gates.ts",       required: true },
   { id: "L1", name: "Unit + Contract",          script: "layers/L1-unit-contract.ts",      required: true },
   { id: "L2", name: "Isolated Integration",     script: "layers/L2-isolated-integration.ts", required: false },
@@ -17,7 +35,7 @@ const LAYER_SCRIPTS: Array<{ id: string; name: string; script: string; required:
   { id: "L4", name: "Recall Quality",           script: "layers/L4-recall-quality.ts",     required: true },
   { id: "L5", name: "Production E2E",           script: "layers/L5-prod-e2e.ts",           required: true },
   { id: "L6", name: "Production Load",          script: "layers/L6-prod-load.ts",          required: false },
-  { id: "L7", name: "OpenClaw Integration",     script: "layers/L7-openclaw-integration.ts", required: true },
+  { id: "L7", name: "OpenClaw Integration",     script: "layers/L7-openclaw-integration.ts", required: requireOpenClaw },
   { id: "L8", name: "Intelligence E2E",        script: "layers/L8-intelligence-e2e.ts", required: true },
   { id: "L9", name: "MCP User Flow",           script: "layers/L9-mcp-user-flow.ts", required: true },
   { id: "L10", name: "Temporal Governance",    script: "layers/L10-temporal-governance.ts", required: true },
@@ -30,7 +48,8 @@ const LAYER_SCRIPTS: Array<{ id: string; name: string; script: string; required:
   { id: "L17", name: "Knowledge Hybrid Recall", script: "layers/L17-knowledge-hybrid-recall.ts", required: true },
   { id: "L18", name: "Graph Recall",            script: "layers/L18-graph-recall.ts", required: true },
   { id: "L19", name: "Conversation Monitor",   script: "layers/L19-conversation-monitor.ts", required: true },
-];
+  ];
+}
 
 function processSnapshot(): string {
   try {
@@ -110,7 +129,7 @@ function runLayerProcess(args: readonly string[], timeoutMs: number): Promise<{ 
   });
 }
 
-function parseArgs(): { runAll: boolean; layers: string[]; tier: string } {
+function parseArgs(): { runAll: boolean; layers: string[]; tier: string; requireOpenClaw: boolean } {
   const args = process.argv.slice(2);
   const layerArg = args.find(a => a.startsWith("--layer="));
   const tierArg = args.find(a => a.startsWith("--tier="));
@@ -119,11 +138,17 @@ function parseArgs(): { runAll: boolean; layers: string[]; tier: string } {
     runAll: layers.length === 0 && (args.includes("--all") || args.length === 0),
     layers,
     tier: tierArg ? tierArg.split("=")[1] : "smoke",
+    requireOpenClaw: args.includes("--require-openclaw") || envFlag("MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION"),
   };
 }
 
 async function main() {
-  const { runAll, layers } = parseArgs();
+  const runId = generateRunId();
+  const ts = reportTimestamp();
+  const reportDir = `${config.reportDir}/${ts}`;
+  const parsedArgs = parseArgs();
+  const { runAll, layers } = parsedArgs;
+  const layerScripts = buildHarnessLayerScripts({ requireOpenClaw: parsedArgs.requireOpenClaw });
 
   console.log(`\n${"=".repeat(60)}`);
   console.log(`  memory-xx Test Framework — run_id: ${runId}`);
@@ -133,8 +158,8 @@ async function main() {
   fs.mkdirSync(reportDir, { recursive: true });
 
   const toRun = runAll
-    ? LAYER_SCRIPTS
-    : LAYER_SCRIPTS.filter(l => layers.includes(l.id));
+    ? layerScripts
+    : layerScripts.filter(l => layers.includes(l.id));
 
   if (toRun.length === 0) {
     console.log("No layers to run. Use --all or --layer=L0,L1,L3");
@@ -161,7 +186,7 @@ async function main() {
     console.log(`  Running ${layer.id}: ${layer.name}${layer.required ? " (required)" : ""}`);
     console.log(`${"─".repeat(50)}`);
 
-    const tierArg = layer.id === "L6" ? ` --tier=${parseArgs().tier}` : "";
+    const tierArg = layer.id === "L6" ? ` --tier=${parsedArgs.tier}` : "";
     const args = ["--import", "tsx", `scripts/test-harness/${layer.script}`];
     if (tierArg) args.push(tierArg.trim());
     const { stdout, exitCode } = await runLayerProcess(args, 600000);
@@ -253,7 +278,7 @@ async function main() {
     `|-------|------|----------|--------|--------|`,
   ];
 
-  for (const layer of LAYER_SCRIPTS) {
+  for (const layer of layerScripts) {
     const report = layerReports[layer.id];
     if (!report) continue;
     const icon = report.ok ? "PASS" : "FAIL";
@@ -295,4 +320,7 @@ async function main() {
   process.exit(summary.ok ? 0 : 1);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+const entrypoint = process.argv[1] ?? "";
+if (entrypoint.endsWith("scripts/test-harness/reports/aggregator.ts") || entrypoint.endsWith("scripts\\test-harness\\reports\\aggregator.ts")) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

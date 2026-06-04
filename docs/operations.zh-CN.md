@@ -71,6 +71,13 @@ TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run test:conversation-monitor
 ```
 
+`L7` 覆盖可选 OpenClaw adapter。公开 harness 默认不把它作为阻塞层，避免没有 OpenClaw 的部署无法验证 Core、enhanced 和 full 模块。只有目标环境明确要求 OpenClaw 时才显式开启：
+
+```bash
+TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7 --require-openclaw
+MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1 TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7
+```
+
 ## systemd 与平台部署
 
 `systemd/` 下提供 wrapper、projector、maintenance、canary、landing scan、fastpath、lexical sidecar、embedding upstream、embedding proxy、reranker upstream、reranker adapter、mem0 extractor、conversation monitor、control panel 等 user service/timer 模板。

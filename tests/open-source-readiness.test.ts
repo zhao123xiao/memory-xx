@@ -593,6 +593,24 @@ test("public canary docs keep optional conversation adapters opt-in", async () =
   assert.match(quickstart, /OpenClaw 是可选 adapter/u);
 });
 
+test("public harness keeps OpenClaw integration opt-in", async () => {
+  const aggregator = await readFile("scripts/test-harness/reports/aggregator.ts", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+
+  assert.match(aggregator, /export function buildHarnessLayerScripts/u);
+  assert.match(aggregator, /--require-openclaw/u);
+  assert.match(aggregator, /MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION/u);
+  assert.match(aggregator, /required: requireOpenClaw/u);
+  assert.doesNotMatch(aggregator, /name:\s*"OpenClaw Integration"[\s\S]{0,120}required:\s*true/u);
+  assert.match(operations, /L7.*optional OpenClaw adapter/us);
+  assert.match(operations, /--require-openclaw/u);
+  assert.match(operations, /MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1/u);
+  assert.match(operationsZh, /L7.*可选 OpenClaw adapter/us);
+  assert.match(operationsZh, /--require-openclaw/u);
+  assert.match(operationsZh, /MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1/u);
+});
+
 test("public quickstart and env template keep embedding provider vendor-neutral", async () => {
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const envExample = await readFile(".env.example", "utf8");
