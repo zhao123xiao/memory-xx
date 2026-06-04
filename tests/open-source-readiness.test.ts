@@ -964,6 +964,55 @@ test("public repository exposes recall quality smoke as a read-only full-stack c
   assert.match(moduleCatalog, /smoke:recall-quality/u);
 });
 
+test("public repository exposes temporal ops smoke for decay and consolidation dry-runs", async () => {
+  const files = [
+    "app/decay/index.ts",
+    "app/decay/calculator.ts",
+    "app/decay/production-decay.ts",
+    "app/consolidation/index.ts",
+    "app/consolidation/worker.ts",
+    "app/consolidation/merge-engine.ts",
+    "scripts/decay-run.ts",
+    "scripts/temporal-sweep.ts",
+    "scripts/memory-temporal-policy.ts",
+    "scripts/memory-consolidate.ts",
+    "scripts/temporal-ops-smoke.ts",
+    "tests/temporal-ops-smoke.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+  const smoke = await readFile("scripts/temporal-ops-smoke.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+  const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["smoke:temporal-ops"], "node --import tsx scripts/temporal-ops-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /tests\/temporal-ops-smoke\.test\.ts/u);
+  assert.match(capabilities, /name: "temporal_decay"[\s\S]*scripts\/temporal-ops-smoke\.ts/u);
+  assert.match(capabilities, /name: "temporal_consolidation"[\s\S]*scripts\/temporal-ops-smoke\.ts/u);
+  assert.doesNotMatch(smoke, /--apply|memory-consolidate\.ts",\s*"--apply"|memory-temporal-policy\.ts",\s*"apply"/u);
+  assert.match(readme, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
+  assert.match(operations, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
+  assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
+  assert.match(moduleCatalog, /smoke:temporal-ops/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

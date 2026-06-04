@@ -82,7 +82,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_TEMPORAL_DECAY_ENABLED",
     source_paths: ["app/decay/index.ts", "app/decay/calculator.ts", "app/decay/production-decay.ts"],
-    script_paths: ["scripts/decay-run.ts", "scripts/temporal-sweep.ts", "scripts/memory-temporal-policy.ts"],
+    script_paths: ["scripts/decay-run.ts", "scripts/temporal-sweep.ts", "scripts/memory-temporal-policy.ts", "scripts/temporal-ops-smoke.ts"],
     degraded_behavior: "Temporal decay scoring and archive candidate generation are not run automatically.",
   },
   {
@@ -93,7 +93,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_CONSOLIDATION_ENABLED",
     source_paths: ["app/consolidation/index.ts", "app/consolidation/worker.ts", "app/consolidation/merge-engine.ts"],
-    script_paths: ["scripts/memory-consolidate.ts"],
+    script_paths: ["scripts/memory-consolidate.ts", "scripts/temporal-ops-smoke.ts"],
     degraded_behavior: "Duplicate/episode consolidation suggestions are not produced automatically.",
   },
   {

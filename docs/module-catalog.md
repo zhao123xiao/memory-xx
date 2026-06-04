@@ -92,8 +92,8 @@ matching dependencies are configured.
 | `knowledge_ingest` | `memory:knowledge-md`, `smoke:knowledge-graph` |
 | `memory_knowledge_graph` | `memory:graph-report`, `memory:graph-health`, `smoke:knowledge-graph` |
 | `code_graph` | `memory:code-graph` |
-| `temporal_decay` | `memory:decay`, `memory:temporal-sweep`, `memory:temporal-policy` |
-| `temporal_consolidation` | `memory:consolidate` |
+| `temporal_decay` | `memory:decay`, `memory:temporal-sweep`, `memory:temporal-policy`, `smoke:temporal-ops` |
+| `temporal_consolidation` | `memory:consolidate`, `smoke:temporal-ops` |
 | `memory_dreaming` | `run:dream-worker`, `smoke:memory-dreaming` |
 | `policy_evaluation` | `memory:policy-corpus`, `memory:policy-eval`, `memory:policy-report`, `memory:debt-plan`, `smoke:policy-ops` |
 | `recall_quality` | `memory:quality`, `memory:intelligence-quality`, `memory:reranker-policy-benchmark`, `memory:p1-evidence`, `memory:recall-repair`, `memory:trace-feedback`, `smoke:recall-quality` |

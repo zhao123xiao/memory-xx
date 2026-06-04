@@ -64,7 +64,7 @@ TMPDIR=/tmp npm run memory:p1-gate
 
 candidate-only 退出至少需要满足：真实反馈样本足够、pending 不失控、Qdrant drift 为 0、P1 gate 通过、production guard 通过、default recall leakage 为 0、unknown/sensitive/test-noise auto approve 为 0、rollback rate 可解释。
 
-公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路。cache invalidation、write ticket、markdown projection、memory dreaming、full ops、policy ops、knowledge graph、Qdrant reconciliation 和 recall quality smoke 会用 live PostgreSQL、Redis、Qdrant、配置好的 embedding provider、生成的投影文件、安全降级的 dream cycle、治理报告、增强 graph 模块、投影修复状态和 recall/reranker 质量面验证持久化后台 worker 与可插拔能力。`smoke:knowledge-graph` 只执行 Knowledge Markdown scan、graph health/report 和 repository code graph，不会 ingest 或 archive 文档。`smoke:qdrant-reconciliation` 只运行 report/status surface，不会 replay outbox、mark dispatched 或 apply Qdrant repair。`smoke:recall-quality` 只运行 trace replay quality、intelligence compare status、trace feedback candidates 和 reranker policy benchmark，不会写 observations、apply feedback 或执行 repair：
+公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路。cache invalidation、write ticket、markdown projection、memory dreaming、full ops、policy ops、knowledge graph、Qdrant reconciliation、recall quality 和 temporal ops smoke 会用 live PostgreSQL、Redis、Qdrant、配置好的 embedding provider、生成的投影文件、安全降级的 dream cycle、治理报告、增强 graph 模块、投影修复状态、recall/reranker 质量面和 temporal governance 验证持久化后台 worker 与可插拔能力。`smoke:knowledge-graph` 只执行 Knowledge Markdown scan、graph health/report 和 repository code graph，不会 ingest 或 archive 文档。`smoke:qdrant-reconciliation` 只运行 report/status surface，不会 replay outbox、mark dispatched 或 apply Qdrant repair。`smoke:recall-quality` 只运行 trace replay quality、intelligence compare status、trace feedback candidates 和 reranker policy benchmark，不会写 observations、apply feedback 或执行 repair。`smoke:temporal-ops` 只运行 decay、expiry sweep、temporal policy 和 consolidation dry-run；consolidation 会 rollback transaction，不会提交 archive、episode、entity 或 relation 写入：
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -78,6 +78,7 @@ TMPDIR=/tmp npm run smoke:policy-ops
 TMPDIR=/tmp npm run smoke:knowledge-graph
 TMPDIR=/tmp npm run smoke:qdrant-reconciliation
 TMPDIR=/tmp npm run smoke:recall-quality
+TMPDIR=/tmp npm run smoke:temporal-ops
 ```
 
 `L7` 覆盖可选 OpenClaw adapter。公开 harness 默认不把它作为阻塞层，避免没有 OpenClaw 的部署无法验证 Core、enhanced 和 full 模块。只有目标环境明确要求 OpenClaw 时才显式开启：
