@@ -29,7 +29,7 @@ COPY sidecars/ sidecars/
 COPY configs/ configs/
 COPY migrations/ migrations/
 
-EXPOSE 5100 5200 5210 5220 5221 5310 6334 8085
+EXPOSE 5100 5200 5210 5220 5221 5222 5223 5310 6334 8084 8085
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:5100/live').then(r=>{process.exit(r.status < 300 ? 0 : 1)}).catch(()=>process.exit(1))"
 

@@ -101,6 +101,42 @@ services:
       timeout: 5s
       retries: 3
 
+  memory-xx-dev-reranker-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-reranker-upstream/dev-reranker-upstream.mjs"]
+    ports:
+      - "${MEMORY_XX_DEV_RERANKER_HOST_PORT:-8084}:8084"
+    environment:
+      MEMORY_XX_DEV_RERANKER_HOST: 0.0.0.0
+      MEMORY_XX_DEV_RERANKER_PORT: "8084"
+      MEMORY_XX_DEV_RERANKER_MODEL: ${MEMORY_XX_DEV_RERANKER_MODEL:-memory-xx-dev-reranker}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8084/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-dev-chat-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-chat-upstream/dev-chat-upstream.mjs"]
+    ports:
+      - "${MEMORY_XX_DEV_CHAT_HOST_PORT:-5223}:5223"
+    environment:
+      MEMORY_XX_DEV_CHAT_HOST: 0.0.0.0
+      MEMORY_XX_DEV_CHAT_PORT: "5223"
+      MEMORY_XX_DEV_CHAT_MODEL: ${MEMORY_XX_DEV_CHAT_MODEL:-memory-xx-dev-chat}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5223/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   memory-xx-migrate:
     build: .
     command: ["node", "--import", "tsx", "scripts/migrate.ts"]
@@ -235,8 +271,8 @@ services:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_RERANKER_ADAPTER_HOST: 0.0.0.0
       MEMORY_XX_RERANKER_ADAPTER_PORT: "8085"
-      MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://host.docker.internal:8084/v3/rerank}
-      MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://host.docker.internal:8084/v3/models}
+      MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/rerank}
+      MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/models}
       MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
     restart: on-failure
     healthcheck:
@@ -286,9 +322,9 @@ services:
       MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_MEM0_EXTRACTOR_HOST: 0.0.0.0
       MEMORY_XX_MEM0_EXTRACTOR_PORT: "5220"
-      MEMORY_XX_MEM0_BASE_URL: ${MEMORY_XX_MEM0_BASE_URL:-${MEMORY_INTELLIGENCE_BASE_URL:-}}
+      MEMORY_XX_MEM0_BASE_URL: ${MEMORY_XX_MEM0_BASE_URL:-${MEMORY_INTELLIGENCE_BASE_URL:-http://memory-xx-dev-chat-upstream:5223/v1}}
       MEMORY_XX_MEM0_MODEL: ${MEMORY_XX_MEM0_MODEL:-${MEMORY_INTELLIGENCE_MODEL:-MiniMax-M2.7-highspeed}}
-      MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-}}
+      MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-dev-key}}
       MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
     restart: on-failure
     healthcheck:

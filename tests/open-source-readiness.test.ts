@@ -95,8 +95,22 @@ test("docker compose keeps embedding provider defaults vendor-neutral", async ()
   assert.match(compose, /sidecars\/dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
   assert.match(compose, /MEMORY_XX_DEV_EMBEDDING_DIMS: \$\{MEMORY_XX_DEV_EMBEDDING_DIMS:-\$\{EMBEDDING_DIMS:-4096\}\}/u);
   assert.equal(packageJson.scripts["memory:dev-embedding-upstream"], "node sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs");
+  assert.equal(packageJson.scripts["memory:dev-reranker-upstream"], "node sidecars/dev-reranker-upstream/dev-reranker-upstream.mjs");
+  assert.equal(packageJson.scripts["memory:dev-chat-upstream"], "node sidecars/dev-chat-upstream/dev-chat-upstream.mjs");
+  assert.match(compose, /^  memory-xx-dev-reranker-upstream:$/mu);
+  assert.match(compose, /^  memory-xx-dev-chat-upstream:$/mu);
+  assert.match(composeServiceBlock(compose, "memory-xx-dev-reranker-upstream"), /profiles:\s*\n\s+- dev/u);
+  assert.match(composeServiceBlock(compose, "memory-xx-dev-chat-upstream"), /profiles:\s*\n\s+- dev/u);
+  assert.match(compose, /sidecars\/dev-reranker-upstream\/dev-reranker-upstream\.mjs/u);
+  assert.match(compose, /sidecars\/dev-chat-upstream\/dev-chat-upstream\.mjs/u);
+  assert.match(composeServiceBlock(compose, "memory-xx-reranker-adapter"), /memory-xx-dev-reranker-upstream:8084\/v3\/rerank/u);
+  assert.match(composeServiceBlock(compose, "memory-xx-mem0-extractor"), /memory-xx-dev-chat-upstream:5223\/v1/u);
   assert.match(sidecarReadme, /dev-embedding-upstream\/dev-embedding-upstream\.mjs/u);
+  assert.match(sidecarReadme, /dev-reranker-upstream\/dev-reranker-upstream\.mjs/u);
+  assert.match(sidecarReadme, /dev-chat-upstream\/dev-chat-upstream\.mjs/u);
   assert.match(sidecarReadme, /npm run memory:dev-embedding-upstream/u);
+  assert.match(sidecarReadme, /npm run memory:dev-reranker-upstream/u);
+  assert.match(sidecarReadme, /npm run memory:dev-chat-upstream/u);
   assert.doesNotMatch(compose, /scnet\.cn|超算互联网|0\.1\s*\/\s*百万\s*token/u);
 });
 
@@ -463,6 +477,7 @@ test("Dockerfile includes source needed by public pluggable modules", async () =
   assert.match(dockerfile, /COPY app\/ app\//u);
   assert.match(dockerfile, /COPY src\/ src\//u);
   assert.match(dockerfile, /COPY tsconfig\.json \.\//u);
+  assert.match(dockerfile, /EXPOSE .*5222.*5223.*8084.*8085/u);
 });
 
 test("Dockerfile builder copies every TypeScript source root before build", async () => {
@@ -712,6 +727,8 @@ test("public repository includes source entries for pluggable full-stack sidecar
     "sidecars/fastpath/fastpath.mjs",
     "sidecars/lexical-sidecar/lexical-sidecar.mjs",
     "sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs",
+    "sidecars/dev-reranker-upstream/dev-reranker-upstream.mjs",
+    "sidecars/dev-chat-upstream/dev-chat-upstream.mjs",
     "sidecars/dev-embedding-upstream/README.md",
   ];
   const missing: string[] = [];
