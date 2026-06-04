@@ -1354,6 +1354,27 @@ test("public embedding upstream manager remains opt-in for remote providers", as
   assert.match(envExample, /^MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0$/mu);
 });
 
+test("public embedding defaults are provider-neutral", async () => {
+  const files = [
+    "README.md",
+    "docs/quickstart.zh-CN.md",
+    "docs/vector-runtime.zh-CN.md",
+    "configs/memory-xx-wrapper.env.example",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/EMBEDDING_MODEL=Qwen3|MEMORY_XX_EMBEDDING_GENERATION_ID=local-qwen|MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=.*local-qwen|MEMORY_XX_REDIS_PREFIX=.*local-qwen/u.test(content)) {
+      stale.push(file);
+    }
+  }
+
+  assert.deepEqual(stale, []);
+  assert.match(await readFile("configs/memory-xx-wrapper.env.example", "utf8"), /^EMBEDDING_MODEL=memory-xx-dev-embedding$/mu);
+  assert.match(await readFile("configs/memory-xx-wrapper.env.example", "utf8"), /^EMBEDDING_DIMS=4096$/mu);
+  assert.match(await readFile("docs/vector-runtime.zh-CN.md", "utf8"), /MEMORY_XX_EMBEDDING_GENERATION_ID=memory-xx-default-v1/u);
+});
+
 test("public doctor and control panel remediation stays provider-neutral", async () => {
   const files = [
     "scripts/memory-doctor.ts",

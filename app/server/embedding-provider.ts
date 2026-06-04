@@ -29,9 +29,9 @@ export function loadEmbeddingProviderRequestConfig(
     env.EMBEDDING_API_BASE?.trim() ??
     "http://127.0.0.1:5221";
   return {
-    model: env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B",
+    model: env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding",
     dims: readPositiveInt(env, "EMBEDDING_DIMS", 4096),
-    generation_id: env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1",
+    generation_id: env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "memory-xx-default-v1",
     api_base: apiBase,
   };
 }

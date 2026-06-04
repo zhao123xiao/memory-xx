@@ -16,7 +16,7 @@ services:
       MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-${MEMORY_XX_API_TOKEN:-changeme}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
       EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen3-Embedding-8B}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-memory-xx-dev-embedding}
       EMBEDDING_DIMS: ${EMBEDDING_DIMS:-4096}
       MEMORY_XX_FASTPATH_URL: http://memory-xx-fastpath:5200
       MEMORY_XX_RERANKER_ADAPTER_URL: http://memory-xx-reranker-adapter:8085
@@ -50,7 +50,7 @@ services:
       MEMORY_XX_EMBEDDING_PROXY_HOST: 0.0.0.0
       MEMORY_XX_EMBEDDING_PROXY_PORT: "5221"
       MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE: ${EMBEDDING_PROXY_UPSTREAM_BASE:-${EMBEDDING_API_BASE:-https://embedding-provider.example/v1}}
-      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL: ${EMBEDDING_PROXY_UPSTREAM_MODEL:-${EMBEDDING_MODEL:-Qwen3-Embedding-8B}}
+      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL: ${EMBEDDING_PROXY_UPSTREAM_MODEL:-${EMBEDDING_MODEL:-memory-xx-dev-embedding}}
       MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY: ${EMBEDDING_PROXY_UPSTREAM_API_KEY:-${OPENAI_API_KEY:-changeme}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     restart: unless-stopped
@@ -104,7 +104,7 @@ services:
       MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
       MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE: /app/.runtime/qdrant-projector-worker.status.json
       EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen3-Embedding-8B}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-memory-xx-dev-embedding}
       EMBEDDING_DIMS: ${EMBEDDING_DIMS:-4096}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     depends_on:

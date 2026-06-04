@@ -89,7 +89,7 @@ MEMORY_XX_REDIS_URL=redis://127.0.0.1:6379/0
 MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
 MEMORY_XX_QDRANT_COLLECTION=memory-xx-active
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
+EMBEDDING_MODEL=memory-xx-dev-embedding
 EMBEDDING_DIMS=4096
 MEMORY_XX_API_TOKEN=<set-private-token>
 ```
@@ -97,17 +97,19 @@ MEMORY_XX_API_TOKEN=<set-private-token>
 Embedding 可以使用本地模型，也可以使用 OpenAI-compatible API：
 
 ```bash
-# 方案 A：本地 embedding 服务
-EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
-EMBEDDING_DIMS=4096
-
-# 方案 B：远程 OpenAI-compatible embedding API。
+# 方案 A：远程 OpenAI-compatible embedding API。
 # URL、模型名称和维度以你的 embedding provider 文档为准。
 OPENAI_API_KEY=<set-private-key>
 EMBEDDING_API_BASE=https://embedding-provider.example/v1
-EMBEDDING_MODEL=<embedding-model-name>
-EMBEDDING_DIMS=<embedding-dimensions>
+EMBEDDING_MODEL=<provider-embedding-model-name>
+EMBEDDING_DIMS=4096
+
+# 方案 B：本地 OpenAI-compatible embedding 服务。
+# 按本地模型实际名称/维度设置；只有需要 systemd 管理本地 upstream 时
+# 才启用 MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1。
+EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
+EMBEDDING_MODEL=<local-embedding-model-name>
+EMBEDDING_DIMS=<local-embedding-dimensions>
 ```
 
 主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。

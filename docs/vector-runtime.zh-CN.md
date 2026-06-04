@@ -16,10 +16,10 @@ Embedding 同时影响：
 
 ```bash
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
+EMBEDDING_MODEL=memory-xx-dev-embedding
 EMBEDDING_DIMS=4096
-MEMORY_XX_EMBEDDING_GENERATION_ID=local-qwen8b-int4-v1
-MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-memory-v1
+MEMORY_XX_EMBEDDING_GENERATION_ID=memory-xx-default-v1
+MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-memory-xx-default-v1
 ```
 
 `memory-xx-embedding-proxy` 可以代理远程 OpenAI-compatible provider，也可以代理本机 OVMS。
