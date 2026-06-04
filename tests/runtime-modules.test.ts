@@ -9,7 +9,11 @@ import {
   RUNTIME_MODULES,
   resolveRuntimeModuleStates,
 } from "../app/runtime-modules";
-import { buildRuntimeProfileStartServices } from "../scripts/memory-mode";
+import {
+  buildMemoryModeStatusPayload,
+  buildRuntimeProfileStartServices,
+  buildRuntimeProfileStopServices,
+} from "../scripts/memory-mode";
 
 test("runtime module registry describes full-stack pluggable modules", () => {
   const modules = new Map(RUNTIME_MODULES.map((module) => [module.name, module]));
@@ -103,6 +107,72 @@ test("memory mode starts expected services for enhanced profiles", () => {
   assert.ok(enhancedServices.includes("memory-xx-mem0-extractor.service"));
   assert.ok(enhancedServices.includes("memory-xx-conversation-monitor-worker.service"));
   assert.ok(enhancedServices.includes("memory-xx-control-panel.service"));
+});
+
+test("memory mode start plan skips full modules disabled by kill switches", () => {
+  const services = buildRuntimeProfileStartServices("full", {
+    MEMORY_XX_FASTPATH_ENABLED: "0",
+    MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+    MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+    MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
+    MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    MEMORY_XX_QUALITY_RUNNER_ENABLED: "0",
+    MEMORY_XX_GOVERNANCE_REPORT_ENABLED: "0",
+  });
+
+  assert.deepEqual(services, [
+    "memory-xx-wrapper.service",
+    "memory-xx-embedding-proxy-next.service",
+    "memory-xx-qdrant-projector-worker.service",
+    "memory-xx-qdrant-proxy-next.service",
+    "memory-xx-maintenance.service",
+    "memory-xx-consolidation.service",
+    "memory-xx-detect.service",
+    "memory-xx-auto-repair.service",
+    "memory-xx-repair-report.service",
+    "memory-xx-landing-scan.service",
+    "memory-xx-canary-7d-report.service",
+  ]);
+});
+
+test("memory mode stop plan keeps disabled profile services stoppable", () => {
+  const services = buildRuntimeProfileStopServices("full", {
+    MEMORY_XX_FASTPATH_ENABLED: "0",
+    MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+    MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+    MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
+    MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+    MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+  });
+
+  assert.ok(services.includes("memory-xx-fastpath.service"));
+  assert.ok(services.includes("memory-xx-lexical-sidecar.service"));
+  assert.ok(services.includes("memory-xx-reranker-adapter-next.service"));
+  assert.ok(services.includes("memory-xx-mem0-extractor.service"));
+  assert.ok(services.includes("memory-xx-conversation-monitor-worker.service"));
+  assert.ok(services.includes("memory-xx-control-panel.service"));
+});
+
+test("memory mode payload separates enabled start services from disabled cleanup services", () => {
+  const payload = buildMemoryModeStatusPayload("plan", "full", {
+    env: {
+      MEMORY_XX_FASTPATH_ENABLED: "0",
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: "0",
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: "0",
+      MEMORY_XX_MEM0_EXTRACTOR_ENABLED: "0",
+      MEMORY_XX_CONVERSATION_MONITOR_ENABLED: "0",
+      MEMORY_XX_CONTROL_PANEL_ENABLED: "0",
+    },
+    unitState: () => "inactive",
+  });
+
+  assert.equal(payload.ok, true);
+  assert.equal(payload.mode, "full");
+  assert.equal(payload.start_services.includes("memory-xx-fastpath.service"), false);
+  assert.equal(payload.start_services.includes("memory-xx-control-panel.service"), false);
+  assert.equal(payload.stop_services.includes("memory-xx-fastpath.service"), true);
+  assert.equal(payload.stop_services.includes("memory-xx-control-panel.service"), true);
 });
 
 test("disabled enhanced modules do not block core readiness", () => {
