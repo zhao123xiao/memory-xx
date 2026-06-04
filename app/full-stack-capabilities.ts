@@ -395,7 +395,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_SELF_IMPROVEMENT_ENABLED",
     source_paths: ["app/governance/memory-auto-approval-sweep.ts", "app/mcp/mcp-server.ts"],
-    script_paths: ["scripts/memory-self-improvement.ts", "scripts/memory-graphiti-shadow-export.ts", "scripts/memory-sweep-test-pollution.ts"],
+    script_paths: ["scripts/memory-self-improvement.ts", "scripts/memory-graphiti-shadow-export.ts", "scripts/memory-sweep-test-pollution.ts", "scripts/self-improvement-ops-smoke.ts"],
     degraded_behavior: "Report-only self-improvement proposals and Graphiti shadow export are disabled; normal governance and review continue.",
   },
 ];

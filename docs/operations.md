@@ -179,7 +179,10 @@ aliases, roll back generations, or run local bulk vector jobs.
 limit and concurrency 1; it does not create Qdrant collections, write points, or
 update the embedding manifest. `smoke:governance-ops` runs pending/report/scan
 surfaces only; it does not apply governance actions, freeze/revert actions, run
-cleanup, or modify memory records:
+cleanup, or modify memory records. `smoke:self-improvement-ops` generates only
+report-only self-improvement proposals, Graphiti shadow exports, and test
+pollution dry-runs; it does not write memory, write markdown, apply, or run
+cleanup:
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -200,6 +203,7 @@ TMPDIR=/tmp npm run smoke:trusted-agent
 TMPDIR=/tmp npm run smoke:embedding-ops
 TMPDIR=/tmp npm run smoke:local-embedding-generation
 TMPDIR=/tmp npm run smoke:governance-ops
+TMPDIR=/tmp npm run smoke:self-improvement-ops
 ```
 
 `L7` validates the optional OpenClaw adapter. It is non-blocking by default in

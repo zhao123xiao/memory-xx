@@ -112,4 +112,4 @@ matching dependencies are configured.
 | `write_ticket_maintenance` | `memory:sweep-write-ticket-timeouts`, `memory:archive-write-tickets`, `memory:sweep-ingest-accepted`, `memory:sweep-low-confidence`, `smoke:write-ticket` |
 | `deployment_packaging` | `memory:migration-preflight`, `memory:deployment-bundle`, `memory:secrets-audit`, `smoke:backup-ops` |
 | `release_governance_gates` | `memory:p0-gate`, `memory:p1-gate`, `memory:cutover-gate`, `memory:landing-scan`, `memory:canary-7d-report`, `memory:freeze-m0`, `memory:capacity-audit`, `memory:capacity-smoke`, `memory:consistency-scan`, `memory:dlq-recovery`, `memory:quality-metadata-backfill`, `shadow:recall`, `shadow:projection`, `smoke:full-ops` |
-| `self_improvement_ops` | `memory:self-improvement`, `memory:graphiti-shadow-export`, `memory:sweep-test-pollution` |
+| `self_improvement_ops` | `memory:self-improvement`, `memory:graphiti-shadow-export`, `memory:sweep-test-pollution`, `smoke:self-improvement-ops` |

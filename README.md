@@ -240,6 +240,7 @@ TMPDIR=/tmp npm run smoke:trusted-agent
 TMPDIR=/tmp npm run smoke:embedding-ops
 TMPDIR=/tmp npm run smoke:local-embedding-generation
 TMPDIR=/tmp npm run smoke:governance-ops
+TMPDIR=/tmp npm run smoke:self-improvement-ops
 TMPDIR=/tmp npm run smoke:functional -- m1
 TMPDIR=/tmp npm run check:secrets
 TMPDIR=/tmp npm run audit:prod
@@ -256,6 +257,7 @@ TMPDIR=/tmp npm run memory:control-panel
 `smoke:embedding-ops` 只读取 embedding manifest 状态并执行小样本 calibration；不会切换 alias、回滚 generation 或执行本地批量向量任务。
 `smoke:local-embedding-generation` 只运行 estimate-only 小样本验收；不会创建 Qdrant collection、写入 points 或更新 manifest。
 `smoke:governance-ops` 只运行 pending/report/scan 类治理面；不会 apply、freeze、revert、cleanup 或修改记录。
+`smoke:self-improvement-ops` 只生成 report-only self-improvement proposal、Graphiti shadow export 和 test pollution dry-run；不会写 memory、写 markdown、apply 或 cleanup。
 
 ## 文档导航
 
