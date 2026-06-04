@@ -49,7 +49,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_KNOWLEDGE_INGEST_ENABLED",
     source_paths: ["app/knowledge/service.ts", "app/knowledge/markdown-governance.ts"],
-    script_paths: ["scripts/memory-knowledge-md.ts"],
+    script_paths: ["scripts/memory-knowledge-md.ts", "scripts/knowledge-graph-smoke.ts"],
     degraded_behavior: "Long-form documents are not ingested automatically; short memory write/recall continues.",
   },
   {
@@ -60,7 +60,7 @@ export const FULL_STACK_CAPABILITIES: readonly FullStackCapability[] = [
     default_enabled: false,
     env_enabled: "MEMORY_XX_MEMORY_GRAPH_ENABLED",
     source_paths: ["app/intelligence/graph-extraction.ts", "app/recall/retrievers/graph-retriever.ts", "app/graph-health.ts"],
-    script_paths: ["scripts/memory-graph-report.ts", "scripts/graph-health.ts"],
+    script_paths: ["scripts/memory-graph-report.ts", "scripts/graph-health.ts", "scripts/knowledge-graph-smoke.ts"],
     degraded_behavior: "Graph evidence and graph recall boosts are skipped; vector and lexical recall remain available.",
   },
   {

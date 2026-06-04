@@ -830,6 +830,51 @@ test("public repository includes memory dreaming as a pluggable full-stack modul
   assert.doesNotMatch(dreamWorker, /MEMORY_XX_DREAM_ENABLED/u);
 });
 
+test("public repository exposes knowledge graph smoke for enhanced graph modules", async () => {
+  const files = [
+    "app/knowledge/service.ts",
+    "app/intelligence/graph-extraction.ts",
+    "app/recall/retrievers/graph-retriever.ts",
+    "app/code-graph.ts",
+    "scripts/memory-knowledge-md.ts",
+    "scripts/graph-health.ts",
+    "scripts/memory-graph-report.ts",
+    "scripts/memory-code-graph.ts",
+    "scripts/knowledge-graph-smoke.ts",
+    "tests/knowledge-graph-smoke.test.ts",
+  ];
+  const missing: string[] = [];
+  const stale: string[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      if (/MEMORY_V2_|memory-v2|Memory-v2|\/api\/memory\/v2/u.test(content)) stale.push(file);
+    } catch {
+      missing.push(file);
+    }
+  }
+
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
+  const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
+
+  assert.deepEqual(missing, []);
+  assert.deepEqual(stale, []);
+  assert.equal(packageJson.scripts["smoke:knowledge-graph"], "node --import tsx scripts/knowledge-graph-smoke.ts");
+  assert.match(packageJson.scripts["verify:open-source"], /tests\/knowledge-graph-smoke\.test\.ts/u);
+  assert.match(capabilities, /name: "knowledge_ingest"[\s\S]*scripts\/knowledge-graph-smoke\.ts/u);
+  assert.match(capabilities, /name: "memory_knowledge_graph"[\s\S]*scripts\/knowledge-graph-smoke\.ts/u);
+  assert.match(readme, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
+  assert.match(operations, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
+  assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
+  assert.match(moduleCatalog, /smoke:knowledge-graph/u);
+});
+
 test("public sidecar sources use memory-xx names and avoid runtime artifacts", async () => {
   const files = [
     "sidecars/embedding-proxy/embedding-proxy.mjs",

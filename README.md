@@ -230,6 +230,7 @@ TMPDIR=/tmp npm run smoke:markdown-projection
 TMPDIR=/tmp npm run smoke:memory-dreaming
 TMPDIR=/tmp npm run smoke:full-ops
 TMPDIR=/tmp npm run smoke:policy-ops
+TMPDIR=/tmp npm run smoke:knowledge-graph
 TMPDIR=/tmp npm run smoke:functional -- m1
 TMPDIR=/tmp npm run check:secrets
 TMPDIR=/tmp npm run audit:prod

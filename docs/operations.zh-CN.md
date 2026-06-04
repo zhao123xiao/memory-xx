@@ -64,7 +64,7 @@ TMPDIR=/tmp npm run memory:p1-gate
 
 candidate-only 退出至少需要满足：真实反馈样本足够、pending 不失控、Qdrant drift 为 0、P1 gate 通过、production guard 通过、default recall leakage 为 0、unknown/sensitive/test-noise auto approve 为 0、rollback rate 可解释。
 
-公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路。cache invalidation、write ticket、markdown projection 和 memory dreaming smoke 会用 live PostgreSQL、Redis、Qdrant、配置好的 embedding provider、生成的投影文件以及安全降级的 dream cycle 验证持久化后台 worker：
+公开分层验收可以按模块单独运行。`L1` 覆盖单元和 HTTP contract，`L19` 覆盖 conversation monitor 从 JSONL spool 到 recall 的链路。cache invalidation、write ticket、markdown projection、memory dreaming、full ops、policy ops 和 knowledge graph smoke 会用 live PostgreSQL、Redis、Qdrant、配置好的 embedding provider、生成的投影文件、安全降级的 dream cycle、治理报告和增强 graph 模块验证持久化后台 worker 与可插拔能力。`smoke:knowledge-graph` 只执行 Knowledge Markdown scan、graph health/report 和 repository code graph，不会 ingest 或 archive 文档：
 
 ```bash
 TMPDIR=/tmp npm run test:unit-contract
@@ -75,6 +75,7 @@ TMPDIR=/tmp npm run smoke:markdown-projection
 TMPDIR=/tmp npm run smoke:memory-dreaming
 TMPDIR=/tmp npm run smoke:full-ops
 TMPDIR=/tmp npm run smoke:policy-ops
+TMPDIR=/tmp npm run smoke:knowledge-graph
 ```
 
 `L7` 覆盖可选 OpenClaw adapter。公开 harness 默认不把它作为阻塞层，避免没有 OpenClaw 的部署无法验证 Core、enhanced 和 full 模块。只有目标环境明确要求 OpenClaw 时才显式开启：

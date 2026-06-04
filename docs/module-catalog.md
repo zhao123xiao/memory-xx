@@ -89,8 +89,8 @@ matching dependencies are configured.
 
 | Capability | Public npm entrypoints |
 | --- | --- |
-| `knowledge_ingest` | `memory:knowledge-md` |
-| `memory_knowledge_graph` | `memory:graph-report`, `memory:graph-health` |
+| `knowledge_ingest` | `memory:knowledge-md`, `smoke:knowledge-graph` |
+| `memory_knowledge_graph` | `memory:graph-report`, `memory:graph-health`, `smoke:knowledge-graph` |
 | `code_graph` | `memory:code-graph` |
 | `temporal_decay` | `memory:decay`, `memory:temporal-sweep`, `memory:temporal-policy` |
 | `temporal_consolidation` | `memory:consolidate` |
