@@ -47,6 +47,10 @@ function statusFilePath(): string {
     `${process.cwd()}/.runtime/cache-invalidation-worker.status.json`;
 }
 
+function workerId(): string {
+  return process.env.MEMORY_XX_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
+}
+
 async function writeStatus(payload: Record<string, unknown>): Promise<void> {
   const file = statusFilePath();
   await mkdir(dirname(file), { recursive: true });
@@ -60,7 +64,7 @@ async function main(): Promise<void> {
   const cache = new RedisRecallCache({ config: redisConfig });
   await cache.connect();
   const repo = new CacheInvalidationRequestRepository();
-  const workerId = process.env.MEMORY_XX_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
+  const workerIdValue = workerId();
   const dryRun = hasArg("--dry-run");
   const limit = readPositiveInt("batch_size", Number.parseInt(argValue("--limit") ?? "50", 10) || 50);
   const maxAttempts = readPositiveInt("max_attempts", 10);
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
         maxAttempts
       }));
       const summary = {
-        worker_id: workerId,
+        worker_id: workerIdValue,
         dry_run: true,
         claimable: rows.length,
         rows: rows.map((row) => ({
@@ -94,7 +98,7 @@ async function main(): Promise<void> {
     }
 
     const rows = await withWriteTransaction(db, (tx) => repo.claimNext(tx, {
-      workerId,
+      workerId: workerIdValue,
       limit,
       leaseTtlSeconds,
       maxAttempts
@@ -125,7 +129,7 @@ async function main(): Promise<void> {
       }
     }
     const summary = {
-      worker_id: workerId,
+      worker_id: workerIdValue,
       dry_run: false,
       claimed: rows.length,
       completed,
@@ -143,6 +147,13 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
+  void writeStatus({
+    worker_id: workerId(),
+    ok: false,
+    phase: "startup_failed",
+    error: error instanceof Error ? error.message : String(error),
+    at: new Date().toISOString()
+  }).catch(() => undefined);
   console.error(error instanceof Error ? error.stack ?? error.message : String(error));
   process.exitCode = 1;
 });
