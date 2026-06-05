@@ -2499,3 +2499,27 @@ test("package exposes a completion audit for full objective verification", async
   assert.match(readme, /open-source:completion-audit/u);
   assert.match(checklist, /open-source:completion-audit/u);
 });
+
+test("package exposes provider matrix evidence for release validation", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const completionAudit = await readFile("scripts/open-source-completion-audit.ts", "utf8");
+  const providerEvidence = await readFile("scripts/provider-matrix-evidence.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const checklist = await readFile("docs/release-checklist.md", "utf8");
+
+  assert.equal(packageJson.scripts["open-source:provider-matrix"], "node --import tsx scripts/provider-matrix-evidence.ts");
+  assert.match(completionAudit, /buildProviderMatrixEvidence/u);
+  assert.match(providerEvidence, /OpenAI-compatible embedding/u);
+  assert.match(providerEvidence, /OpenAI-compatible LLM/u);
+  assert.match(providerEvidence, /OpenAI-compatible reranker/u);
+  assert.match(providerEvidence, /MEMORY_XX_PROVIDER_MATRIX_LIVE/u);
+  assert.match(providerEvidence, /EMBEDDING_API_BASE/u);
+  assert.match(providerEvidence, /MEMORY_INTELLIGENCE_BASE_URL/u);
+  assert.match(providerEvidence, /MEMORY_XX_RERANKER_DOWNSTREAM_URL/u);
+  assert.match(providerEvidence, /MEMORY_XX_QDRANT_BASE_URL/u);
+  assert.match(providerEvidence, /MEMORY_XX_REDIS_URL/u);
+  assert.match(readme, /open-source:provider-matrix/u);
+  assert.match(checklist, /open-source:provider-matrix/u);
+});

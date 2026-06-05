@@ -15,6 +15,7 @@ TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run open-source:completion-audit
+TMPDIR=/tmp npm run open-source:provider-matrix
 TMPDIR=/tmp npm run check:migrations
 TMPDIR=/tmp npm run check:hardcoded-paths
 TMPDIR=/tmp npm run audit:prod
@@ -30,6 +31,11 @@ TMPDIR=/tmp npm run verify:open-source-full-stack
 runtime module registry, full-stack capability manifest, source/script
 entrypoints, public docs, stale naming, and optional reference parity when
 `MEMORY_XX_PARITY_REFERENCE_ROOT` is set.
+
+`open-source:provider-matrix` records provider-neutral release evidence for
+OpenAI-compatible embedding, OpenAI-compatible LLM, OpenAI-compatible reranker,
+Qdrant, and Redis. Set `MEMORY_XX_PROVIDER_MATRIX_LIVE=1` in a maintainer
+environment to require live provider probes before tagging.
 
 For non-Docker CI environments, the same gate may skip Compose while still
 checking typecheck, tests, public readiness, migration order, hardcoded paths,

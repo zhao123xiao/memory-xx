@@ -29,6 +29,7 @@
     "open-source:preaudit": "node --import tsx scripts/open-source-preaudit.ts",
     "open-source:parity-audit": "node --import tsx scripts/open-source-parity-audit.ts",
     "open-source:completion-audit": "node --import tsx scripts/open-source-completion-audit.ts",
+    "open-source:provider-matrix": "node --import tsx scripts/provider-matrix-evidence.ts",
     "open-source:export": "node --import tsx scripts/open-source-export.ts",
     "check:db-invariants": "node --import tsx scripts/check-db-invariants.ts",
     "check:migrations": "node --import tsx scripts/check-migration-order.ts",

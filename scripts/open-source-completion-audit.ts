@@ -5,6 +5,7 @@ import path from "node:path";
 import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { RUNTIME_MODULES, type RuntimeModule } from "../app/runtime-modules";
 import { buildParityAuditReport, type ParityAuditReport } from "./open-source-parity-audit";
+import { buildProviderMatrixEvidence, type ProviderMatrixEvidence } from "./provider-matrix-evidence";
 
 interface AuditSection {
   readonly ok: boolean;
@@ -24,6 +25,7 @@ interface CompletionAuditReport {
   };
   readonly public_docs: AuditSection;
   readonly stale_public_names: AuditSection;
+  readonly provider_matrix: ProviderMatrixEvidence;
   readonly reference_parity?: ParityAuditReport;
   readonly blockers: readonly string[];
 }
@@ -171,6 +173,7 @@ async function auditPublicDocs(): Promise<AuditSection> {
 
   for (const required of [
     "open-source:completion-audit",
+    "open-source:provider-matrix",
     "verify:open-source-full-stack",
     "smoke:compose-core-live",
     "smoke:compose-enhanced",
@@ -233,11 +236,12 @@ async function auditStalePublicNames(): Promise<AuditSection> {
 }
 
 export async function buildCompletionAuditReport(): Promise<CompletionAuditReport> {
-  const [hotPluggable, fullStackCapabilities, publicDocs, stalePublicNames] = await Promise.all([
+  const [hotPluggable, fullStackCapabilities, publicDocs, stalePublicNames, providerMatrix] = await Promise.all([
     auditHotPluggableRuntime(),
     auditFullStackCapabilities(),
     auditPublicDocs(),
     auditStalePublicNames(),
+    buildProviderMatrixEvidence(),
   ]);
 
   let referenceParity: ParityAuditReport | undefined;
@@ -251,6 +255,7 @@ export async function buildCompletionAuditReport(): Promise<CompletionAuditRepor
     ...fullStackCapabilities.blockers,
     ...publicDocs.blockers,
     ...stalePublicNames.blockers,
+    ...providerMatrix.blockers,
     ...(referenceParity?.blockers ?? []),
   ].sort();
 
@@ -262,6 +267,7 @@ export async function buildCompletionAuditReport(): Promise<CompletionAuditRepor
     full_stack_capabilities: fullStackCapabilities,
     public_docs: publicDocs,
     stale_public_names: stalePublicNames,
+    provider_matrix: providerMatrix,
     reference_parity: referenceParity,
     blockers,
   };
