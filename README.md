@@ -284,6 +284,7 @@ TMPDIR=/tmp npm run memory:control-panel
 | API 参考 | [docs/api.md](docs/api.md) |
 | Runtime profile | [docs/runtime-profiles.md](docs/runtime-profiles.md) |
 | Module catalog | [docs/module-catalog.md](docs/module-catalog.md) |
+| Open-source release checklist | [docs/release-checklist.md](docs/release-checklist.md) |
 
 ## 当前状态与边界
 

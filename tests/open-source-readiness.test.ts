@@ -2459,3 +2459,23 @@ test("package exposes a full-stack open-source release gate for maintainers", as
   assert.match(readme, /MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1/u);
   assert.match(operations, /npm run verify:open-source-full-stack/u);
 });
+
+test("public release checklist documents full-stack release evidence", async () => {
+  const readme = await readFile("README.md", "utf8");
+  const checklist = await readFile("docs/release-checklist.md", "utf8");
+
+  assert.match(readme, /docs\/release-checklist\.md/u);
+  assert.match(checklist, /verify:open-source-full-stack/u);
+  assert.match(checklist, /MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1/u);
+  assert.match(checklist, /MEMORY_XX_PARITY_REFERENCE_ROOT/u);
+  assert.match(checklist, /Provider matrix/u);
+  assert.match(checklist, /OpenAI-compatible embedding/u);
+  assert.match(checklist, /OpenAI-compatible LLM/u);
+  assert.match(checklist, /OpenAI-compatible reranker/u);
+  assert.match(checklist, /smoke:compose-core-live/u);
+  assert.match(checklist, /smoke:compose-enhanced/u);
+  assert.match(checklist, /smoke:compose-full/u);
+  assert.match(checklist, /hot-pluggable degradation/u);
+  assert.match(checklist, /No-go/u);
+  assert.doesNotMatch(checklist, /MEMORY_V2_|\/api\/memory\/v2|memory-v2|Memory-v2/u);
+});
