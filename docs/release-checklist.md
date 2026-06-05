@@ -14,6 +14,7 @@ TMPDIR=/tmp npm ci
 TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
 TMPDIR=/tmp npm run verify:open-source
+TMPDIR=/tmp npm run open-source:completion-audit
 TMPDIR=/tmp npm run check:migrations
 TMPDIR=/tmp npm run check:hardcoded-paths
 TMPDIR=/tmp npm run audit:prod
@@ -24,6 +25,11 @@ Run the full-stack release gate before publishing:
 ```bash
 TMPDIR=/tmp npm run verify:open-source-full-stack
 ```
+
+`open-source:completion-audit` is the objective-level audit. It checks the
+runtime module registry, full-stack capability manifest, source/script
+entrypoints, public docs, stale naming, and optional reference parity when
+`MEMORY_XX_PARITY_REFERENCE_ROOT` is set.
 
 For non-Docker CI environments, the same gate may skip Compose while still
 checking typecheck, tests, public readiness, migration order, hardcoded paths,

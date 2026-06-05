@@ -105,6 +105,10 @@ function buildSteps(): ReleaseGateStep[] {
       run: () => runNpm("check:hardcoded-paths"),
     },
     {
+      label: "completion audit",
+      run: () => runNpm("open-source:completion-audit"),
+    },
+    {
       label: "stale public compatibility name scan",
       run: assertNoStalePublicCompatibilityNames,
     },

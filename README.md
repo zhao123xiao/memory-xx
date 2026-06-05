@@ -222,6 +222,7 @@ TMPDIR=/tmp npm test
 TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run verify:open-source-full-stack
+TMPDIR=/tmp npm run open-source:completion-audit
 TMPDIR=/tmp npm run open-source:parity-audit -- --reference-root "$MEMORY_XX_PARITY_REFERENCE_ROOT" --json
 TMPDIR=/tmp npm run smoke:compose-core
 TMPDIR=/tmp npm run smoke:compose-core-live
@@ -265,6 +266,7 @@ TMPDIR=/tmp npm run memory:control-panel
 `smoke:governance-ops` 只运行 pending/report/scan 类治理面；不会 apply、freeze、revert、cleanup 或修改记录。
 `smoke:self-improvement-ops` 只生成 report-only self-improvement proposal、Graphiti shadow export 和 test pollution dry-run；不会写 memory、写 markdown、apply 或 cleanup。
 `open-source:parity-audit` 是发布维护者使用的参考树对比工具，需要显式传入本机 reference root；普通用户安装和 Core 启动不需要运行它。
+`open-source:completion-audit` 会检查公开仓库的 runtime modules、full-stack capability manifest、源码/脚本入口、文档入口、旧命名残留，并在设置 `MEMORY_XX_PARITY_REFERENCE_ROOT` 时附带 reference parity 结果。
 `verify:open-source-full-stack` 是维护者发布门禁：它会串联 typecheck、完整测试、`verify:open-source`、migration/path/旧命名扫描、可选 parity audit，以及 enhanced/full Compose smoke。若只想跑非 Docker 门禁，可设置 `MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1`；若要强制对照私有参考树，设置 `MEMORY_XX_PARITY_REFERENCE_ROOT`，或再设置 `MEMORY_XX_RELEASE_GATE_REQUIRE_PARITY=1` 让缺少 reference root 直接失败。
 
 ## 文档导航

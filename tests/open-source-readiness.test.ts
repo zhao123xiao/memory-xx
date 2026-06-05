@@ -2479,3 +2479,23 @@ test("public release checklist documents full-stack release evidence", async () 
   assert.match(checklist, /No-go/u);
   assert.doesNotMatch(checklist, /MEMORY_V2_|\/api\/memory\/v2|memory-v2|Memory-v2/u);
 });
+
+test("package exposes a completion audit for full objective verification", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const releaseGate = await readFile("scripts/open-source-full-stack-release-gate.ts", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const checklist = await readFile("docs/release-checklist.md", "utf8");
+  const completionAudit = await readFile("scripts/open-source-completion-audit.ts", "utf8");
+
+  assert.equal(packageJson.scripts["open-source:completion-audit"], "node --import tsx scripts/open-source-completion-audit.ts");
+  assert.match(releaseGate, /runNpm\("open-source:completion-audit"/u);
+  assert.match(completionAudit, /FULL_STACK_CAPABILITIES/u);
+  assert.match(completionAudit, /RUNTIME_MODULES/u);
+  assert.match(completionAudit, /MEMORY_XX_PARITY_REFERENCE_ROOT/u);
+  assert.match(completionAudit, /hot_pluggable/u);
+  assert.match(completionAudit, /full_stack_capabilities/u);
+  assert.match(readme, /open-source:completion-audit/u);
+  assert.match(checklist, /open-source:completion-audit/u);
+});
