@@ -10,6 +10,7 @@ import test from "node:test";
 import { FULL_STACK_CAPABILITIES } from "../app/full-stack-capabilities";
 import { buildOpenSourcePreauditReport } from "../app/ops/open-source-release";
 import { RUNTIME_MODULES } from "../app/runtime-modules";
+import { buildCompletionAuditReport } from "../scripts/open-source-completion-audit";
 
 async function collectPublicFiles(root: string, extensions: readonly string[]): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true });
@@ -2471,6 +2472,16 @@ test("package exposes a completion audit for full objective verification", async
   assert.match(completionAudit, /CHANGELOG\.md/u);
   assert.match(completionAudit, /release_notes/u);
   assert.match(checklist, /open-source:completion-audit/u);
+});
+
+test("completion audit keeps maintainer commands out of README requirements", async () => {
+  const report = await buildCompletionAuditReport();
+
+  assert.deepEqual(
+    report.public_docs.blockers.filter((blocker) => blocker.startsWith("readme_missing:")),
+    []
+  );
+  assert.doesNotMatch(await readFile("README.md", "utf8"), /open-source:completion-audit|verify:open-source-full-stack|smoke:compose-full/u);
 });
 
 test("package exposes provider matrix evidence for release validation", async () => {

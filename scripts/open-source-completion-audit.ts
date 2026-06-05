@@ -36,6 +36,7 @@ const packageJsonPath = path.join(root, "package.json");
 const catalogPath = path.join(root, "docs/module-catalog.md");
 const readmePath = path.join(root, "README.md");
 const checklistPath = path.join(root, "docs/release-checklist.md");
+const operationsPath = path.join(root, "docs/operations.md");
 const changelogPath = path.join(root, "CHANGELOG.md");
 
 const coreRequiredAllowlist = new Set([
@@ -167,22 +168,35 @@ async function auditFullStackCapabilities(): Promise<CompletionAuditReport["full
 
 async function auditPublicDocs(): Promise<AuditSection> {
   const blockers: string[] = [];
-  const [readme, checklist, catalog] = await Promise.all([
+  const [readme, checklist, operations, catalog] = await Promise.all([
     readFile(readmePath, "utf8"),
     readFile(checklistPath, "utf8"),
+    readFile(operationsPath, "utf8"),
     readFile(catalogPath, "utf8"),
   ]);
+
+  for (const required of ["docs/release-checklist.md", "CHANGELOG.md", "Core", "enhanced", "full"]) {
+    if (!readme.includes(required)) blockers.push(`readme_missing:${required}`);
+  }
+  if (!readme.includes("hot-pluggable") && !readme.includes("热插拔")) {
+    blockers.push("readme_missing:hot-pluggable");
+  }
 
   for (const required of [
     "open-source:completion-audit",
     "open-source:provider-matrix",
     "verify:open-source-full-stack",
+  ]) {
+    if (!checklist.includes(required)) blockers.push(`release_checklist_missing:${required}`);
+  }
+
+  for (const required of [
     "smoke:compose-core-live",
     "smoke:compose-enhanced",
     "smoke:compose-full",
   ]) {
-    if (!readme.includes(required)) blockers.push(`readme_missing:${required}`);
     if (!checklist.includes(required)) blockers.push(`release_checklist_missing:${required}`);
+    if (!operations.includes(required)) blockers.push(`operations_missing:${required}`);
   }
 
   for (const required of ["Runtime Modules", "Full-Stack Capabilities", "Full-Stack Capability Commands"]) {
