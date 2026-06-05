@@ -282,6 +282,12 @@ test("public compose core smoke is exposed as an open-source verification entryp
   assert.match(script, /enhanced\/full services must stay behind profiles/u);
 });
 
+test("public CI runs the open-source verification gate", async () => {
+  const workflow = await readFile(".github/workflows/ci.yml", "utf8");
+
+  assert.match(workflow, /npm run verify:open-source/u);
+});
+
 test("public core live compose smoke starts core/dev profiles and validates write recall", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     readonly scripts: Record<string, string>;
