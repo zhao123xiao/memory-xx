@@ -2516,6 +2516,8 @@ test("package exposes a completion audit for full objective verification", async
   assert.match(completionAudit, /MEMORY_XX_PARITY_REFERENCE_ROOT/u);
   assert.match(completionAudit, /hot_pluggable/u);
   assert.match(completionAudit, /full_stack_capabilities/u);
+  assert.match(completionAudit, /CHANGELOG\.md/u);
+  assert.match(completionAudit, /release_notes/u);
   assert.match(readme, /open-source:completion-audit/u);
   assert.match(checklist, /open-source:completion-audit/u);
 });

@@ -24,6 +24,7 @@ interface CompletionAuditReport {
     readonly total: number;
   };
   readonly public_docs: AuditSection;
+  readonly release_notes: AuditSection;
   readonly stale_public_names: AuditSection;
   readonly provider_matrix: ProviderMatrixEvidence;
   readonly reference_parity?: ParityAuditReport;
@@ -35,6 +36,7 @@ const packageJsonPath = path.join(root, "package.json");
 const catalogPath = path.join(root, "docs/module-catalog.md");
 const readmePath = path.join(root, "README.md");
 const checklistPath = path.join(root, "docs/release-checklist.md");
+const changelogPath = path.join(root, "CHANGELOG.md");
 
 const coreRequiredAllowlist = new Set([
   "wrapper",
@@ -193,6 +195,36 @@ async function auditPublicDocs(): Promise<AuditSection> {
   };
 }
 
+async function auditReleaseNotes(): Promise<AuditSection> {
+  const blockers: string[] = [];
+  let changelog = "";
+  try {
+    changelog = await readFile(changelogPath, "utf8");
+  } catch {
+    blockers.push("release_notes_missing:CHANGELOG.md");
+  }
+
+  for (const required of [
+    "memory-xx public preview",
+    "Core",
+    "enhanced",
+    "full-stack",
+    "hot-pluggable",
+    "provider matrix",
+    "verify:open-source-full-stack",
+    "OpenAI-compatible",
+    "MEMORY_XX_*",
+    "/api/memory/xx",
+  ]) {
+    if (!changelog.includes(required)) blockers.push(`release_notes_missing:${required}`);
+  }
+
+  return {
+    ok: blockers.length === 0,
+    blockers,
+  };
+}
+
 async function listFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const files: string[] = [];
@@ -236,10 +268,11 @@ async function auditStalePublicNames(): Promise<AuditSection> {
 }
 
 export async function buildCompletionAuditReport(): Promise<CompletionAuditReport> {
-  const [hotPluggable, fullStackCapabilities, publicDocs, stalePublicNames, providerMatrix] = await Promise.all([
+  const [hotPluggable, fullStackCapabilities, publicDocs, releaseNotes, stalePublicNames, providerMatrix] = await Promise.all([
     auditHotPluggableRuntime(),
     auditFullStackCapabilities(),
     auditPublicDocs(),
+    auditReleaseNotes(),
     auditStalePublicNames(),
     buildProviderMatrixEvidence(),
   ]);
@@ -254,6 +287,7 @@ export async function buildCompletionAuditReport(): Promise<CompletionAuditRepor
     ...hotPluggable.blockers,
     ...fullStackCapabilities.blockers,
     ...publicDocs.blockers,
+    ...releaseNotes.blockers,
     ...stalePublicNames.blockers,
     ...providerMatrix.blockers,
     ...(referenceParity?.blockers ?? []),
@@ -266,6 +300,7 @@ export async function buildCompletionAuditReport(): Promise<CompletionAuditRepor
     hot_pluggable: hotPluggable,
     full_stack_capabilities: fullStackCapabilities,
     public_docs: publicDocs,
+    release_notes: releaseNotes,
     stale_public_names: stalePublicNames,
     provider_matrix: providerMatrix,
     reference_parity: referenceParity,
