@@ -282,6 +282,30 @@ test("public compose core smoke is exposed as an open-source verification entryp
   assert.match(script, /enhanced\/full services must stay behind profiles/u);
 });
 
+test("public full compose smoke starts full/dev profiles and validates live write recall", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const script = await readFile("scripts/compose-full-smoke.sh", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+
+  assert.equal(packageJson.scripts["smoke:compose-full"], "bash scripts/compose-full-smoke.sh");
+  assert.match(script, /docker compose --profile full --profile dev up/u);
+  assert.match(script, /MEMORY_XX_RUNTIME_PROFILE:=full/u);
+  assert.match(script, /MEMORY_XX_FASTPATH_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_RERANKER_UPSTREAM_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_LLM_UPSTREAM_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_GOVERNANCE_REPORT_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_WRAPPER_HOST_PORT:=15100/u);
+  assert.match(script, /docker compose exec -T memory-xx/u);
+  assert.match(script, /npm run smoke:compose-profile-live/u);
+  assert.match(script, /npm run smoke:functional -- m1/u);
+  assert.match(script, /MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL/u);
+  assert.match(readme, /npm run smoke:compose-full/u);
+  assert.match(operations, /npm run smoke:compose-full/u);
+});
+
 test("docker compose exposes pluggable enhanced and full-stack services as profiles", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 

@@ -132,8 +132,16 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
+TMPDIR=/tmp npm run smoke:compose-full
 TMPDIR=/tmp npm run smoke:compose-profile-live
 ```
+
+`smoke:compose-full` starts the public `full` + `dev` Compose profiles with
+alternate host ports, bundled dev embedding/chat/reranker upstreams, and all
+full-stack module switches enabled. It then runs `smoke:compose-profile-live`
+and M1 write/recall functional smoke. Set
+`MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL=1` when you only want the live profile
+container check.
 
 `smoke:compose-profile-live` should be run after a Compose profile is up. It
 compares `docker compose ps --all` with the wrapper `/health` runtime module
@@ -523,6 +531,7 @@ exposed through profiles:
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
 MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
+TMPDIR=/tmp npm run smoke:compose-full
 ```
 
 `enhanced` starts fastpath, lexical sidecar, Qdrant proxy, reranker adapter, and
