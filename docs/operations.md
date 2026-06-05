@@ -132,9 +132,16 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
+TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 TMPDIR=/tmp npm run smoke:compose-profile-live
 ```
+
+`smoke:compose-enhanced` starts the public `enhanced` + `dev` Compose profiles
+with alternate host ports, bundled dev embedding/chat/reranker upstreams, and
+the enhanced sidecar switches enabled. It then runs
+`smoke:compose-profile-live` without enabling full-only one-shot governance or
+maintenance modules.
 
 `smoke:compose-full` starts the public `full` + `dev` Compose profiles with
 alternate host ports, bundled dev embedding/chat/reranker upstreams, and all
@@ -531,6 +538,7 @@ exposed through profiles:
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
 MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
+TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 ```
 

@@ -306,6 +306,32 @@ test("public full compose smoke starts full/dev profiles and validates live writ
   assert.match(operations, /npm run smoke:compose-full/u);
 });
 
+test("public enhanced compose smoke starts enhanced/dev profiles for pluggable sidecars", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    readonly scripts: Record<string, string>;
+  };
+  const script = await readFile("scripts/compose-enhanced-smoke.sh", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+
+  assert.equal(packageJson.scripts["smoke:compose-enhanced"], "bash scripts/compose-enhanced-smoke.sh");
+  assert.match(script, /docker compose --profile enhanced --profile dev up/u);
+  assert.match(script, /MEMORY_XX_RUNTIME_PROFILE:=enhanced/u);
+  assert.match(script, /MEMORY_XX_FASTPATH_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_LEXICAL_SIDECAR_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_RERANKER_UPSTREAM_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_RERANKER_ADAPTER_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_LLM_UPSTREAM_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_MEM0_EXTRACTOR_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_CONVERSATION_MONITOR_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_CONTROL_PANEL_ENABLED:=1/u);
+  assert.match(script, /MEMORY_XX_WRAPPER_HOST_PORT:=14100/u);
+  assert.match(script, /docker compose exec -T memory-xx/u);
+  assert.match(script, /npm run smoke:compose-profile-live/u);
+  assert.match(readme, /npm run smoke:compose-enhanced/u);
+  assert.match(operations, /npm run smoke:compose-enhanced/u);
+});
+
 test("docker compose exposes pluggable enhanced and full-stack services as profiles", async () => {
   const compose = await readFile("docker-compose.yml", "utf8");
 
