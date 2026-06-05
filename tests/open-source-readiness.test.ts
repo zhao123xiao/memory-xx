@@ -286,6 +286,9 @@ test("public CI runs the open-source verification gate", async () => {
   const workflow = await readFile(".github/workflows/ci.yml", "utf8");
 
   assert.match(workflow, /npm run verify:open-source/u);
+  assert.match(workflow, /full-stack-release-gate/u);
+  assert.match(workflow, /MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE: "1"/u);
+  assert.match(workflow, /npm run verify:open-source-full-stack/u);
 });
 
 test("public core live compose smoke starts core/dev profiles and validates write recall", async () => {
