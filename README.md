@@ -1,39 +1,86 @@
 # memory-xx
 
-`memory-xx` 是一套面向本地 AI Agent 的长期记忆框架：PostgreSQL 负责事实账本，Qdrant 负责向量召回投影，Policy Engine 负责写入治理，Control Panel 负责运行控制，HTTP / MCP 接口负责给 Codex、Claude Code、OpenClaw 或其他 Agent 使用。
+`memory-xx` 是一套面向本地 AI Agent、个人工作流和多 Agent 系统的长期记忆框架。它把 PostgreSQL 作为事实账本，把 Qdrant 作为向量召回投影，把 Redis 用于缓存和协同，并通过 HTTP / MCP 接口提供 write、recall、review、agent token、治理和运行状态能力。
 
-当前版本来自一套已长期运行的私有记忆系统的 clean export。核心能力已经导出到 `memory-xx`，但公开文档和通用部署体验仍在整理中，因此建议按 **public preview / alpha** 使用。
-
-公开版统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径。
+当前公开版本是 `v0.1.0` public preview。仓库已经统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径，包含 Core、enhanced、full 三类运行 profile。Core 能完成基础写入、投影和召回；enhanced/full 模块按环境热插拔，关闭或降级时不应阻断 Core write/recall。
 
 ## 它解决什么问题
 
-普通 RAG 或向量库通常只解决“把文本放进去，再相似搜索出来”。memory-xx 额外处理长期记忆系统必须面对的问题：
+普通 RAG 或向量库通常只处理“存文本”和“相似搜索”。长期记忆系统还需要解决更多运行问题：
 
-- 哪些内容应该写入，哪些应该拒绝、隔离或等待人工审批。
-- 哪些记忆能进入默认召回，哪些只能显式召回或只作为审计证据。
-- 记忆如何被更新、归档、替换、回滚和投影到向量库。
-- 多个 Agent 如何共享记忆，同时保持 scope、token 和权限边界。
-- 运行中的 embedding、Qdrant、worker、policy、pending、canary 状态如何被观察和治理。
+- 哪些内容应该写入，哪些应该拒绝、隔离、等待人工审批或只进入审计证据。
+- 记忆如何被批准、归档、替换、回滚、重新投影到向量库。
+- 多个 Agent 如何共享记忆，同时保持 user、project、workspace、global 等 scope 边界。
+- embedding、Qdrant、Redis、worker、policy、pending、canary 等运行状态如何观察和治理。
+- 当 reranker、fastpath、lexical、Mem0、conversation monitor 等增强组件不可用时，系统如何降级而不是整体不可用。
 
-## 核心能力
+## 当前真实状态
 
-- **事实账本**：PostgreSQL 保存 memory、event、outbox、feedback、trusted agent、knowledge。
-- **向量召回**：embedding 模型是必需项，Qdrant 保存 current / approved / default recall 的 active 投影。
-- **召回增强**：reranker、lexical、graph recall、code graph 可提升复杂查询质量。
-- **写入治理**：Policy Engine 支持 reject、quarantine、pending、approve 和自动审批 sweep。
-- **生命周期**：支持 approve、reject、archive、supersede、tombstone、update candidate、rollback。
-- **多 Agent 接入**：HTTP / MCP / trusted agent / scope grant 支持多 Agent 共享。
-- **知识库**：长文档进入 `knowledge_v1`，短事实进入 memory，避免长报告污染默认召回。
-- **图谱能力**：支持记忆知识图谱和项目级 Code Graph。
-- **Markdown 投影**：可选导出只读 Markdown review/export 视图，PostgreSQL 仍是事实源。
-- **控制面板**：本地 Web 控制台支持运行总览、热更新配置、审批治理、图谱和平台预检。
-- **生产门禁**：支持 landing scan、7 天 canary、P0/P1 gate、Qdrant reconcile、production guard。
+- **Core 可运行**：wrapper、PostgreSQL、Redis、Qdrant、embedding proxy、Qdrant projector 是最小链路。
+- **向量 embedding 必需**：需要 OpenAI-compatible embedding endpoint；远程 provider 使用 `OPENAI_API_KEY`，本地 provider 也需要暴露兼容 `/v1/embeddings` 的接口。
+- **热插拔 profile 已公开**：`core`、`enhanced`、`full` profile 都有公开配置和 Compose 入口。
+- **sidecar 已开源**：embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 在 `sidecars/` 下提供公开实现。
+- **full-stack 能力是可选能力包**：知识库、知识图谱、Code Graph、temporal、dreaming、policy evaluation、recall quality、backup、governance、observability、self-improvement 等能力已进入公开模块清单，但需要按环境逐项开启。
+- **public preview 边界**：这不是托管服务，也不是零配置产品；用户仍需要准备 PostgreSQL、Redis、Qdrant 和 embedding provider。
+
+## 功能与模块
+
+### Core
+
+Core 是最小可运行记忆链路：
+
+- HTTP / MCP wrapper
+- PostgreSQL truth ledger
+- Redis cache / coordination
+- Qdrant active projection
+- embedding proxy
+- Qdrant projector worker
+- write / recall / review / approve / reject / archive / health
+
+Core 目标是稳定完成“写入事实账本 -> 生成 embedding -> 投影 Qdrant -> 召回候选 -> 返回给 Agent”。
+
+### Enhanced
+
+Enhanced 面向更好的召回质量、延迟和接入体验，模块可以按需开启：
+
+- fastpath recall
+- lexical sidecar
+- Qdrant proxy
+- reranker adapter / upstream
+- Mem0 extractor
+- conversation monitor
+- trusted agent tooling
+- control panel
+- platform doctor
+
+这些模块不可用时，系统应回退到 Core 路径。
+
+### Full
+
+Full 面向完整治理和生产化运行，包含更多后台、审计和质量能力：
+
+- Knowledge ingest
+- Memory knowledge graph / Code Graph
+- temporal decay / consolidation
+- memory dreaming
+- policy evaluation
+- recall quality
+- auto approval / auto update ops
+- embedding manifest / calibration / local generation
+- backup and restore planning
+- Qdrant reconciliation
+- governance operations
+- runtime observability retention
+- write ticket maintenance
+- release governance gates
+- self-improvement ops
+
+Full 能力默认不应影响 Core 可用性。需要某个模块时，先配置对应依赖和 `MEMORY_XX_*_ENABLED` 开关，再通过 health、Doctor 或 operations 文档确认状态。
 
 ## 架构概览
 
 ```text
-Conversation / API / MCP
+Agent / API / MCP
         |
         v
 Extraction + Policy Engine
@@ -45,7 +92,7 @@ Extraction + Policy Engine
                  v
           PostgreSQL truth ledger
                  |
-                 +--> temporal governance / knowledge graph / audit
+                 +--> governance / graph / audit / lifecycle
                  |
                  v
         embedding generation + Qdrant projection
@@ -57,30 +104,24 @@ Extraction + Policy Engine
         Agent tools / HTTP API / Control Panel
 ```
 
-## 快速启动
+## 快速体验
 
 最小依赖：
 
 - Node.js 20+
-- PostgreSQL 16，建议使用 pgvector 镜像
+- PostgreSQL 16
 - Redis 7+
 - Qdrant
-- OpenAI-compatible embedding endpoint，必需
-- reranker 可选
+- OpenAI-compatible embedding endpoint
 
-安装依赖：
+安装依赖并复制配置：
 
 ```bash
 npm install
-```
-
-复制配置：
-
-```bash
 cp configs/memory-xx.env.example .env.local
 ```
 
-至少配置：
+至少配置这些变量：
 
 ```bash
 MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
@@ -88,78 +129,16 @@ MEMORY_XX_DATABASE_SCHEMA=memory_xx
 MEMORY_XX_REDIS_URL=redis://127.0.0.1:6379/0
 MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
 MEMORY_XX_QDRANT_COLLECTION=memory-xx-active
-EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=memory-xx-dev-embedding
-EMBEDDING_DIMS=4096
+EMBEDDING_API_BASE=https://embedding-provider.example/v1
+EMBEDDING_MODEL=<provider-embedding-model-name>
+EMBEDDING_DIMS=<provider-embedding-dimensions>
+OPENAI_API_KEY=<set-private-key>
 MEMORY_XX_API_TOKEN=<set-private-token>
 ```
 
-Embedding 可以使用本地模型，也可以使用 OpenAI-compatible API：
+本地模型也可以使用，只要它提供 OpenAI-compatible embedding API。仓库内的 dev embedding upstream 只适合本地 smoke 和链路验证，不代表真实语义召回质量。
 
-```bash
-# 方案 A：远程 OpenAI-compatible embedding API。
-# URL、模型名称和维度以你的 embedding provider 文档为准。
-OPENAI_API_KEY=<set-private-key>
-EMBEDDING_API_BASE=https://embedding-provider.example/v1
-EMBEDDING_MODEL=<provider-embedding-model-name>
-EMBEDDING_DIMS=4096
-
-# 方案 B：本地 OpenAI-compatible embedding 服务。
-# 按本地模型实际名称/维度设置；只有需要 systemd 管理本地 upstream 时
-# 才启用 MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1。
-EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=<local-embedding-model-name>
-EMBEDDING_DIMS=<local-embedding-dimensions>
-```
-
-主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。
-
-如果只想先验证 Core write/project/recall 链路，可以用 `memory-xx-dev-embedding-upstream` 开发 profile 提供 deterministic OpenAI-compatible embedding。它只用于本地 smoke，不代表真实语义召回质量：
-
-```bash
-TMPDIR=/tmp npm run smoke:compose-core-live
-TMPDIR=/tmp npm run memory:dev-embedding-upstream
-```
-
-Docker Compose 也可以用 `dev` profile 启动同一个开发 upstream：
-
-```bash
-MEMORY_XX_DEV_EMBEDDING_DIMS=4096 \
-EMBEDDING_PROXY_UPSTREAM_BASE=http://memory-xx-dev-embedding-upstream:5222/v1 \
-EMBEDDING_MODEL=memory-xx-dev-embedding \
-EMBEDDING_DIMS=4096 \
-docker-compose --profile dev up --build -d
-```
-
-Core 数据库 schema 和 Qdrant projector 默认按 4096 维 embedding 校验。低维 dev embedding 只适合单独测试 sidecar，不适合 Core write/project/recall smoke。
-
-如果本机已经运行 PostgreSQL、Redis、Qdrant 或其他 memory-xx 实例，可以覆盖 Compose 暴露到宿主机的端口；容器内部连接仍使用默认端口：
-
-```bash
-MEMORY_XX_WRAPPER_HOST_PORT=15100 \
-MEMORY_XX_EMBEDDING_PROXY_HOST_PORT=15221 \
-MEMORY_XX_DEV_EMBEDDING_HOST_PORT=15222 \
-MEMORY_XX_FASTPATH_HOST_PORT=15200 \
-MEMORY_XX_LEXICAL_HOST_PORT=15210 \
-MEMORY_XX_QDRANT_PROXY_HOST_PORT=16334 \
-MEMORY_XX_RERANKER_ADAPTER_HOST_PORT=18085 \
-MEMORY_XX_CONTROL_PANEL_HOST_PORT=15310 \
-MEMORY_XX_MEM0_EXTRACTOR_HOST_PORT=15220 \
-MEMORY_XX_POSTGRES_HOST_PORT=15432 \
-MEMORY_XX_REDIS_HOST_PORT=16379 \
-MEMORY_XX_QDRANT_HOST_PORT=16333 \
-docker-compose --profile dev up --build -d
-```
-
-如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用。OpenClaw 是可选 adapter；公开 landing scan / canary 默认只要求 Codex / Claude Code source，只有显式传入 `--required-source=openclaw_session` 时才把 OpenClaw 纳入阻塞条件：
-
-```bash
-MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
-MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
-MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
-```
-
-迁移并启动：
+启动：
 
 ```bash
 set -a
@@ -177,9 +156,7 @@ curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 ```
 
-WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
-
-更完整的启动说明见 [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md)。
+如果想用 Compose 启动本地 Core 链路，见 [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md)。WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
 
 ## 最小 API 示例
 
@@ -214,62 +191,30 @@ curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/rec
   }'
 ```
 
-## 常用命令
+Strict scope 默认开启。上面的示例便于本地理解接口；如果 scoped 操作返回 403，请使用 trusted agent / MCP token / admin token，或仅在本地调试时临时设置 `MEMORY_XX_SCOPE_POLICY_MODE=single_user`。
+
+## Agent 会话接入
+
+memory-xx 可以显式读取 Codex、Claude Code 或 OpenClaw 的历史会话目录。OpenClaw 是可选 adapter；公开 landing scan / canary 默认只要求 Codex / Claude Code source，只有显式传入 `--required-source=openclaw_session` 时才把 OpenClaw 纳入阻塞条件。
 
 ```bash
-TMPDIR=/tmp npm run typecheck
-TMPDIR=/tmp npm test
-TMPDIR=/tmp npm run test:unit-contract
-TMPDIR=/tmp npm run verify:open-source
-TMPDIR=/tmp npm run verify:open-source-full-stack
-TMPDIR=/tmp npm run open-source:completion-audit
-TMPDIR=/tmp npm run open-source:provider-matrix
-TMPDIR=/tmp npm run open-source:parity-audit -- --reference-root "$MEMORY_XX_PARITY_REFERENCE_ROOT" --json
-TMPDIR=/tmp npm run smoke:compose-core
-TMPDIR=/tmp npm run smoke:compose-core-live
-TMPDIR=/tmp npm run smoke:compose-enhanced
-TMPDIR=/tmp npm run smoke:compose-full
-TMPDIR=/tmp npm run smoke:compose-profile-live
-TMPDIR=/tmp npm run smoke:runtime-profiles
-TMPDIR=/tmp npm run smoke:runtime-profiles -- --live --url http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
-TMPDIR=/tmp npm run smoke:cache-invalidation
-TMPDIR=/tmp npm run smoke:write-ticket
-TMPDIR=/tmp npm run smoke:markdown-projection
-TMPDIR=/tmp npm run smoke:memory-dreaming
-TMPDIR=/tmp npm run smoke:full-ops
-TMPDIR=/tmp npm run smoke:policy-ops
-TMPDIR=/tmp npm run smoke:knowledge-graph
-TMPDIR=/tmp npm run smoke:qdrant-reconciliation
-TMPDIR=/tmp npm run smoke:recall-quality
-TMPDIR=/tmp npm run smoke:temporal-ops
-TMPDIR=/tmp npm run smoke:backup-ops
-TMPDIR=/tmp npm run smoke:runtime-observability
-TMPDIR=/tmp npm run smoke:trusted-agent
-TMPDIR=/tmp npm run smoke:embedding-ops
-TMPDIR=/tmp npm run smoke:local-embedding-generation
-TMPDIR=/tmp npm run smoke:governance-ops
-TMPDIR=/tmp npm run smoke:self-improvement-ops
-TMPDIR=/tmp npm run smoke:functional -- m1
-TMPDIR=/tmp npm run check:secrets
-TMPDIR=/tmp npm run audit:prod
-TMPDIR=/tmp npm run memory:status -- --json
-TMPDIR=/tmp npm run memory:pending -- --json
-TMPDIR=/tmp npm run memory:source-mode
-TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
-TMPDIR=/tmp npm run memory:control-panel
+MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
+MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
+MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
 ```
 
-`smoke:backup-ops` 只做 dry-run/report 验收，但 backup plan 属于 admin 操作；运行前请设置 `MEMORY_XX_CLI_TOKEN` 或 `MEMORY_XX_ADMIN_TOKEN`。
-`smoke:runtime-observability` 只做 retention/report/artifact cleanup dry-run；运行前同样需要 `MEMORY_XX_CLI_TOKEN` 或 `MEMORY_XX_ADMIN_TOKEN`。
-`smoke:trusted-agent` 只审计 trusted agent 和 scope grant 状态；不会注册、撤销或修改 token。
-`smoke:embedding-ops` 只读取 embedding manifest 状态并执行小样本 calibration；不会切换 alias、回滚 generation 或执行本地批量向量任务。
-`smoke:local-embedding-generation` 只运行 estimate-only 小样本验收；不会创建 Qdrant collection、写入 points 或更新 manifest。
-`smoke:governance-ops` 只运行 pending/report/scan 类治理面；不会 apply、freeze、revert、cleanup 或修改记录。
-`smoke:self-improvement-ops` 只生成 report-only self-improvement proposal、Graphiti shadow export 和 test pollution dry-run；不会写 memory、写 markdown、apply 或 cleanup。
-`open-source:parity-audit` 是发布维护者使用的参考树对比工具，需要显式传入本机 reference root；普通用户安装和 Core 启动不需要运行它。
-`open-source:completion-audit` 会检查公开仓库的 runtime modules、full-stack capability manifest、源码/脚本入口、文档入口、旧命名残留，并在设置 `MEMORY_XX_PARITY_REFERENCE_ROOT` 时附带 reference parity 结果。
-`open-source:provider-matrix` 会检查 embedding、LLM、reranker、Qdrant、Redis 的 provider-neutral 配置和文档证据；设置 `MEMORY_XX_PROVIDER_MATRIX_LIVE=1` 后会对真实 provider endpoint 做 live probe。
-`verify:open-source-full-stack` 是维护者发布门禁：它会串联 typecheck、完整测试、`verify:open-source`、migration/path/旧命名扫描、可选 parity audit，以及 enhanced/full Compose smoke。若只想跑非 Docker 门禁，可设置 `MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1`；若要强制对照私有参考树，设置 `MEMORY_XX_PARITY_REFERENCE_ROOT`，或再设置 `MEMORY_XX_RELEASE_GATE_REQUIRE_PARITY=1` 让缺少 reference root 直接失败。
+开源配置中的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，使用前需要替换成真实路径。
+
+## 运行边界
+
+- Embedding 是必需组件；reranker 是增强组件。
+- Qdrant 是 Core 召回投影依赖；PostgreSQL 仍是事实源。
+- Redis 不可用时缓存和协同能力会降级，但不应替代 PostgreSQL 的事实状态。
+- fastpath、lexical、reranker、Mem0、conversation monitor、control panel 是可选增强模块。
+- Control Panel 是本地运维界面，建议只绑定 `127.0.0.1`，不要直接暴露公网。
+- Markdown projection 是只读 review/export 投影，不支持反向同步。
+- global 自动写入默认不建议开启。
+- real update / supersede / apply 默认不建议直接开启，应先 dry-run 或 canary。
 
 ## 文档导航
 
@@ -283,6 +228,7 @@ TMPDIR=/tmp npm run memory:control-panel
 | Embedding、Reranker、Qdrant Alias | [docs/vector-runtime.zh-CN.md](docs/vector-runtime.zh-CN.md) |
 | 控制面板和热插拔配置 | [docs/control-panel.zh-CN.md](docs/control-panel.zh-CN.md) |
 | Worker、备份、迁移、systemd、平台检查 | [docs/operations.zh-CN.md](docs/operations.zh-CN.md) |
+| Operations guide | [docs/operations.md](docs/operations.md) |
 | Knowledge 文档治理 | [docs/knowledge.zh-CN.md](docs/knowledge.zh-CN.md) |
 | Canary 与生产就绪 | [docs/canary.zh-CN.md](docs/canary.zh-CN.md) |
 | API 参考 | [docs/api.md](docs/api.md) |
@@ -290,26 +236,6 @@ TMPDIR=/tmp npm run memory:control-panel
 | Module catalog | [docs/module-catalog.md](docs/module-catalog.md) |
 | Release notes | [CHANGELOG.md](CHANGELOG.md) |
 | Open-source release checklist | [docs/release-checklist.md](docs/release-checklist.md) |
-
-## 当前状态与边界
-
-- 本仓库是 public preview / alpha。
-- Embedding 是必需组件；reranker 是增强组件。
-- Docker Compose 默认 Core 会启动 wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis 和 Qdrant；宿主机端口可用 `MEMORY_XX_*_HOST_PORT` 覆盖以避开本机已有服务。
-- `TMPDIR=/tmp npm run smoke:compose-core-live` 会用 core+dev profile 启动最小本地栈，默认使用 dev embedding upstream，并执行 profile live smoke 与 M1 write/project/recall functional smoke。
-- Docker enhanced/full profile 需要同步设置 `MEMORY_XX_RUNTIME_PROFILE=enhanced/full`，否则 wrapper health、Doctor 和控制面板会按 Core 口径解释模块状态。
-- `TMPDIR=/tmp npm run smoke:compose-enhanced` 会用 enhanced+dev profile 启动公开可复现的增强本地栈，默认开启 fastpath、lexical、Qdrant proxy、reranker adapter、Mem0 extractor、conversation monitor、control panel 和 dev upstream，并执行 profile live smoke。
-- `TMPDIR=/tmp npm run smoke:compose-full` 会用 full+dev profile 启动公开可复现的完整本地栈，默认使用 dev embedding/chat/reranker upstream 和备用宿主机端口，并执行 profile live smoke 与 M1 write/recall functional smoke；仅检查容器状态时可设置 `MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL=1`。
-- Docker full profile 会包含 enhanced 服务，并暴露 Mem0、conversation monitor、cache invalidation worker、maintenance、consolidation、detect、auto-repair、repair report、landing scan、canary report 等模块；这些模块默认仍由各自 `MEMORY_XX_*_ENABLED=0` 开关关闭，按环境开启后才执行。
-- `sidecars/` 已纳入 embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 的公开源码；这些模块可按环境开启、关闭或降级。
-- fastpath 和 lexical sidecar 当前提供 Node.js 开源实现，部署环境可替换为更高性能实现，但必须保持 HTTP 契约兼容；禁用它们不影响 core write/recall。
-- Markdown projection 是 full-stack 可插拔模块，可用 `MEMORY_XX_MARKDOWN_PROJECTION_ENABLED=1` 开启；导出的 Markdown 是 review/export 投影，不支持反向同步。
-- `app/full-stack-capabilities.ts` 记录非服务型 full-stack 能力包，例如 Knowledge ingest、Memory/Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation、Recall quality、auto-approval/update ops、embedding manifest/calibration、本地 embedding 生成、backup、platform doctor、trusted agent tooling、Qdrant reconciliation、conversation ops、governance operations、runtime observability retention、write-ticket maintenance、deployment/security packaging、release governance gates 和 self-improvement ops；这些能力默认不影响 Core，可按环境开启或只运行 CLI。
-- global 自动写入默认不建议开启。
-- real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
-- 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。
-
-Strict scope 默认开启。最小 API 示例使用 `MEMORY_XX_API_TOKEN` 便于本地理解接口；如果 scoped 操作返回 403，请使用 trusted agent / MCP token / admin token，或仅在本地调试时临时设置 `MEMORY_XX_SCOPE_POLICY_MODE=single_user`。
 
 ## 许可证
 

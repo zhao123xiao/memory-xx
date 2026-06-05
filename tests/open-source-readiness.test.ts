@@ -266,7 +266,6 @@ test("public compose core smoke is exposed as an open-source verification entryp
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     readonly scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const script = await readFile("scripts/compose-core-smoke.ts", "utf8");
@@ -274,8 +273,6 @@ test("public compose core smoke is exposed as an open-source verification entryp
   assert.equal(packageJson.scripts["smoke:compose-core"], "node --import tsx scripts/compose-core-smoke.ts");
   assert.equal(packageJson.scripts["smoke:compose-profile-live"], "node --import tsx scripts/compose-core-smoke.ts --live");
   assert.match(packageJson.scripts["verify:open-source"], /npm run smoke:compose-core/u);
-  assert.match(readme, /npm run smoke:compose-core/u);
-  assert.match(readme, /npm run smoke:compose-profile-live/u);
   assert.match(quickstart, /npm run smoke:compose-core/u);
   assert.match(operations, /npm run smoke:compose-profile-live/u);
   assert.match(script, /memory-xx-qdrant-projector-worker/u);
@@ -296,7 +293,6 @@ test("public core live compose smoke starts core/dev profiles and validates writ
     readonly scripts: Record<string, string>;
   };
   const script = await readFile("scripts/compose-core-live-smoke.sh", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
 
@@ -311,7 +307,6 @@ test("public core live compose smoke starts core/dev profiles and validates writ
   assert.match(script, /npm run smoke:compose-profile-live/u);
   assert.match(script, /npm run smoke:functional -- m1/u);
   assert.match(script, /MEMORY_XX_COMPOSE_CORE_LIVE_SKIP_FUNCTIONAL/u);
-  assert.match(readme, /npm run smoke:compose-core-live/u);
   assert.match(quickstart, /npm run smoke:compose-core-live/u);
   assert.match(operations, /npm run smoke:compose-core-live/u);
 });
@@ -321,7 +316,6 @@ test("public full compose smoke starts full/dev profiles and validates live writ
     readonly scripts: Record<string, string>;
   };
   const script = await readFile("scripts/compose-full-smoke.sh", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
 
   assert.equal(packageJson.scripts["smoke:compose-full"], "bash scripts/compose-full-smoke.sh");
@@ -336,7 +330,6 @@ test("public full compose smoke starts full/dev profiles and validates live writ
   assert.match(script, /npm run smoke:compose-profile-live/u);
   assert.match(script, /npm run smoke:functional -- m1/u);
   assert.match(script, /MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL/u);
-  assert.match(readme, /npm run smoke:compose-full/u);
   assert.match(operations, /npm run smoke:compose-full/u);
 });
 
@@ -345,7 +338,6 @@ test("public enhanced compose smoke starts enhanced/dev profiles for pluggable s
     readonly scripts: Record<string, string>;
   };
   const script = await readFile("scripts/compose-enhanced-smoke.sh", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
 
   assert.equal(packageJson.scripts["smoke:compose-enhanced"], "bash scripts/compose-enhanced-smoke.sh");
@@ -362,7 +354,6 @@ test("public enhanced compose smoke starts enhanced/dev profiles for pluggable s
   assert.match(script, /MEMORY_XX_WRAPPER_HOST_PORT:=14100/u);
   assert.match(script, /docker compose exec -T memory-xx/u);
   assert.match(script, /npm run smoke:compose-profile-live/u);
-  assert.match(readme, /npm run smoke:compose-enhanced/u);
   assert.match(operations, /npm run smoke:compose-enhanced/u);
 });
 
@@ -992,7 +983,6 @@ test("public repository exposes knowledge graph smoke for enhanced graph modules
     scripts: Record<string, string>;
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1003,7 +993,6 @@ test("public repository exposes knowledge graph smoke for enhanced graph modules
   assert.match(packageJson.scripts["verify:open-source"], /tests\/knowledge-graph-smoke\.test\.ts/u);
   assert.match(capabilities, /name: "knowledge_ingest"[\s\S]*scripts\/knowledge-graph-smoke\.ts/u);
   assert.match(capabilities, /name: "memory_knowledge_graph"[\s\S]*scripts\/knowledge-graph-smoke\.ts/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:knowledge-graph/u);
   assert.match(moduleCatalog, /smoke:knowledge-graph/u);
@@ -1037,7 +1026,6 @@ test("public repository exposes qdrant reconciliation smoke as a read-only full-
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/qdrant-reconciliation-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1048,7 +1036,6 @@ test("public repository exposes qdrant reconciliation smoke as a read-only full-
   assert.match(packageJson.scripts["verify:open-source"], /tests\/qdrant-reconciliation-smoke\.test\.ts/u);
   assert.match(capabilities, /name: "qdrant_reconciliation"[\s\S]*scripts\/qdrant-reconciliation-smoke\.ts/u);
   assert.doesNotMatch(smoke, /--apply|--mark-dispatched|fix-qdrant-replay\.ts|replay-qdrant-outbox\.ts/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:qdrant-reconciliation/u);
   assert.match(moduleCatalog, /smoke:qdrant-reconciliation/u);
@@ -1081,7 +1068,6 @@ test("public repository exposes recall quality smoke as a read-only full-stack c
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/recall-quality-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1092,7 +1078,6 @@ test("public repository exposes recall quality smoke as a read-only full-stack c
   assert.match(packageJson.scripts["verify:open-source"], /tests\/recall-quality-smoke\.test\.ts/u);
   assert.match(capabilities, /name: "recall_quality"[\s\S]*scripts\/recall-quality-smoke\.ts/u);
   assert.doesNotMatch(smoke, /--apply|--write-observations|memory-recall-repair\.ts|memory-local-agent-evidence\.ts/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:recall-quality/u);
   assert.match(moduleCatalog, /smoke:recall-quality/u);
@@ -1129,7 +1114,6 @@ test("public repository exposes temporal ops smoke for decay and consolidation d
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/temporal-ops-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1141,7 +1125,6 @@ test("public repository exposes temporal ops smoke for decay and consolidation d
   assert.match(capabilities, /name: "temporal_decay"[\s\S]*scripts\/temporal-ops-smoke\.ts/u);
   assert.match(capabilities, /name: "temporal_consolidation"[\s\S]*scripts\/temporal-ops-smoke\.ts/u);
   assert.doesNotMatch(smoke, /--apply|memory-consolidate\.ts",\s*"--apply"|memory-temporal-policy\.ts",\s*"apply"/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:temporal-ops/u);
   assert.match(moduleCatalog, /smoke:temporal-ops/u);
@@ -1175,7 +1158,6 @@ test("public repository exposes backup ops smoke for dry-run backup and deployme
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/backup-ops-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1187,7 +1169,6 @@ test("public repository exposes backup ops smoke for dry-run backup and deployme
   assert.match(capabilities, /name: "backup_and_restore"[\s\S]*scripts\/backup-ops-smoke\.ts/u);
   assert.match(capabilities, /name: "deployment_packaging"[\s\S]*scripts\/backup-ops-smoke\.ts/u);
   assert.doesNotMatch(smoke, /--apply|pg_dump|copyFileSync|chmodSync|memory-governance-revert|rollback/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:backup-ops/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:backup-ops/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:backup-ops/u);
   assert.match(moduleCatalog, /smoke:backup-ops/u);
@@ -1221,7 +1202,6 @@ test("public repository exposes runtime observability smoke for retention dry-ru
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/runtime-observability-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1232,7 +1212,6 @@ test("public repository exposes runtime observability smoke for retention dry-ru
   assert.match(packageJson.scripts["verify:open-source"], /tests\/runtime-observability-smoke\.test\.ts/u);
   assert.match(capabilities, /name: "runtime_observability_retention"[\s\S]*scripts\/runtime-observability-smoke\.ts/u);
   assert.doesNotMatch(smoke, /--apply|archive-next-residue-logs|fs\.rename|renameSync|rmSync|unlinkSync/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:runtime-observability/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:runtime-observability/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:runtime-observability/u);
   assert.match(moduleCatalog, /smoke:runtime-observability/u);
@@ -1264,7 +1243,6 @@ test("public repository exposes trusted agent smoke for strict-scope provisionin
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/trusted-agent-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1276,7 +1254,6 @@ test("public repository exposes trusted agent smoke for strict-scope provisionin
   assert.match(packageJson.scripts["verify:open-source"], /tests\/trusted-agent-smoke\.test\.ts/u);
   assert.match(capabilities, /name: "trusted_agent_tools"[\s\S]*scripts\/trusted-agent-smoke\.ts/u);
   assert.doesNotMatch(smoke, /\bcreate\b|\bgrant\b|\brevoke-grant\b|--add|--remove|--env-file|writeFileSync|chmodSync/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:trusted-agent/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:trusted-agent/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:trusted-agent/u);
   assert.match(moduleCatalog, /smoke:trusted-agent/u);
@@ -1310,7 +1287,6 @@ test("public repository exposes embedding ops smoke for manifest status and cali
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/embedding-ops-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1323,7 +1299,6 @@ test("public repository exposes embedding ops smoke for manifest status and cali
   assert.match(capabilities, /name: "embedding_manifest"[\s\S]*scripts\/embedding-ops-smoke\.ts/u);
   assert.match(capabilities, /name: "embedding_calibration"[\s\S]*scripts\/embedding-ops-smoke\.ts/u);
   assert.doesNotMatch(smoke, /\b(validate|activate|rollback|refresh|generate|prepare|observe|mark-dirty)\b|generate-local-memory-embeddings/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:embedding-ops/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:embedding-ops/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:embedding-ops/u);
   assert.match(moduleCatalog, /smoke:embedding-ops/u);
@@ -1354,7 +1329,6 @@ test("public repository exposes local embedding generation estimate-only smoke",
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/local-embedding-generation-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1368,7 +1342,6 @@ test("public repository exposes local embedding generation estimate-only smoke",
   assert.match(smoke, /--estimate-only/u);
   assert.match(smoke, /--limit=1/u);
   assert.doesNotMatch(smoke, /--force-recreate|--target-collection|local-qwen8b-benchmark\.ts|generate-embeddings\.ts/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:local-embedding-generation/u);
   assert.match(moduleCatalog, /smoke:local-embedding-generation/u);
@@ -1405,7 +1378,6 @@ test("public repository exposes governance ops smoke for read-only reports", asy
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/governance-ops-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1421,7 +1393,6 @@ test("public repository exposes governance ops smoke for read-only reports", asy
   assert.match(smoke, /memory-policy-backfill\.ts/u);
   assert.match(smoke, /memory-event-lifecycle\.ts/u);
   assert.doesNotMatch(smoke, /--apply|--write-report|memory-governance-cleanup\.ts|memory-governance-freeze\.ts|memory-governance-revert\.ts|memory-governance-stuck-runs\.ts/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:governance-ops/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:governance-ops/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:governance-ops/u);
   assert.match(moduleCatalog, /smoke:governance-ops/u);
@@ -1451,7 +1422,6 @@ test("public repository exposes self-improvement ops smoke for report-only propo
   };
   const capabilities = await readFile("app/full-stack-capabilities.ts", "utf8");
   const smoke = await readFile("scripts/self-improvement-ops-smoke.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
   const moduleCatalog = await readFile("docs/module-catalog.md", "utf8");
@@ -1468,7 +1438,6 @@ test("public repository exposes self-improvement ops smoke for report-only propo
   assert.match(smoke, /--no-write-memory/u);
   assert.match(smoke, /--deterministic/u);
   assert.doesNotMatch(smoke, /--apply|--write-markdown|memory-governance-cleanup/u);
-  assert.match(readme, /TMPDIR=\/tmp npm run smoke:self-improvement-ops/u);
   assert.match(operations, /TMPDIR=\/tmp npm run smoke:self-improvement-ops/u);
   assert.match(operationsZh, /TMPDIR=\/tmp npm run smoke:self-improvement-ops/u);
   assert.match(moduleCatalog, /smoke:self-improvement-ops/u);
@@ -2039,13 +2008,10 @@ test("public runtime profile smoke is exposed as an offline open-source verifica
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     readonly scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
   const runtimeProfiles = await readFile("docs/runtime-profiles.md", "utf8");
   const script = await readFile("scripts/runtime-profile-smoke.ts", "utf8");
 
   assert.equal(packageJson.scripts["smoke:runtime-profiles"], "node --import tsx scripts/runtime-profile-smoke.ts");
-  assert.match(readme, /npm run smoke:runtime-profiles/u);
-  assert.match(readme, /smoke:runtime-profiles -- --live --url/u);
   assert.match(runtimeProfiles, /npm run smoke:runtime-profiles/u);
   assert.match(runtimeProfiles, /smoke:runtime-profiles -- --live --url/u);
   assert.match(script, /buildRuntimeModuleSnapshot/u);
@@ -2057,12 +2023,10 @@ test("public functional smoke script is portable and auth-aware", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     readonly scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
   const quickstart = await readFile("docs/quickstart.zh-CN.md", "utf8");
   const script = await readFile("scripts/functional-test-memory-xx.sh", "utf8");
 
   assert.equal(packageJson.scripts["smoke:functional"], "bash scripts/functional-test-memory-xx.sh");
-  assert.match(readme, /npm run smoke:functional/u);
   assert.match(quickstart, /npm run smoke:functional/u);
   assert.doesNotMatch(script, /shadow_r3_\d+/u);
   assert.doesNotMatch(script, /<linux-user-home>/u);
@@ -2369,7 +2333,6 @@ test("package exposes public harness entrypoints for unit contract and conversat
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const operationsZh = await readFile("docs/operations.zh-CN.md", "utf8");
 
@@ -2382,13 +2345,6 @@ test("package exposes public harness entrypoints for unit contract and conversat
   assert.equal(packageJson.scripts["smoke:memory-dreaming"], "node --import tsx scripts/memory-dreaming-smoke.ts");
   assert.equal(packageJson.scripts["smoke:full-ops"], "node --import tsx scripts/full-ops-smoke.ts");
   assert.equal(packageJson.scripts["smoke:policy-ops"], "node --import tsx scripts/policy-ops-smoke.ts");
-  assert.match(readme, /npm run test:unit-contract/u);
-  assert.match(readme, /npm run smoke:cache-invalidation/u);
-  assert.match(readme, /npm run smoke:write-ticket/u);
-  assert.match(readme, /npm run smoke:markdown-projection/u);
-  assert.match(readme, /npm run smoke:memory-dreaming/u);
-  assert.match(readme, /npm run smoke:full-ops/u);
-  assert.match(readme, /npm run smoke:policy-ops/u);
   assert.match(operations, /npm run test:conversation-monitor/u);
   assert.match(operations, /npm run smoke:cache-invalidation/u);
   assert.match(operations, /npm run smoke:write-ticket/u);
@@ -2425,12 +2381,12 @@ test("package exposes optional reference parity audit without making it a public
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
+  const checklist = await readFile("docs/release-checklist.md", "utf8");
   const source = await readFile("scripts/open-source-parity-audit.ts", "utf8");
 
   assert.equal(packageJson.scripts["open-source:parity-audit"], "node --import tsx scripts/open-source-parity-audit.ts");
   assert.doesNotMatch(packageJson.scripts["verify:open-source"], /open-source:parity-audit/u);
-  assert.match(readme, /open-source:parity-audit -- --reference-root "\$MEMORY_XX_PARITY_REFERENCE_ROOT" --json/u);
+  assert.match(checklist, /open-source:parity-audit -- \\\n  --reference-root "\$MEMORY_XX_PARITY_REFERENCE_ROOT" --json/u);
   assert.match(source, /MEMORY_XX_PARITY_REFERENCE_ROOT/u);
   assert.match(source, /missing_npm_script/u);
   assert.match(source, /reference_only_file/u);
@@ -2440,7 +2396,6 @@ test("package exposes a full-stack open-source release gate for maintainers", as
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     scripts: Record<string, string>;
   };
-  const readme = await readFile("README.md", "utf8");
   const operations = await readFile("docs/operations.md", "utf8");
   const source = await readFile("scripts/open-source-full-stack-release-gate.ts", "utf8");
 
@@ -2455,8 +2410,6 @@ test("package exposes a full-stack open-source release gate for maintainers", as
   assert.match(source, /runNpm\("smoke:compose-enhanced"\)/u);
   assert.match(source, /runNpm\("smoke:compose-full"\)/u);
   assert.match(source, /stale public compatibility name/u);
-  assert.match(readme, /npm run verify:open-source-full-stack/u);
-  assert.match(readme, /MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1/u);
   assert.match(operations, /npm run verify:open-source-full-stack/u);
 });
 
@@ -2505,7 +2458,6 @@ test("package exposes a completion audit for full objective verification", async
     scripts: Record<string, string>;
   };
   const releaseGate = await readFile("scripts/open-source-full-stack-release-gate.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const checklist = await readFile("docs/release-checklist.md", "utf8");
   const completionAudit = await readFile("scripts/open-source-completion-audit.ts", "utf8");
 
@@ -2518,7 +2470,6 @@ test("package exposes a completion audit for full objective verification", async
   assert.match(completionAudit, /full_stack_capabilities/u);
   assert.match(completionAudit, /CHANGELOG\.md/u);
   assert.match(completionAudit, /release_notes/u);
-  assert.match(readme, /open-source:completion-audit/u);
   assert.match(checklist, /open-source:completion-audit/u);
 });
 
@@ -2528,7 +2479,6 @@ test("package exposes provider matrix evidence for release validation", async ()
   };
   const completionAudit = await readFile("scripts/open-source-completion-audit.ts", "utf8");
   const providerEvidence = await readFile("scripts/provider-matrix-evidence.ts", "utf8");
-  const readme = await readFile("README.md", "utf8");
   const checklist = await readFile("docs/release-checklist.md", "utf8");
 
   assert.equal(packageJson.scripts["open-source:provider-matrix"], "node --import tsx scripts/provider-matrix-evidence.ts");
@@ -2542,6 +2492,5 @@ test("package exposes provider matrix evidence for release validation", async ()
   assert.match(providerEvidence, /MEMORY_XX_RERANKER_DOWNSTREAM_URL/u);
   assert.match(providerEvidence, /MEMORY_XX_QDRANT_BASE_URL/u);
   assert.match(providerEvidence, /MEMORY_XX_REDIS_URL/u);
-  assert.match(readme, /open-source:provider-matrix/u);
   assert.match(checklist, /open-source:provider-matrix/u);
 });
