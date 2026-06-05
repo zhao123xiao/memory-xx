@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased - memory-xx public preview
+## 0.1.0 - 2026-06-05 - memory-xx public preview
 
 This public preview turns the running private memory system into the open-source
 `memory-xx` repository. The release target is a reproducible Core stack plus
