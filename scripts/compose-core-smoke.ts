@@ -53,6 +53,20 @@ const CORE_LONG_RUNNING_SERVICES = [
   "qdrant",
 ] as const;
 
+const ONE_SHOT_RUNTIME_MODULES = new Set([
+  "markdown_projection",
+  "cache_invalidation_worker",
+  "maintenance_orchestrator",
+  "temporal_consolidation",
+  "runtime_issue_detection",
+  "auto_repair",
+  "repair_report",
+  "landing_scan",
+  "canary_7d_report",
+  "quality_runner",
+  "governance_report",
+]);
+
 export interface ComposeCoreSmokeReport {
   readonly ok: boolean;
   readonly compose_file: string;
@@ -177,8 +191,13 @@ function buildComposeProfileLiveSmokeReportFromState(
   const enabledRuntimeServices = Object.entries(runtimeStates)
     .map(([name, value]) => ({ name, state: readRecord(value) }))
     .filter(({ state }) => readString(state.state) === "enabled")
-    .map(({ name, state }) => ({ module: name, service: systemdServiceToComposeService(readString(state.service)) }))
-    .filter((item): item is { module: string; service: string } => Boolean(item.service))
+    .map(({ name, state }) => ({
+      module: name,
+      kind: readString(state.kind),
+      service: systemdServiceToComposeService(readString(state.service)),
+    }))
+    .filter((item): item is { module: string; kind: string | null; service: string } => Boolean(item.service))
+    .filter((item) => item.kind !== "external")
     .filter((item) => !CORE_LONG_RUNNING_SERVICES.includes(item.service as typeof CORE_LONG_RUNNING_SERVICES[number]));
   const missingEnabledServices = enabledRuntimeServices
     .filter((item) => !byService.has(item.service))
@@ -186,6 +205,7 @@ function buildComposeProfileLiveSmokeReportFromState(
   const stoppedEnabledServices = enabledRuntimeServices
     .map((item) => ({ ...item, state: byService.get(item.service)?.State }))
     .filter((item) => item.state && readString(item.state) !== "running")
+    .filter((item) => !isAllowedExitedZeroRuntimeModule(item.module, item.kind, byService.get(item.service)))
     .map((item) => `${item.module}:${item.service}:${item.state}`);
   const unhealthyServices = services
     .filter((service) => readString(service.Health) && readString(service.Health) !== "healthy")
@@ -230,6 +250,11 @@ function buildComposeProfileLiveSmokeReportFromState(
     profile_mismatch: profileMismatch,
     blockers,
   };
+}
+
+function isAllowedExitedZeroRuntimeModule(module: string, kind: string | null, service: ComposePsService | undefined): boolean {
+  if (readString(service?.State) !== "exited" || Number(service?.ExitCode ?? 0) !== 0) return false;
+  return kind === "gate" || ONE_SHOT_RUNTIME_MODULES.has(module);
 }
 
 function systemdServiceToComposeService(service: string | null): string | null {

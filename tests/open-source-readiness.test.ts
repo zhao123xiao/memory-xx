@@ -223,6 +223,45 @@ test("docker compose service environments do not duplicate keys", async () => {
   assert.deepEqual(duplicatedComposeEnvironmentKeys(compose), []);
 });
 
+test("docker compose full profile operations are authenticated and degradable", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const tokenConsumers = [
+    "memory-xx-dream-worker",
+    "memory-xx-detect",
+    "memory-xx-auto-repair",
+    "memory-xx-repair-report",
+    "memory-xx-landing-scan",
+    "memory-xx-quality-runner",
+    "memory-xx-governance-report",
+  ];
+  const reportOnlyGates = [
+    "memory-xx-detect",
+    "memory-xx-auto-repair",
+    "memory-xx-repair-report",
+    "memory-xx-landing-scan",
+    "memory-xx-canary-7d-report",
+    "memory-xx-quality-runner",
+    "memory-xx-governance-report",
+  ];
+
+  for (const service of tokenConsumers) {
+    const block = composeServiceBlock(compose, service);
+    assert.match(block, /MEMORY_XX_API_TOKEN: \$\{MEMORY_XX_API_TOKEN:-changeme-api\}/u, service);
+    assert.match(block, /MEMORY_XX_ADMIN_TOKEN: \$\{MEMORY_XX_ADMIN_TOKEN:-changeme-admin\}/u, service);
+  }
+  for (const service of reportOnlyGates) {
+    const block = composeServiceBlock(compose, service);
+    assert.match(block, /memory-xx full profile gate is report-only; see logs for blockers/u, service);
+    assert.match(block, /\|\|/u, service);
+  }
+});
+
+test("Dockerfile runtime includes git for doctor and release gate commands", async () => {
+  const dockerfile = await readFile("Dockerfile", "utf8");
+
+  assert.match(dockerfile, /apt-get install -y --no-install-recommends[^\n]*git/u);
+});
+
 test("public compose core smoke is exposed as an open-source verification entrypoint", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     readonly scripts: Record<string, string>;
@@ -366,6 +405,17 @@ test("docker compose wrapper receives pluggable runtime module switches", async 
   for (const envName of envNames) {
     assert.equal(wrapper.includes(`${envName}: \${${envName}:-0}`), true, envName);
   }
+});
+
+test("docker compose wrapper receives full profile upstream health endpoints", async () => {
+  const compose = await readFile("docker-compose.yml", "utf8");
+  const wrapper = composeServiceBlock(compose, "memory-xx");
+
+  assert.match(wrapper, /MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: \$\{MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL:-http:\/\/memory-xx-dev-reranker-upstream:8084\/health\}/u);
+  assert.match(wrapper, /MEMORY_XX_RERANKER_DOWNSTREAM_URL: \$\{MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http:\/\/memory-xx-dev-reranker-upstream:8084\/v3\/rerank\}/u);
+  assert.match(wrapper, /MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: \$\{MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http:\/\/memory-xx-dev-reranker-upstream:8084\/v3\/models\}/u);
+  assert.match(wrapper, /MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: \$\{MEMORY_XX_LLM_UPSTREAM_HEALTH_URL:-http:\/\/memory-xx-dev-chat-upstream:5223\/health\}/u);
+  assert.match(wrapper, /MEMORY_INTELLIGENCE_BASE_URL: \$\{MEMORY_INTELLIGENCE_BASE_URL:-http:\/\/memory-xx-dev-chat-upstream:5223\/v1\}/u);
 });
 
 test("docker compose passes runtime profile into pluggable module guards", async () => {

@@ -169,6 +169,123 @@ test("compose profile live smoke requires enabled runtime service containers to 
   assert.equal(report.blockers.includes("missing_enabled_service:fastpath:memory-xx-fastpath"), true);
 });
 
+test("compose profile live smoke accepts enabled one-shot modules that exit cleanly", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-markdown-projection", State: "exited", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-cache-invalidation-worker", State: "exited", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-quality-runner", State: "exited", Health: "", ExitCode: 0 }),
+    ],
+    healthPayload: {
+      runtime_profile: "full",
+      runtime_modules: {
+        mode: "full",
+        states: {
+          wrapper: { state: "enabled", blocks_profile: false, service: "memory-xx-wrapper.service", kind: "core" },
+          postgres: { state: "enabled", blocks_profile: false, kind: "external" },
+          redis: { state: "enabled", blocks_profile: false, kind: "external" },
+          qdrant: { state: "enabled", blocks_profile: false, kind: "external" },
+          embedding_proxy: { state: "enabled", blocks_profile: false, service: "memory-xx-embedding-proxy.service", kind: "sidecar" },
+          projector: { state: "enabled", blocks_profile: false, service: "memory-xx-qdrant-projector-worker.service", kind: "worker" },
+          markdown_projection: { state: "enabled", blocks_profile: false, service: "memory-xx-markdown-projection.service", kind: "worker" },
+          cache_invalidation_worker: { state: "enabled", blocks_profile: false, service: "memory-xx-cache-invalidation-worker.service", kind: "worker" },
+          quality_runner: { state: "enabled", blocks_profile: false, service: "memory-xx-quality-runner.service", kind: "gate" },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.stopped_enabled_services, []);
+  assert.deepEqual([...report.exited_zero_services].sort(), [
+    "memory-xx-cache-invalidation-worker",
+    "memory-xx-markdown-projection",
+    "memory-xx-quality-runner",
+  ].sort());
+});
+
+test("compose profile live smoke still blocks enabled long-running sidecars that exit cleanly", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-fastpath", State: "exited", Health: "", ExitCode: 0 }),
+    ],
+    healthPayload: {
+      runtime_profile: "full",
+      runtime_modules: {
+        mode: "full",
+        states: {
+          wrapper: { state: "enabled", blocks_profile: false, service: "memory-xx-wrapper.service", kind: "core" },
+          postgres: { state: "enabled", blocks_profile: false, kind: "external" },
+          redis: { state: "enabled", blocks_profile: false, kind: "external" },
+          qdrant: { state: "enabled", blocks_profile: false, kind: "external" },
+          embedding_proxy: { state: "enabled", blocks_profile: false, service: "memory-xx-embedding-proxy.service", kind: "sidecar" },
+          projector: { state: "enabled", blocks_profile: false, service: "memory-xx-qdrant-projector-worker.service", kind: "worker" },
+          fastpath: { state: "enabled", blocks_profile: false, service: "memory-xx-fastpath.service", kind: "sidecar" },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.stopped_enabled_services, ["fastpath:memory-xx-fastpath:exited"]);
+  assert.equal(report.blockers.includes("stopped_enabled_service:fastpath:memory-xx-fastpath:exited"), true);
+});
+
+test("compose profile live smoke does not require external upstreams to be compose-managed", async () => {
+  const report = await buildComposeProfileLiveSmokeReport({
+    composePsJsonLines: [
+      JSON.stringify({ Service: "memory-xx", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "postgres", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "redis", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "qdrant", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-embedding-proxy", State: "running", Health: "healthy", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-qdrant-projector-worker", State: "running", Health: "", ExitCode: 0 }),
+      JSON.stringify({ Service: "memory-xx-reranker-adapter", State: "running", Health: "healthy", ExitCode: 0 }),
+    ],
+    healthPayload: {
+      runtime_profile: "full",
+      runtime_modules: {
+        mode: "full",
+        states: {
+          wrapper: { state: "enabled", blocks_profile: false, service: "memory-xx-wrapper.service", kind: "core" },
+          postgres: { state: "enabled", blocks_profile: false, kind: "external" },
+          redis: { state: "enabled", blocks_profile: false, kind: "external" },
+          qdrant: { state: "enabled", blocks_profile: false, kind: "external" },
+          embedding_proxy: { state: "enabled", blocks_profile: false, service: "memory-xx-embedding-proxy.service", kind: "sidecar" },
+          projector: { state: "enabled", blocks_profile: false, service: "memory-xx-qdrant-projector-worker.service", kind: "worker" },
+          reranker_upstream: {
+            state: "enabled",
+            blocks_profile: false,
+            service: "memory-xx-reranker-upstream.service",
+            kind: "external",
+            health_url: "http://reranker.example/health",
+          },
+          reranker_adapter: { state: "enabled", blocks_profile: false, service: "memory-xx-reranker-adapter.service", kind: "sidecar" },
+        },
+      },
+      full_stack_capabilities: { states: {} },
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.missing_enabled_services, []);
+  assert.deepEqual(report.blocking_runtime_modules, []);
+});
+
 test("compose profile live smoke retries transient Docker health starting state", async () => {
   let attempts = 0;
   const report = await buildComposeProfileLiveSmokeReport({
