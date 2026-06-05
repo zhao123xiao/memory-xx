@@ -27,6 +27,9 @@ Run the full-stack release gate before publishing:
 TMPDIR=/tmp npm run verify:open-source-full-stack
 ```
 
+Before tagging, update `CHANGELOG.md` with the public release scope, release
+evidence, provider matrix status, and any known limitations.
+
 `open-source:completion-audit` is the objective-level audit. It checks the
 runtime module registry, full-stack capability manifest, source/script
 entrypoints, public docs, stale naming, and optional reference parity when

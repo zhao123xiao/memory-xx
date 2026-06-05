@@ -2480,6 +2480,26 @@ test("public release checklist documents full-stack release evidence", async () 
   assert.doesNotMatch(checklist, /MEMORY_V2_|\/api\/memory\/v2|memory-v2|Memory-v2/u);
 });
 
+test("public release notes document full-stack preview scope and release gates", async () => {
+  const changelog = await readFile("CHANGELOG.md", "utf8");
+  const readme = await readFile("README.md", "utf8");
+  const checklist = await readFile("docs/release-checklist.md", "utf8");
+  const exporter = await readFile("app/ops/open-source-release.ts", "utf8");
+
+  assert.match(changelog, /memory-xx public preview/u);
+  assert.match(changelog, /Core/u);
+  assert.match(changelog, /enhanced/u);
+  assert.match(changelog, /full-stack/u);
+  assert.match(changelog, /hot-pluggable/u);
+  assert.match(changelog, /provider matrix/u);
+  assert.match(changelog, /verify:open-source-full-stack/u);
+  assert.match(changelog, /OpenAI-compatible/u);
+  assert.doesNotMatch(changelog, /MEMORY_V2_|\/api\/memory\/v2|memory-v2|Memory-v2/u);
+  assert.match(readme, /\[CHANGELOG\.md\]\(CHANGELOG\.md\)/u);
+  assert.match(checklist, /CHANGELOG\.md/u);
+  assert.match(exporter, /"CHANGELOG\.md"/u);
+});
+
 test("package exposes a completion audit for full objective verification", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
     scripts: Record<string, string>;

@@ -50,6 +50,7 @@ const ALLOWLIST_TOP_LEVEL = new Set([
   ".env.example",
   ".github",
   ".gitignore",
+  "CHANGELOG.md",
   "Dockerfile",
   "README.md",
   "app",
