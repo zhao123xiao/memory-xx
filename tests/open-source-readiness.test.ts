@@ -2432,3 +2432,27 @@ test("package exposes optional reference parity audit without making it a public
   assert.match(source, /missing_npm_script/u);
   assert.match(source, /reference_only_file/u);
 });
+
+test("package exposes a full-stack open-source release gate for maintainers", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const readme = await readFile("README.md", "utf8");
+  const operations = await readFile("docs/operations.md", "utf8");
+  const source = await readFile("scripts/open-source-full-stack-release-gate.ts", "utf8");
+
+  assert.equal(
+    packageJson.scripts["verify:open-source-full-stack"],
+    "node --import tsx scripts/open-source-full-stack-release-gate.ts"
+  );
+  assert.match(source, /runNpm\("verify:open-source"\)/u);
+  assert.match(source, /runNpm\("check:migrations"\)/u);
+  assert.match(source, /runNpm\("check:hardcoded-paths"\)/u);
+  assert.match(source, /runNpm\("open-source:parity-audit"/u);
+  assert.match(source, /runNpm\("smoke:compose-enhanced"\)/u);
+  assert.match(source, /runNpm\("smoke:compose-full"\)/u);
+  assert.match(source, /stale public compatibility name/u);
+  assert.match(readme, /npm run verify:open-source-full-stack/u);
+  assert.match(readme, /MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1/u);
+  assert.match(operations, /npm run verify:open-source-full-stack/u);
+});

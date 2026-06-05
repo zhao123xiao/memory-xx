@@ -136,6 +136,7 @@ TMPDIR=/tmp npm run smoke:compose-core-live
 TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 TMPDIR=/tmp npm run smoke:compose-profile-live
+TMPDIR=/tmp npm run verify:open-source-full-stack
 ```
 
 `smoke:compose-core-live` starts the public `core` + `dev` Compose profiles with
@@ -161,6 +162,15 @@ container check.
 compares `docker compose ps --all` with the wrapper `/health` runtime module
 snapshot, so enabled enhanced/full modules must have a matching running
 container while disabled module containers may exit cleanly.
+
+Maintainers can run `TMPDIR=/tmp npm run verify:open-source-full-stack` before
+publishing. It chains typecheck, the full test suite, `verify:open-source`,
+migration and hardcoded-path checks, the stale public compatibility-name scan,
+optional reference parity audit, and enhanced/full Compose smokes. Set
+`MEMORY_XX_PARITY_REFERENCE_ROOT=/path/to/reference-tree` to compare against a
+local reference tree; set `MEMORY_XX_RELEASE_GATE_REQUIRE_PARITY=1` to make that
+reference mandatory; set `MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1` for a
+non-Docker release audit.
 
 Public harness layers can be run individually when validating a module. `L1`
 checks the unit and HTTP contract layer, while `L19` exercises the conversation
