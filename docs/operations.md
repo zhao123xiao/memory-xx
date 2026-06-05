@@ -132,10 +132,17 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
+TMPDIR=/tmp npm run smoke:compose-core-live
 TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 TMPDIR=/tmp npm run smoke:compose-profile-live
 ```
+
+`smoke:compose-core-live` starts the public `core` + `dev` Compose profiles with
+alternate host ports and the bundled dev embedding upstream. It then runs
+`smoke:compose-profile-live` and M1 write/project/recall functional smoke.
+Set `MEMORY_XX_COMPOSE_CORE_LIVE_SKIP_FUNCTIONAL=1` when you only want the
+live Core container check.
 
 `smoke:compose-enhanced` starts the public `enhanced` + `dev` Compose profiles
 with alternate host ports, bundled dev embedding/chat/reranker upstreams, and
@@ -538,6 +545,7 @@ exposed through profiles:
 ```bash
 MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
 MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
+TMPDIR=/tmp npm run smoke:compose-core-live
 TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 ```

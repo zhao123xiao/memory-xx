@@ -117,6 +117,7 @@ EMBEDDING_DIMS=<local-embedding-dimensions>
 如果只想先验证 Core write/project/recall 链路，可以用 `memory-xx-dev-embedding-upstream` 开发 profile 提供 deterministic OpenAI-compatible embedding。它只用于本地 smoke，不代表真实语义召回质量：
 
 ```bash
+TMPDIR=/tmp npm run smoke:compose-core-live
 TMPDIR=/tmp npm run memory:dev-embedding-upstream
 ```
 
@@ -222,6 +223,7 @@ TMPDIR=/tmp npm run test:unit-contract
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run open-source:parity-audit -- --reference-root "$MEMORY_XX_PARITY_REFERENCE_ROOT" --json
 TMPDIR=/tmp npm run smoke:compose-core
+TMPDIR=/tmp npm run smoke:compose-core-live
 TMPDIR=/tmp npm run smoke:compose-enhanced
 TMPDIR=/tmp npm run smoke:compose-full
 TMPDIR=/tmp npm run smoke:compose-profile-live
@@ -286,6 +288,7 @@ TMPDIR=/tmp npm run memory:control-panel
 - 本仓库是 public preview / alpha。
 - Embedding 是必需组件；reranker 是增强组件。
 - Docker Compose 默认 Core 会启动 wrapper、embedding proxy、Qdrant projector worker、PostgreSQL、Redis 和 Qdrant；宿主机端口可用 `MEMORY_XX_*_HOST_PORT` 覆盖以避开本机已有服务。
+- `TMPDIR=/tmp npm run smoke:compose-core-live` 会用 core+dev profile 启动最小本地栈，默认使用 dev embedding upstream，并执行 profile live smoke 与 M1 write/project/recall functional smoke。
 - Docker enhanced/full profile 需要同步设置 `MEMORY_XX_RUNTIME_PROFILE=enhanced/full`，否则 wrapper health、Doctor 和控制面板会按 Core 口径解释模块状态。
 - `TMPDIR=/tmp npm run smoke:compose-enhanced` 会用 enhanced+dev profile 启动公开可复现的增强本地栈，默认开启 fastpath、lexical、Qdrant proxy、reranker adapter、Mem0 extractor、conversation monitor、control panel 和 dev upstream，并执行 profile live smoke。
 - `TMPDIR=/tmp npm run smoke:compose-full` 会用 full+dev profile 启动公开可复现的完整本地栈，默认使用 dev embedding/chat/reranker upstream 和备用宿主机端口，并执行 profile live smoke 与 M1 write/recall functional smoke；仅检查容器状态时可设置 `MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL=1`。

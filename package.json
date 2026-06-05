@@ -31,6 +31,7 @@
     "check:db-invariants": "node --import tsx scripts/check-db-invariants.ts",
     "check:migrations": "node --import tsx scripts/check-migration-order.ts",
     "smoke:compose-core": "node --import tsx scripts/compose-core-smoke.ts",
+    "smoke:compose-core-live": "bash scripts/compose-core-live-smoke.sh",
     "smoke:compose-enhanced": "bash scripts/compose-enhanced-smoke.sh",
     "smoke:compose-full": "bash scripts/compose-full-smoke.sh",
     "smoke:compose-profile-live": "node --import tsx scripts/compose-core-smoke.ts --live",

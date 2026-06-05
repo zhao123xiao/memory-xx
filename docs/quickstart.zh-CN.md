@@ -171,10 +171,13 @@ TMPDIR=/tmp npm run smoke:functional -- m1
 
 ```bash
 TMPDIR=/tmp npm run smoke:compose-core
+TMPDIR=/tmp npm run smoke:compose-core-live
 docker-compose up --build -d
 ```
 
-没有真实 embedding provider 时，可以先用 dev profile 验证 Core 布线：
+`smoke:compose-core` 是离线 Compose 拓扑检查；`smoke:compose-core-live` 会用 core+dev profile 启动最小本地栈，并验证 write -> projector -> Qdrant -> recall 的真实链路。
+
+没有真实 embedding provider 时，也可以手动用 dev profile 验证 Core 布线：
 
 ```bash
 MEMORY_XX_DEV_EMBEDDING_DIMS=4096 \
