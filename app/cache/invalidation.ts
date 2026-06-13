@@ -31,12 +31,89 @@ export interface FastpathInvalidationFailure {
 
 const fastpathInvalidationFailures: FastpathInvalidationFailure[] = [];
 
+export interface CacheInvalidationWorkerSummary {
+  readonly claimed: number;
+  readonly completed: number;
+  readonly failed: number;
+}
+
+export interface CacheInvalidationWorkerOptions {
+  readonly database: WriteTransactionRunner;
+  readonly invalidator: MemoryCacheInvalidator;
+  readonly repository?: CacheInvalidationRequestRepository;
+  readonly workerId?: string;
+  readonly batchSize?: number;
+  readonly maxAttempts?: number;
+  readonly leaseTtlSeconds?: number;
+  readonly retryDelaySeconds?: (attempts: number) => number;
+  readonly pollIntervalMs?: number;
+}
+
 export function getFastpathInvalidationFailures(): readonly FastpathInvalidationFailure[] {
   return [...fastpathInvalidationFailures];
 }
 
 export function clearFastpathInvalidationFailures(): void {
   fastpathInvalidationFailures.splice(0, fastpathInvalidationFailures.length);
+}
+
+export class CacheInvalidationWorker {
+  private readonly repository: CacheInvalidationRequestRepository;
+  private readonly workerId: string;
+  private timer: NodeJS.Timeout | null = null;
+  private running = false;
+
+  constructor(private readonly options: CacheInvalidationWorkerOptions) {
+    this.repository = options.repository ?? new CacheInvalidationRequestRepository();
+    this.workerId = options.workerId ?? `cache-invalidation-${process.pid}`;
+  }
+
+  async processOnce(): Promise<CacheInvalidationWorkerSummary> {
+    const rows = await withWriteTransaction(this.options.database, (tx) => this.repository.claimNext(tx, {
+      workerId: this.workerId,
+      limit: this.options.batchSize ?? 100,
+      leaseTtlSeconds: this.options.leaseTtlSeconds ?? 120,
+      maxAttempts: this.options.maxAttempts ?? 10
+    }));
+    let completed = 0;
+    let failed = 0;
+    for (const row of rows) {
+      try {
+        await this.options.invalidator.invalidate([{ type: row.scopeType, id: row.scopeId }]);
+        await withWriteTransaction(this.options.database, (tx) => this.repository.markCompleted(tx, row.id));
+        completed += 1;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const delay = this.options.retryDelaySeconds?.(row.attempts) ?? 60;
+        await withWriteTransaction(this.options.database, (tx) => this.repository.markFailed(tx, row.id, message, delay));
+        failed += 1;
+      }
+    }
+    return { claimed: rows.length, completed, failed };
+  }
+
+  start(): void {
+    if (this.timer) return;
+    const poll = async () => {
+      if (this.running) return;
+      this.running = true;
+      try {
+        await this.processOnce();
+      } finally {
+        this.running = false;
+      }
+    };
+    this.timer = setInterval(() => {
+      void poll().catch(() => undefined);
+    }, this.options.pollIntervalMs ?? 10_000);
+    void poll().catch(() => undefined);
+  }
+
+  stop(): void {
+    if (!this.timer) return;
+    clearInterval(this.timer);
+    this.timer = null;
+  }
 }
 
 export class RecallRuntimeCacheInvalidator implements MemoryCacheInvalidator {

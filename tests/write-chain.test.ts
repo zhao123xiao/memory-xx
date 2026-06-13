@@ -216,7 +216,7 @@ test("source-aware write supersedes approved record for same file and block", as
   const service = new CreateMemoryService({ database });
   const first = await service.execute(createCommand("req-source-approved-1", {
     metadata: { canonical_source_path: "docs/runtime.md", block_id: "qdrant-alias" },
-    content: "Production reads directly from memory-xx-next.",
+    content: "Production reads directly from the legacy memory collection.",
   }));
 
   const second = await service.execute(createCommand("req-source-approved-2", {

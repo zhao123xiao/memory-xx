@@ -306,7 +306,7 @@ async function cleanupGraphFixtures(memoryIds: readonly string[]): Promise<void>
 async function cleanupRecallCaches(): Promise<void> {
   const prefixes = [...new Set([
     process.env.MEMORY_XX_REDIS_PREFIX?.trim(),
-    "memory-xx-local-qwen8b-int4",
+    process.env.MEMORY_XX_REDIS_PREFIX?.trim() || "memory-xx-default-v1",
     "memory-xx",
   ].filter((value): value is string => Boolean(value)))];
   const client = createClient({ url: config.redisUrl });

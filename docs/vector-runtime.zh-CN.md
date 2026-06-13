@@ -16,11 +16,16 @@ Embedding 同时影响：
 
 ```bash
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
+EMBEDDING_MODEL=memory-xx-dev-embedding
 EMBEDDING_DIMS=4096
-MEMORY_XX_EMBEDDING_GENERATION_ID=local-qwen8b-int4-v1
-MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-local-qwen8b-int4-memory-v1
+MEMORY_XX_EMBEDDING_GENERATION_ID=memory-xx-default-v1
+MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION=query-embedding-v3-memory-xx-default-v1
 ```
+
+`memory-xx-embedding-proxy` 可以代理远程 OpenAI-compatible provider，也可以代理本机 OVMS。
+只有在需要由 systemd 管理本机 embedding upstream 时，才启用
+`MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1`。如果 `EMBEDDING_API_BASE` 指向远程
+provider，保持 `MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=0` 不会阻止 Core 启动。
 
 ## Qdrant Alias 与代际管理
 
@@ -43,6 +48,8 @@ TMPDIR=/tmp npm run memory:qdrant-alias -- --json
 TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
 TMPDIR=/tmp npm run memory:auto-repair -- --dry-run --json
 TMPDIR=/tmp npm run memory:embedding-calibrate
+TMPDIR=/tmp npm run smoke:embedding-ops
+TMPDIR=/tmp npm run smoke:local-embedding-generation
 TMPDIR=/tmp npm run memory:generate-local-embeddings -- --help
 ```
 
@@ -55,3 +62,43 @@ Reranker 属于增强组件。它可以提升排序质量，但不应作为最�
 - 多个候选记忆相似时重新排序。
 - 混合 lexical / vector / graph recall 后合并排序。
 - enhanced/full profile 下提升复杂问题召回质量。
+
+启用 Reranker 需要两层开关：先启动 adapter/upstream，再让 wrapper 调用 model reranker。
+
+```bash
+MEMORY_XX_RERANKER_ADAPTER_ENABLED=1
+MEMORY_XX_RERANKER_UPSTREAM_ENABLED=1
+MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL=http://127.0.0.1:8084/v3/models
+MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
+MEMORY_XX_RERANKER_MODE=model
+MEMORY_XX_RERANKER_ENDPOINT=http://127.0.0.1:8085/rerank
+MEMORY_XX_RERANKER_MODEL=qwen3-reranker
+```
+
+`MEMORY_XX_RERANKER_UPSTREAM_ENABLED=1` 必须同时提供 models/health URL。
+否则 runtime profile 会把 `reranker_upstream` 标记为 `missing_dependency`，
+并跳过依赖它的 `reranker_adapter` 启动计划。
+
+如果 `MEMORY_XX_RERANKER_MODE=model` 或 `MEMORY_XX_RERANKER_ENDPOINT` 未配置，
+wrapper 会继续使用本地排序融合；这属于正常降级，不应影响 Core write/recall。
+
+## Fastpath 与 Mem0 激活关系
+
+Enhanced/full sidecar 的 `MEMORY_XX_*_ENABLED=1` 只表示该模块进入运行计划或
+服务启动条件，不等于 wrapper 已经把流量切过去。需要额外设置 wrapper 侧激活变量：
+
+```bash
+# Fastpath recall
+MEMORY_XX_FASTPATH_ENABLED=1
+MEMORY_XX_RECALL_PRIMARY=fastpath
+
+# Mem0-style extraction
+MEMORY_XX_MEM0_EXTRACTOR_ENABLED=1
+MEMORY_XX_LLM_UPSTREAM_ENABLED=1
+MEMORY_INTELLIGENCE_PROVIDER=mem0
+MEMORY_INTELLIGENCE_MEM0_URL=http://127.0.0.1:5220
+```
+
+未设置 `MEMORY_XX_RECALL_PRIMARY=fastpath` 时，recall 仍走 Node wrapper 路径。
+未设置 `MEMORY_INTELLIGENCE_PROVIDER=mem0` 时，即使
+`MEMORY_INTELLIGENCE_MEM0_URL` 有默认值，intelligence 也仍使用 native provider。

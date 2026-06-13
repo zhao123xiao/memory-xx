@@ -10,7 +10,7 @@ import { ProjectorEmbeddingResolver } from "./projector-embedding-resolver";
 import { markEmbeddingManifestDirty } from "../embedding/manifest-refresh";
 import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
-import { QwenEmbeddingProviderWrapper } from "../server/embedding-provider";
+import { OpenAICompatibleEmbeddingProvider } from "../server/embedding-provider";
 import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
 import { readRuntimeControlNumberSync } from "../runtime-control-settings";
 import { createLogger } from "../shared/logger";
@@ -285,7 +285,7 @@ export async function createQdrantProjectorWorkerFromEnv(
   const outboxRepository = new DatabaseQdrantSyncOutboxRepository(database);
   const pointWriter = new HttpQdrantPointWriter({ config: loadMemoryXXQdrantConfig(env) });
 
-  const embeddingProvider = new QwenEmbeddingProviderWrapper();
+  const embeddingProvider = new OpenAICompatibleEmbeddingProvider();
   const embeddingResolver = new ProjectorEmbeddingResolver({
     provider: embeddingProvider,
     database,

@@ -366,7 +366,7 @@ async function main() {
     check("reranker:functional", false, `Rerank test failed: ${e.message}`, "warning");
   }
 
-  // 9. Real recall routing: wrapper must use Go fastpath + Rust lexical/Qdrant + model reranker
+  // 9. Real recall routing: wrapper must use fastpath + lexical/Qdrant + model reranker
   try {
     const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: "memory-xx Reranker集成完成",

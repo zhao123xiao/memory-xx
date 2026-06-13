@@ -4,7 +4,7 @@ import "./test-harness/config.js";
 import { loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { createConfiguredRecallRuntime } from "../app/recall/postgres-runtime";
 import { loadMemoryXXQdrantConfig } from "../app/recall/qdrant-config";
-import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider";
+import { OpenAICompatibleEmbeddingProvider } from "../app/server/embedding-provider";
 import type { RecallRequest } from "../app/recall/types";
 
 type Policy = "adaptive" | "force_top1" | "always";
@@ -30,7 +30,7 @@ async function runPolicy(policy: Policy, request: RecallRequest, iterations: num
   const runtime = createConfiguredRecallRuntime({
     config: loadMemoryXXPostgresConfig(),
     qdrant: loadMemoryXXQdrantConfig(),
-    query_embedding_provider: new QwenEmbeddingProviderWrapper(),
+    query_embedding_provider: new OpenAICompatibleEmbeddingProvider(),
     vector_column_name: "content_embedding",
   }).runtime;
   try {

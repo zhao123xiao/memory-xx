@@ -18,7 +18,7 @@ import {
 import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
 import { createLogger } from "../shared/logger";
-import { QwenEmbeddingProviderWrapper, loadEmbeddingProviderRequestConfig } from "./embedding-provider";
+import { OpenAICompatibleEmbeddingProvider, loadEmbeddingProviderRequestConfig } from "./embedding-provider";
 import { QdrantProjectionSyncService } from "../qdrant-sync/projector";
 import { HttpQdrantPointWriter } from "../qdrant-sync/qdrant-point-writer";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../runtime-control-settings";
@@ -88,7 +88,7 @@ export async function initRuntime(): Promise<void> {
   });
   await sharedEmbeddingCache.connect();
   const embeddingProvider = new ResilientQueryEmbeddingProvider(
-    new QwenEmbeddingProviderWrapper(),
+    new OpenAICompatibleEmbeddingProvider(),
     {
       max_retries: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_MAX_RETRIES", 0),
       retry_delay_ms: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_RETRY_DELAY_MS", 250),

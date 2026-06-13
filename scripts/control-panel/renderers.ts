@@ -114,7 +114,7 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
         <div id="mcp-tools-page"></div>
       </section>
       <section class="services-panel">
-        <div class="panel-head"><h2>组件状态矩阵</h2><span class="subtle">实时探测 wrapper、OVMS、Qdrant、Redis、worker、队列和投影一致性</span></div>
+        <div class="panel-head"><h2>组件状态矩阵</h2><span class="subtle">实时探测 wrapper、embedding provider、Qdrant、Redis、worker、队列和投影一致性</span></div>
         <div id="component-status-page" class="insight-grid"></div>
       </section>
     </section>
@@ -1125,8 +1125,8 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
     async function loadSecurityPlatformMigration() {
       const [security, platform, migration] = await Promise.allSettled([
         fetch("/api/runtime/secrets-audit", { headers: { "x-panel-token": PANEL_TOKEN } }),
-        fetch("/api/runtime/platform?profile=wsl-windows-gpu", { headers: { "x-panel-token": PANEL_TOKEN } }),
-        fetch("/api/runtime/deployment-preflight?profile=wsl-windows-gpu", { headers: { "x-panel-token": PANEL_TOKEN } }),
+        fetch("/api/runtime/platform", { headers: { "x-panel-token": PANEL_TOKEN } }),
+        fetch("/api/runtime/deployment-preflight", { headers: { "x-panel-token": PANEL_TOKEN } }),
       ]);
       if (security.status === "fulfilled" && security.value.ok) renderSecurityAudit(await security.value.json());
       if (platform.status === "fulfilled" && platform.value.ok) renderPlatformDoctor(await platform.value.json());
@@ -1478,7 +1478,7 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
         setMetric("m-profile", health.runtime_profile || health.wrapper_mode || "未知", "ok");
         setMetric(
           "m-embedding-upstream",
-          embeddingProbe ? (embeddingProbe.ok ? "OVMS 就绪" : (embeddingProbe.status ? "OVMS " + embeddingProbe.status : "OVMS 不可用")) : "未知",
+          embeddingProbe ? (embeddingProbe.ok ? "Provider 就绪" : (embeddingProbe.status ? "Provider " + embeddingProbe.status : "Provider 不可用")) : "未知",
           embeddingProbe?.ok ? "ok" : "bad"
         );
         setMetric("m-generation", health.embedding_generation?.active_generation?.generation_id || "未知", health.embedding_generation?.ok === false ? "bad" : "ok");

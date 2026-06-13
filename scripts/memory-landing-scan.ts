@@ -24,6 +24,17 @@ function argValue(name: string): string | null {
   return index >= 0 ? process.argv[index + 1] ?? null : null;
 }
 
+function argValues(name: string): string[] {
+  const prefix = `${name}=`;
+  const values: string[] = [];
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+    if (arg.startsWith(prefix)) values.push(arg.slice(prefix.length));
+    else if (arg === name && process.argv[index + 1]) values.push(process.argv[index + 1]);
+  }
+  return values.flatMap((value) => value.split(",")).map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
 function parseJsonFromOutput(stdout: string): Record<string, unknown> | null {
   const start = stdout.indexOf("{");
   const end = stdout.lastIndexOf("}");
@@ -92,6 +103,7 @@ async function main(): Promise<void> {
     productionGuard: productionGuard.json,
     conversationSources: conversationSources.json,
     conversationMonitorReport: conversationMonitorReport.json,
+    requiredConversationSources: argValues("--required-source"),
     commandStatus,
   });
 

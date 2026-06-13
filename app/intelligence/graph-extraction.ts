@@ -33,7 +33,7 @@ function unique(values: readonly string[]): string[] {
 }
 
 function entityCandidates(text: string): string[] {
-  const latin = text.match(/\b[A-Z][A-Za-z0-9_-]{2,}\b|\b[a-z]+(?:-[a-z0-9]+)+\b|\b(?:mem0|memory-xx|Qdrant|OVMS|Codex|reranker|fastpath|PostgreSQL|Qwen3)\b/giu) ?? [];
+  const latin = text.match(/\b[A-Z][A-Za-z0-9_-]{2,}\b|\b[a-z]+(?:-[a-z0-9]+)+\b|\b(?:mem0|memory-xx|Qdrant|Codex|reranker|fastpath|PostgreSQL)\b/giu) ?? [];
   const chinese = text.match(/[\u4e00-\u9fa5A-Za-z0-9_-]{2,24}(?:模型|图谱|控制面板|召回|写入|审批|记忆|服务|框架|策略|语料库|清单|投影|开关|关系|实体)/gu) ?? [];
   return unique([...latin, ...chinese])
     .filter((item) => !STOPWORDS.has(item.toLowerCase()))

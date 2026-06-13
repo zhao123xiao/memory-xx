@@ -1,21 +1,27 @@
 import "./test-harness/config.js";
 import { execFileSync } from "node:child_process";
-import { buildRuntimeProfilePlan, parseMemoryRuntimeProfile } from "../app/runtime-profiles";
+import {
+  buildRuntimeProfilePlan,
+  parseMemoryRuntimeProfile,
+  type MemoryRuntimeProfile,
+} from "../app/runtime-profiles";
+import { resolveRuntimeModuleStates, type RuntimeEnv } from "../app/runtime-modules";
 
-const action = process.argv[2] ?? "status";
-const requestedMode = readArg("--mode") ?? process.argv.find((arg) => ["core", "enhanced", "full"].includes(arg));
-const mode = parseMemoryRuntimeProfile(requestedMode);
-const plan = buildRuntimeProfilePlan(mode);
+type MemoryModeAction = "status" | "plan" | "up" | "down";
+type UnitStateReader = (service: string) => string;
 
-function readArg(name: string): string | undefined {
+function readArg(argv: readonly string[], name: string): string | undefined {
   const prefix = `${name}=`;
-  const found = process.argv.find((arg) => arg.startsWith(prefix));
+  const found = argv.find((arg) => arg.startsWith(prefix));
   return found ? found.slice(prefix.length) : undefined;
 }
 
 function unitState(service: string): string {
   try {
-    return execFileSync("systemctl", ["--user", "is-active", service], { encoding: "utf8" }).trim();
+    return execFileSync("systemctl", ["--user", "is-active", service], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return "inactive";
   }
@@ -26,28 +32,85 @@ function systemctl(verb: "start" | "stop", services: readonly string[]): void {
   execFileSync("systemctl", ["--user", verb, ...services], { stdio: "inherit" });
 }
 
-const startable = plan.required_components
-  .filter((component) => component.startable && component.service)
+export function buildRuntimeProfileStartServices(
+  mode: MemoryRuntimeProfile,
+  env: RuntimeEnv = process.env
+): readonly string[] {
+  const plan = buildRuntimeProfilePlan(mode);
+  const states = new Map(resolveRuntimeModuleStates(mode, env).map((resolved) => [resolved.module.name, resolved]));
+  return [...plan.required_components, ...plan.expected_components]
+  .filter((component) =>
+    component.startable &&
+    component.service &&
+    component.kind !== "external" &&
+    states.get(component.name)?.state === "enabled"
+  )
   .map((component) => component.service!);
-const optionalForDown = plan.optional_components
-  .filter((component) => component.stop_with_profile && component.service)
-  .map((component) => component.service!);
-
-if (action === "up") {
-  systemctl("start", startable);
-} else if (action === "down") {
-  systemctl("stop", optionalForDown);
 }
 
-const services = [...new Set([...startable, ...optionalForDown])].map((service) => ({
-  service,
-  state: unitState(service),
-}));
+export function buildRuntimeProfileStopServices(
+  mode: MemoryRuntimeProfile,
+  _env: RuntimeEnv = process.env
+): readonly string[] {
+  const plan = buildRuntimeProfilePlan(mode);
+  return [...plan.required_components, ...plan.expected_components, ...plan.optional_components]
+  .filter((component) => component.stop_with_profile && component.service)
+  .map((component) => component.service!);
+}
 
-process.stdout.write(`${JSON.stringify({
-  ok: true,
-  action,
-  mode,
-  profile_plan: plan,
-  services,
-}, null, 2)}\n`);
+export function buildMemoryModeStatusPayload(
+  action: MemoryModeAction,
+  mode: MemoryRuntimeProfile,
+  options: {
+    readonly env?: RuntimeEnv;
+    readonly unitState?: UnitStateReader;
+  } = {}
+): {
+  readonly ok: true;
+  readonly action: MemoryModeAction;
+  readonly mode: MemoryRuntimeProfile;
+  readonly profile_plan: ReturnType<typeof buildRuntimeProfilePlan>;
+  readonly start_services: readonly string[];
+  readonly stop_services: readonly string[];
+  readonly services: readonly { readonly service: string; readonly state: string }[];
+} {
+  const env = options.env ?? process.env;
+  const readUnitState = options.unitState ?? unitState;
+  const plan = buildRuntimeProfilePlan(mode);
+  const startable = buildRuntimeProfileStartServices(mode, env);
+  const stoppable = buildRuntimeProfileStopServices(mode, env);
+  const services = [...new Set([...startable, ...stoppable])].map((service) => ({
+    service,
+    state: readUnitState(service),
+  }));
+
+  return {
+    ok: true,
+    action,
+    mode,
+    profile_plan: plan,
+    start_services: startable,
+    stop_services: stoppable,
+    services,
+  };
+}
+
+export function runMemoryModeCli(argv = process.argv): void {
+  const action = (argv[2] ?? "status") as MemoryModeAction;
+  const requestedMode = readArg(argv, "--mode") ?? argv.find((arg) => ["core", "enhanced", "full"].includes(arg));
+  const mode = parseMemoryRuntimeProfile(requestedMode);
+  const startable = buildRuntimeProfileStartServices(mode);
+  const stoppable = buildRuntimeProfileStopServices(mode);
+
+  if (action === "up") {
+    systemctl("start", startable);
+  } else if (action === "down") {
+    systemctl("stop", stoppable);
+  }
+
+  process.stdout.write(`${JSON.stringify(buildMemoryModeStatusPayload(action, mode), null, 2)}\n`);
+}
+
+if (require.main === module) {
+  runMemoryModeCli();
+}

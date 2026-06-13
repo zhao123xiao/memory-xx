@@ -59,10 +59,18 @@ export class HttpQdrantPointWriter implements QdrantPointWriter {
       return;
     }
 
-    await this.request("/points?wait=true", {
+    const init = {
       method: "PUT",
       body: JSON.stringify({ points })
-    });
+    } satisfies RequestInit;
+
+    try {
+      await this.request("/points?wait=true", init);
+    } catch (error) {
+      if (!isQdrantStatusError(error, 404)) throw error;
+      await this.ensureCollection(points[0]?.vector.length ?? 0);
+      await this.request("/points?wait=true", init);
+    }
   }
 
   async delete(pointIds: readonly string[]): Promise<void> {
@@ -104,6 +112,23 @@ export class HttpQdrantPointWriter implements QdrantPointWriter {
     await this.requestJson(path, init);
   }
 
+  private async ensureCollection(vectorSize: number): Promise<void> {
+    if (!Number.isFinite(vectorSize) || vectorSize <= 0) {
+      throw new Error("Qdrant collection init failed: vector size is missing.");
+    }
+
+    await this.requestJson("", {
+      method: "PUT",
+      body: JSON.stringify({
+        vectors: {
+          size: vectorSize,
+          distance: "Cosine"
+        },
+        on_disk_payload: true
+      })
+    });
+  }
+
   private async requestJson(path: string, init: RequestInit): Promise<unknown> {
     if (!this.baseUrl || !this.collectionName) {
       throw new Error("Qdrant point writer 尚未配置。");
@@ -136,4 +161,8 @@ export class HttpQdrantPointWriter implements QdrantPointWriter {
     const text = typeof response.text === "function" ? await response.text() : "";
     return text ? JSON.parse(text) as unknown : null;
   }
+}
+
+function isQdrantStatusError(error: unknown, status: number): boolean {
+  return error instanceof Error && error.message === `Qdrant write failed with status ${status}`;
 }

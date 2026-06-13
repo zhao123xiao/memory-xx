@@ -32,7 +32,7 @@ function collectReferencedCollections(): string[] {
     : [];
   const files = [
     ".env",
-    ".env.fastpath-next",
+    ".env.fastpath",
     ...systemdFiles
   ];
   const refs = new Set<string>();
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
       acc[item.role] = (acc[item.role] ?? 0) + 1;
       return acc;
     }, {}),
-    source_files_scanned: [".env", ".env.fastpath-next", `${basename(process.env.HOME ?? "~")}/.config/systemd/user/*.service`]
+    source_files_scanned: [".env", ".env.fastpath", `${basename(process.env.HOME ?? "~")}/.config/systemd/user/*.service`]
   });
 }
 

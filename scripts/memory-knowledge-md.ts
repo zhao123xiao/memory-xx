@@ -21,7 +21,7 @@ import {
   type MarkdownManifestEntry,
 } from "../app/knowledge/markdown-governance";
 import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
-import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider";
+import { OpenAICompatibleEmbeddingProvider } from "../app/server/embedding-provider";
 
 type Command = "scan" | "classify" | "ingest" | "archive";
 
@@ -382,7 +382,7 @@ async function upsertKnowledgeQdrant(rows: KnowledgeMarkdownRows): Promise<Inges
   if (!baseUrl) {
     return { requested: true, ok: false, collection, points_upserted: 0, degraded_reason: "MEMORY_XX_QDRANT_BASE_URL_not_configured" };
   }
-  const provider = new QwenEmbeddingProviderWrapper();
+  const provider = new OpenAICompatibleEmbeddingProvider();
   const points: unknown[] = [];
   const batchSize = 32;
   try {

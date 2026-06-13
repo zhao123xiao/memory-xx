@@ -65,6 +65,15 @@ function normalizeRelativePath(relativePath: string): string {
     .replaceAll("openclaw-qdrant-projector-worker", "memory-xx-qdrant-projector-worker");
 }
 
+function isIntentionalPublicReplacement(file: string, targetFiles: ReadonlySet<string>): boolean {
+  if (!/^systemd\/memory-xx-.+-next\.service$/u.test(file)) {
+    return false;
+  }
+
+  const canonical = file.replace(/-next\.service$/u, ".service");
+  return targetFiles.has(canonical);
+}
+
 function readPackageScripts(root: string): Record<string, string> {
   const file = path.join(root, "package.json");
   if (!existsSync(file)) return {};
@@ -89,7 +98,9 @@ function findMissingFiles(sourceRoot: string, targetRoot: string): string[] {
     const sourceFiles = walk(path.join(sourceRoot, root)).map((file) => normalizeRelativePath(`${root}/${file}`));
     const targetFiles = new Set(walk(path.join(targetRoot, root)).map((file) => `${root}/${file}`));
     for (const file of sourceFiles) {
-      if (!targetFiles.has(file)) missing.push(file);
+      if (!targetFiles.has(file) && !isIntentionalPublicReplacement(file, targetFiles)) {
+        missing.push(file);
+      }
     }
   }
   return [...new Set(missing)].sort();

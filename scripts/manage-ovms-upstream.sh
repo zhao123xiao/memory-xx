@@ -4,28 +4,28 @@ set -euo pipefail
 kind="${1:-}"
 mode="${2:-run}"
 
-OVMS_DIR="${MEMORY_XX_OVMS_DIR:-/mnt/d/ovms}"
+OVMS_DIR="${MEMORY_XX_OVMS_DIR:-}"
 POLL_SECONDS="${MEMORY_XX_OVMS_MANAGER_POLL_SECONDS:-15}"
 READY_TIMEOUT_SECONDS="${MEMORY_XX_OVMS_MANAGER_READY_TIMEOUT_SECONDS:-300}"
 UNHEALTHY_THRESHOLD="${MEMORY_XX_OVMS_MANAGER_UNHEALTHY_THRESHOLD:-3}"
 
-CMD_EXE="${MEMORY_XX_WINDOWS_CMD_EXE:-/mnt/c/Windows/System32/cmd.exe}"
-POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
+CMD_EXE="${MEMORY_XX_WINDOWS_CMD_EXE:-}"
+POWERSHELL_EXE="${MEMORY_XX_WINDOWS_POWERSHELL_EXE:-}"
 
 case "$kind" in
   embedding)
-    label="Qwen3 embedding upstream"
+    label="embedding upstream"
     port="${MEMORY_XX_EMBEDDING_UPSTREAM_PORT:-8082}"
-    bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-embedding.bat}"
-    model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-qwen3-embedding}"
-    api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-/mnt/d/ovms/api_key.txt}"
+    bat_path="${MEMORY_XX_EMBEDDING_UPSTREAM_BAT:-}"
+    model="${MEMORY_XX_EMBEDDING_UPSTREAM_MODEL:-memory-xx-dev-embedding}"
+    api_key_file="${MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE:-}"
     process_match="--rest_port ${port}"
     ;;
   reranker)
-    label="Qwen3 reranker upstream"
+    label="reranker upstream"
     port="${MEMORY_XX_RERANKER_UPSTREAM_PORT:-8084}"
-    bat_path="${MEMORY_XX_RERANKER_UPSTREAM_BAT:-<windows-drive>\\ovms\\run-reranker.bat}"
-    model="${MEMORY_XX_RERANKER_UPSTREAM_MODEL:-qwen3-reranker}"
+    bat_path="${MEMORY_XX_RERANKER_UPSTREAM_BAT:-}"
+    model="${MEMORY_XX_RERANKER_UPSTREAM_MODEL:-memory-xx-reranker}"
     api_key_file=""
     process_match="serve-reranker-8b.py"
     ;;
@@ -37,6 +37,25 @@ esac
 
 log() {
   printf '[%s] [%s] %s\n' "$(date -Is)" "$kind" "$*"
+}
+
+require_ovms_dir() {
+  if [[ -z "$OVMS_DIR" ]]; then
+    echo "MEMORY_XX_OVMS_DIR is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$CMD_EXE" ]]; then
+    echo "MEMORY_XX_WINDOWS_CMD_EXE is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$POWERSHELL_EXE" ]]; then
+    echo "MEMORY_XX_WINDOWS_POWERSHELL_EXE is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
+  if [[ -z "$bat_path" ]]; then
+    echo "MEMORY_XX_${kind^^}_UPSTREAM_BAT is required for Windows OVMS upstream management" >&2
+    exit 78
+  fi
 }
 
 api_key() {
@@ -75,7 +94,7 @@ start_windows_process() {
   fi
   log "starting $label via $bat_path"
   "$POWERSHELL_EXE" -NoProfile -ExecutionPolicy Bypass -Command \
-    "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${bat_path}' -WorkingDirectory '<windows-drive>\\ovms' -WindowStyle Minimized" >/dev/null
+    "Start-Process -FilePath '${CMD_EXE}' -ArgumentList '/c','${bat_path}' -WorkingDirectory '${OVMS_DIR}' -WindowStyle Minimized" >/dev/null
 
   local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
   until healthy; do
@@ -119,6 +138,7 @@ case "$mode" in
     ;;
 esac
 
+require_ovms_dir
 mkdir -p "$OVMS_DIR" >/dev/null 2>&1 || true
 log "manager started for $label"
 start_windows_process

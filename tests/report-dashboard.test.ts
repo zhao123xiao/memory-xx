@@ -61,4 +61,6 @@ test("Grafana dashboard JSON is parseable and points at core metrics", () => {
 test("Prometheus config scrapes /metrics/prometheus", () => {
   const raw = readFileSync("deploy/prometheus/prometheus.yml", "utf-8");
   assert.match(raw, /metrics_path:\s+\/metrics\/prometheus/);
+  assert.match(raw, /127\.0\.0\.1:5100/);
+  assert.doesNotMatch(raw, /127\.0\.0\.1:5110/);
 });

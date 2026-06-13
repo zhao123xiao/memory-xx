@@ -15,6 +15,7 @@ export interface MemoryLandingScanInput {
   readonly productionGuard: Record<string, unknown> | null;
   readonly conversationSources: Record<string, unknown> | null;
   readonly conversationMonitorReport?: Record<string, unknown> | null;
+  readonly requiredConversationSources?: readonly string[];
   readonly commandStatus?: Record<string, MemoryLandingCommandStatus>;
 }
 
@@ -32,6 +33,8 @@ export interface MemoryLandingScanReport {
   readonly snapshots: Record<string, unknown>;
   readonly command_status: Record<string, MemoryLandingCommandStatus>;
 }
+
+const DEFAULT_REQUIRED_CONVERSATION_SOURCES = ["codex_session", "claude_code_session"] as const;
 
 function objectValue(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -102,6 +105,9 @@ export function buildMemoryLandingScanReport(input: MemoryLandingScanInput): Mem
   const productionGuard = objectValue(input.productionGuard);
   const conversationSources = objectValue(input.conversationSources ?? memoryStatus.conversation_sources);
   const conversationMonitorReport = objectValue(input.conversationMonitorReport);
+  const requiredConversationSources = (input.requiredConversationSources?.length ? input.requiredConversationSources : DEFAULT_REQUIRED_CONVERSATION_SOURCES)
+    .map((source) => source.trim())
+    .filter((source) => source.length > 0);
 
   const blockers: string[] = [];
   const warnings: string[] = [];
@@ -157,14 +163,13 @@ export function buildMemoryLandingScanReport(input: MemoryLandingScanInput): Mem
 
   const conversationSummary = conversationAdapterSummary(conversationSources);
   const adapters = arrayValue(conversationSummary.adapters).map(objectValue);
-  const hasCodex = adapters.some((adapter) => adapter.adapter === "codex_session" && numberValue(adapter.events) > 0);
-  const hasClaude = adapters.some((adapter) => adapter.adapter === "claude_code_session" && numberValue(adapter.events) > 0);
-  const hasOpenClaw = adapters.some((adapter) => adapter.adapter === "openclaw_session" && numberValue(adapter.events) > 0);
-  if (!hasCodex || !hasClaude || !hasOpenClaw) {
+  const sourceHasEvents = (source: string) => adapters.some((adapter) => adapter.adapter === source && numberValue(adapter.events) > 0);
+  const missingConversationSources = requiredConversationSources.filter((source) => !sourceHasEvents(source));
+  if (missingConversationSources.length > 0) {
     warnings.push("conversation_source_e2e_incomplete");
-    gaps.push("Codex/Claude Code/OpenClaw 三类真实 user turn 尚未全部形成 E2E 样本。");
+    gaps.push(`Required conversation source E2E samples missing: ${missingConversationSources.join(", ")}.`);
   }
-  capabilityStatus.conversation_sources = hasCodex && hasClaude && hasOpenClaw ? "ok" : "warning";
+  capabilityStatus.conversation_sources = missingConversationSources.length === 0 ? "ok" : "warning";
 
   const candidateOnly = objectValue(autoApprovalStatus.candidate_only);
   if (candidateOnly.enabled === true) {
@@ -194,9 +199,7 @@ export function buildMemoryLandingScanReport(input: MemoryLandingScanInput): Mem
   const runtimeUsable = runtimeOk && governanceOk && qdrantOk;
   const productionLandingComplete = uniqueBlockers.length === 0
     && compareCount >= numberValue(compare.minimum, 20)
-    && hasCodex
-    && hasClaude
-    && hasOpenClaw
+    && missingConversationSources.length === 0
     && candidateOnly.enabled !== true
     && productionGuard.ok === true;
 
@@ -227,6 +230,8 @@ export function buildMemoryLandingScanReport(input: MemoryLandingScanInput): Mem
         status: compare.status ?? "unknown",
       },
       conversation_sources: conversationSummary,
+      required_conversation_sources: requiredConversationSources,
+      missing_conversation_sources: missingConversationSources,
       conversation_monitor_report: {
         ok: conversationMonitorReport.ok ?? null,
         status: conversationMonitorReport.status ?? "unknown",

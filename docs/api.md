@@ -448,13 +448,94 @@ GET /health
     "mode": "core",
     "required_components": ["wrapper", "postgres", "redis", "qdrant", "embedding_proxy", "projector"],
     "expected_components": [],
-    "optional_components": ["fastpath", "lexical", "reranker", "graph_recall"]
+    "optional_components": ["embedding_upstream", "qdrant_proxy", "fastpath", "lexical_sidecar", "reranker_upstream", "reranker_adapter", "llm_upstream", "mem0_extractor", "conversation_monitor", "markdown_projection", "control_panel", "maintenance_orchestrator", "temporal_consolidation", "runtime_issue_detection", "auto_repair", "repair_report", "landing_scan", "canary_7d_report", "quality_runner", "governance_report"]
+  },
+  "runtime_modules": {
+    "mode": "core",
+    "states": {
+      "fastpath": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "source_path": "sidecars/fastpath/fastpath.mjs",
+        "degraded_behavior": "Recall falls back to the Node wrapper path with higher latency."
+      },
+      "mem0_extractor": {
+        "state": "missing_dependency",
+        "role": "expected",
+        "enabled": true,
+        "blocks_profile": false,
+        "source_path": "sidecars/mem0-extractor/extractor.py",
+        "reason": "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE=disabled"
+      },
+      "auto_repair": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-auto-repair.service",
+        "env_enabled": "MEMORY_XX_AUTO_REPAIR_ENABLED",
+        "degraded_behavior": "Automatic repair is disabled; Qdrant and embedding repair must be run manually."
+      },
+      "maintenance_orchestrator": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-maintenance.service",
+        "env_enabled": "MEMORY_XX_MAINTENANCE_ENABLED",
+        "degraded_behavior": "Scheduled maintenance is disabled; manual repair, sweep, and governance commands remain available."
+      },
+      "canary_7d_report": {
+        "state": "disabled",
+        "role": "optional",
+        "enabled": false,
+        "blocks_profile": false,
+        "service": "memory-xx-canary-7d-report.service",
+        "env_enabled": "MEMORY_XX_CANARY_7D_REPORT_ENABLED",
+        "degraded_behavior": "7-day canary evidence is not refreshed automatically."
+      }
+    }
+  },
+  "full_stack_capabilities": {
+    "enabled": ["recall_quality"],
+    "disabled": ["memory_dreaming", "auto_approval_ops"],
+    "missing_dependency": ["recall_quality"],
+    "states": {
+      "recall_quality": {
+        "state": "missing_dependency",
+        "enabled": true,
+        "profile": "full",
+        "maturity": "beta",
+        "env_enabled": "MEMORY_XX_RECALL_QUALITY_ENABLED",
+        "dependencies": ["fastpath", "lexical_sidecar", "reranker_adapter"],
+        "reason": "dependency_unavailable:fastpath:disabled",
+        "degraded_behavior": "Release quality evidence is not refreshed automatically; recall still uses configured runtime paths."
+      },
+      "memory_dreaming": {
+        "state": "disabled",
+        "enabled": false,
+        "profile": "full",
+        "maturity": "experimental",
+        "env_enabled": "MEMORY_XX_DREAMING_ENABLED",
+        "degraded_behavior": "Background dreaming/promoted insight generation is disabled; explicit write/recall continues."
+      },
+      "auto_approval_ops": {
+        "state": "disabled",
+        "enabled": false,
+        "profile": "full",
+        "maturity": "beta",
+        "env_enabled": "MEMORY_XX_AUTO_APPROVAL_ENABLED",
+        "degraded_behavior": "Pending memories remain reviewable manually; automatic approvals and sweeps do not run."
+      }
+    }
   },
   "vector": { "available": true, "backend": "qdrant", "primary_backend": "qdrant" },
   "qdrant": { "configured": true, "collection_name": "memory-xx-active" },
   "redis": { "configured": true, "available": true },
   "embedding_generation": { "configured": true, "ok": true },
-  "embedding_provider": { "model": "Qwen3-Embedding-8B", "dims": 4096, "matches_active_generation": true },
+  "embedding_provider": { "model": "memory-xx-dev-embedding", "dims": 4096, "matches_active_generation": true },
   "config": {}
 }
 ```

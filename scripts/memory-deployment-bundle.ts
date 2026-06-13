@@ -8,8 +8,9 @@ import { argValue, loadDotenvIfPresent, printJson } from "./lib/runtime-env.js";
 
 loadDotenvIfPresent();
 
-function profileArg(): PlatformRuntimeProfile {
-  const raw = argValue("--profile") ?? "wsl-windows-gpu";
+function profileArg(): PlatformRuntimeProfile | undefined {
+  const raw = argValue("--profile");
+  if (!raw) return undefined;
   if (raw === "linux-systemd" || raw === "wsl-windows-gpu" || raw === "windows-native" || raw === "docker-compose-local") {
     return raw;
   }
@@ -21,10 +22,11 @@ async function optionalRead(file: string): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  const profile = profileArg();
+  const profileInput = profileArg();
+  const preflight = await buildMigrationPreflight({ profile: profileInput });
+  const profile = preflight.profile;
   const output = path.resolve(argValue("--output") ?? path.join(process.cwd(), "reports", "deployment-bundles", `${profile}-${new Date().toISOString().replace(/[:.]/gu, "-")}`));
   await mkdir(output, { recursive: true });
-  const preflight = await buildMigrationPreflight({ profile });
   const envExample = await optionalRead(path.join(process.cwd(), ".env.example"));
   const readme = [
     `# memory-xx deployment bundle: ${profile}`,

@@ -5,14 +5,14 @@ import { RedisRecallCache, NoopRecallCache } from "../cache";
 import { createConfiguredRecallRuntime } from "../recall/postgres-runtime";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
 import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
-import { DEFAULT_AGENT_ID, ScopeType, FilterMode, LifecycleStatus, ReviewState } from "../shared";
+import { ScopeType, FilterMode, LifecycleStatus, ReviewState } from "../shared";
 import type { PostgresRecallRuntime } from "../recall/postgres-runtime";
 import type { RecallRequest, RecallResponse } from "../recall/types";
 import { CreateMemoryService } from "../write/services/create-memory-service";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
 import { RecallRuntimeCacheInvalidator } from "../cache";
 import { createLogger } from "../shared/logger";
-import { QwenEmbeddingProviderWrapper } from "./embedding-provider";
+import { OpenAICompatibleEmbeddingProvider } from "./embedding-provider";
 import type { RecallCliArgs, WriteCliArgs, CliArgs } from "./types";
 import type { CreateMemoryCommand } from "../shared/contracts/write";
 
@@ -60,7 +60,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
     scopeId: get("--scope-id") ?? "",
     content: get("--content") ?? "",
     title: get("--title"),
-    author: get("--author") ?? DEFAULT_AGENT_ID,
+    author: get("--author") ?? "memory-xx",
     tags: getList("--tags"),
     lifecycleStatus: get("--lifecycle-status"),
     reviewState: get("--review-state"),
@@ -71,7 +71,7 @@ export async function runRecall(args: RecallCliArgs): Promise<void> {
   const config = loadMemoryXXPostgresConfig();
   const redisConfig = loadMemoryRedisConfig();
   const embeddingProvider = new ResilientQueryEmbeddingProvider(
-    new QwenEmbeddingProviderWrapper(),
+    new OpenAICompatibleEmbeddingProvider(),
     { max_retries: 2, retry_delay_ms: 250, retry_backoff_multiplier: 2, cache_ttl_ms: 600_000, allow_stale_on_error: true }
   );
   const redisCache = redisConfig.url ? new RedisRecallCache({ config: redisConfig }) : new NoopRecallCache();

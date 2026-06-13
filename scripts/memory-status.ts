@@ -145,7 +145,7 @@ export async function readTimers(options: ReadTimersOptions = {}): Promise<Timer
       stdio: ["ignore", "pipe", "pipe"],
     })
       .split(/\r?\n/)
-      .filter((line) => line.includes("memory-xx") || line.includes("openclaw-memory"));
+      .filter((line) => line.includes("memory-xx"));
     return { ok: true, timers };
   } catch (error) {
     const systemctlError = error instanceof Error ? error.message : String(error);
@@ -279,7 +279,7 @@ async function main(): Promise<void> {
     qdrant_alias: qdrantAlias.status === "fulfilled" ? qdrantAlias.value : { error: String(qdrantAlias.reason) },
     legacy: {
       markdown_sqlite_role: "retired legacy assets; not audit mirrors or source-of-truth views",
-      openclaw_legacy_memory_search: "disabled by design; use memory_xx_recall and memory_xx_write",
+      agent_legacy_memory_search: "agent-specific legacy memory surfaces are not memory-xx health checks; use memory_xx_recall and memory_xx_write",
     },
   }, null, 2) + "\n");
   process.exitCode = truth.exit_ok ? 0 : 1;

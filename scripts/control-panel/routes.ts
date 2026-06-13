@@ -39,12 +39,13 @@ import { clampInt, objectValue, safeText, stringValue } from "./utils.js";
 
 const execFileAsync = promisify(execFile);
 
-function runtimeProfileFromUrl(url: URL): PlatformRuntimeProfile {
-  const raw = url.searchParams.get("profile") ?? "wsl-windows-gpu";
+function runtimeProfileFromUrl(url: URL): PlatformRuntimeProfile | undefined {
+  const raw = url.searchParams.get("profile");
+  if (!raw) return undefined;
   if (raw === "linux-systemd" || raw === "wsl-windows-gpu" || raw === "windows-native" || raw === "docker-compose-local") {
     return raw;
   }
-  return "wsl-windows-gpu";
+  return undefined;
 }
 
 export interface ControlPanelRouteDeps {
@@ -106,6 +107,10 @@ export function createControlPanelHandler(deps: ControlPanelRouteDeps): (req: In
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/") {
       sendHtml(res, deps.html());
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/health") {
+      sendJson(res, 200, { ok: true, service: "memory-xx-control-panel" });
       return;
     }
     if (req.method === "GET" && url.pathname === "/flows") {

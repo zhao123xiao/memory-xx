@@ -1,0 +1,23 @@
+[Unit]
+Description=memory-xx reranker adapter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=-%h/services/memory-xx/.env
+Environment=MEMORY_XX_RERANKER_ADAPTER_HOST=127.0.0.1
+Environment=MEMORY_XX_RERANKER_ADAPTER_PORT=8085
+Environment=MEMORY_XX_RERANKER_DOWNSTREAM_URL=http://127.0.0.1:8084/v3/rerank
+Environment=MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL=http://127.0.0.1:8084/v3/models
+Environment=MEMORY_XX_RERANKER_ADAPTER_TIMEOUT_MS=10000
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts reranker_adapter
+ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/reranker-adapter/reranker-adapter.mjs
+Restart=always
+RestartSec=3
+StandardOutput=append:%h/services/memory-xx/.runtime/reranker-adapter.log
+StandardError=append:%h/services/memory-xx/.runtime/reranker-adapter.error.log
+
+[Install]
+WantedBy=memory-xx.target

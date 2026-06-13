@@ -109,3 +109,74 @@ test("landing scan marks project complete only when gates, sources, and candidat
   assert.deepEqual(report.blockers, []);
   assert.equal(report.capability_status.conversation_sources, "ok");
 });
+
+test("landing scan treats OpenClaw as optional in public defaults", () => {
+  const report = buildMemoryLandingScanReport(baseInput({
+    memoryStatus: {
+      ok: true,
+      runtime_ok: true,
+      governance_ok: true,
+      systemd_timer_probe_ok: true,
+      status_reason: [],
+    },
+    p1Gate: { ok: true, status: "pass", blockers: [], warnings: [] },
+    policyReport: {
+      windows: { last_24h: { total: 25 } },
+      compare_observations: { count: 20, minimum: 20, status: "ok" },
+    },
+    autoApprovalStatus: {
+      candidate_only: { enabled: false, reasons: [] },
+      real_scope_enablements: { enabled_scopes: ["project:memory-xx", "user:current-user"] },
+      readiness: { update_apply_enablement: { enabled: false, real_project_apply: false } },
+    },
+    productionGuard: { ok: true, guard: { blockers: [], warnings: [] } },
+    conversationSources: {
+      source_adapters: [
+        { adapter: "codex_session", files: 10, events: 1, skipped: 2, last_event_at: "2026-06-02T00:00:00.000Z" },
+        { adapter: "claude_code_session", files: 10, events: 1, skipped: 0, last_event_at: "2026-06-02T00:00:00.000Z" },
+      ],
+    },
+  }));
+
+  assert.equal(report.ok, true);
+  assert.equal(report.production_landing_complete, true);
+  assert.equal(report.capability_status.conversation_sources, "ok");
+  assert.doesNotMatch(report.warnings.join(","), /conversation_source_e2e_incomplete/u);
+  assert.doesNotMatch(report.gaps.join("\n"), /OpenClaw/u);
+});
+
+test("landing scan can explicitly require optional OpenClaw source", () => {
+  const report = buildMemoryLandingScanReport(baseInput({
+    memoryStatus: {
+      ok: true,
+      runtime_ok: true,
+      governance_ok: true,
+      systemd_timer_probe_ok: true,
+      status_reason: [],
+    },
+    p1Gate: { ok: true, status: "pass", blockers: [], warnings: [] },
+    policyReport: {
+      windows: { last_24h: { total: 25 } },
+      compare_observations: { count: 20, minimum: 20, status: "ok" },
+    },
+    autoApprovalStatus: {
+      candidate_only: { enabled: false, reasons: [] },
+      real_scope_enablements: { enabled_scopes: ["project:memory-xx", "user:current-user"] },
+      readiness: { update_apply_enablement: { enabled: false, real_project_apply: false } },
+    },
+    productionGuard: { ok: true, guard: { blockers: [], warnings: [] } },
+    conversationSources: {
+      source_adapters: [
+        { adapter: "codex_session", files: 10, events: 1, skipped: 2, last_event_at: "2026-06-02T00:00:00.000Z" },
+        { adapter: "claude_code_session", files: 10, events: 1, skipped: 0, last_event_at: "2026-06-02T00:00:00.000Z" },
+      ],
+    },
+    requiredConversationSources: ["codex_session", "claude_code_session", "openclaw_session"],
+  }));
+
+  assert.equal(report.ok, true);
+  assert.equal(report.production_landing_complete, false);
+  assert.equal(report.capability_status.conversation_sources, "warning");
+  assert.match(report.warnings.join(","), /conversation_source_e2e_incomplete/u);
+  assert.match(report.gaps.join("\n"), /openclaw_session/u);
+});

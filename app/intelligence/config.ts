@@ -108,7 +108,7 @@ export function loadIntelligenceConfig(env: NodeJS.ProcessEnv = process.env): In
     mem0StrategyVersion,
     nativeFallback: env.MEMORY_INTELLIGENCE_NATIVE_FALLBACK !== "false",
     compareSampleRate: Math.max(0, Math.min(1, parseFiniteNumberEnv(env, "MEMORY_INTELLIGENCE_COMPARE_SAMPLE_RATE", 0))),
-    model: env.MEMORY_INTELLIGENCE_MODEL || "qwen3-8b",
+    model: env.MEMORY_INTELLIGENCE_MODEL || "memory-xx-dev-chat",
     endpoint,
     protocol: parseProtocol(env.MEMORY_INTELLIGENCE_PROTOCOL, endpoint),
     apiKey: env.MEMORY_INTELLIGENCE_API_KEY || "",

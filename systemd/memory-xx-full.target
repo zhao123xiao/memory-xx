@@ -1,0 +1,20 @@
+[Unit]
+Description=memory-xx full pluggable service group
+Wants=memory-xx-enhanced.target
+Wants=memory-xx-markdown-projection.service
+Wants=memory-xx-dream-worker.service
+Wants=memory-xx-cache-invalidation-worker.service
+Wants=memory-xx-write-ticket-worker.service
+Wants=memory-xx-maintenance.service
+Wants=memory-xx-consolidation.service
+Wants=memory-xx-detect.service
+Wants=memory-xx-auto-repair.service
+Wants=memory-xx-repair-report.service
+Wants=memory-xx-landing-scan.service
+Wants=memory-xx-canary-7d-report.service
+Wants=memory-xx-quality-runner.service
+Wants=memory-xx-governance-report.service
+After=network-online.target memory-xx-enhanced.target
+
+[Install]
+WantedBy=default.target

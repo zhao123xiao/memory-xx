@@ -1,0 +1,16 @@
+[Unit]
+Description=memory-xx enhanced pluggable service group
+Wants=memory-xx.target
+Wants=memory-xx-embedding-upstream.service
+Wants=memory-xx-qdrant-proxy.service
+Wants=memory-xx-fastpath.service
+Wants=memory-xx-lexical-sidecar.service
+Wants=memory-xx-reranker-upstream.service
+Wants=memory-xx-reranker-adapter.service
+Wants=memory-xx-mem0-extractor.service
+Wants=memory-xx-conversation-monitor-worker.service
+Wants=memory-xx-control-panel.service
+After=network-online.target memory-xx.target
+
+[Install]
+WantedBy=default.target

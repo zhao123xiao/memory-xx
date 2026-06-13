@@ -500,7 +500,7 @@ export function buildKnowledgeMarkdownRows(input: {
         end_line: chunk.end_line,
         content: chunk.content,
         metadata,
-        embedding_model: "Qwen3-Embedding-8B",
+        embedding_model: process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding",
         embedding_dimension: 4096,
         qdrant_point_id: mapKnowledgeChunkIdToPointId(chunkId),
         content_hash: chunk.content_hash,

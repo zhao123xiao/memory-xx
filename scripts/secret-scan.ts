@@ -25,7 +25,7 @@ const SECRET_RULES: readonly { name: string; pattern: RegExp }[] = [
   { name: "bearer-token-literal", pattern: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}\b/ },
   { name: "memory-xx-token-env", pattern: /^\s*MEMORY_XX_(?:API|ADMIN|CLI)_TOKEN\s*=\s*(?!$|changeme|example|redacted|<)[^#\s]+/ },
   { name: "external-api-key-env", pattern: /^\s*(?:OPENAI_API_KEY|QDRANT_API_KEY|FEISHU_[A-Z_]*SECRET)\s*=\s*(?!$|changeme|example|redacted|<)[^#\s]+/ },
-  { name: "postgres-url-with-password", pattern: /postgres(?:ql)?:\/\/[^:\s]+:[^@\s]+@(?!127\.0\.0\.1(?::|\/)|localhost(?::|\/))/ },
+  { name: "postgres-url-with-password", pattern: /postgres(?:ql)?:\/\/[^:\s]+:[^@\s]+@(?!(?:127\.0\.0\.1|localhost|postgres|memory-xx-postgres)(?::|\/))/ },
 ];
 
 const TEST_FIXTURE_ALLOW_MARKER = "memory-xx-secret-scan: allow-test-fixture";

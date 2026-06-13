@@ -50,6 +50,7 @@ const ALLOWLIST_TOP_LEVEL = new Set([
   ".env.example",
   ".github",
   ".gitignore",
+  "CHANGELOG.md",
   "Dockerfile",
   "README.md",
   "app",
@@ -60,6 +61,7 @@ const ALLOWLIST_TOP_LEVEL = new Set([
   "package-lock.json",
   "package.json",
   "scripts",
+  "sidecars",
   "src",
   "systemd",
   "tests",
@@ -68,14 +70,25 @@ const ALLOWLIST_TOP_LEVEL = new Set([
 ]);
 
 const PUBLIC_DOCS = new Set([
+  "docs/agent-integration.zh-CN.md",
   "docs/api.md",
   "docs/architecture.md",
+  "docs/architecture.zh-CN.md",
+  "docs/canary.zh-CN.md",
+  "docs/control-panel.zh-CN.md",
+  "docs/features.zh-CN.md",
+  "docs/knowledge.zh-CN.md",
   "docs/migration-rollback-playbook.md",
+  "docs/module-catalog.md",
   "docs/operations.md",
+  "docs/operations.zh-CN.md",
+  "docs/policy-governance.zh-CN.md",
+  "docs/quickstart.zh-CN.md",
   "docs/runtime-profiles.md",
   "docs/runbooks/backup-restore.md",
   "docs/runbooks/migration-rollback.md",
   "docs/runbooks/recall-quality.md",
+  "docs/vector-runtime.zh-CN.md",
 ]);
 
 const DENYLIST_TOP_LEVEL = new Set([
@@ -97,6 +110,7 @@ const DENYLIST_TOP_LEVEL = new Set([
 
 const DENYLIST_FILE_NAMES = new Set([
   ".env",
+  ".env.fastpath",
   ".env.fastpath-next",
   "P0-BASELINE.md",
   "P0-data-backup.sql",
@@ -111,14 +125,11 @@ const DENYLIST_FILE_NAMES = new Set([
   "x27source_refx27",
 ]);
 
-const EXPORT_EXCLUDE_RELATIVE_FILES = new Set([
-  "tests/open-source-release.test.ts",
-]);
+const DENYLIST_RELATIVE_FILES = new Set<string>();
 
 const PRIVATE_LINUX_USER = "local";
 const PRIVATE_WINDOWS_USER = "\u8d75\u6653\u6653";
 const PRIVATE_PROJECT_ROOT = ["/home", PRIVATE_LINUX_USER, "services", "memory-xx"].join("/");
-const PRIVATE_PROJECT_NEXT_ROOT = ["/home", PRIVATE_LINUX_USER, "services", "memory-xx-next"].join("/");
 const PRIVATE_LINUX_HOME = ["/home", PRIVATE_LINUX_USER].join("/");
 const PRIVATE_WINDOWS_HOME = ["/mnt/c", "Users", PRIVATE_WINDOWS_USER].join("/");
 const PRIVATE_WINDOWS_C_HOME = ["C:", "Users", PRIVATE_WINDOWS_USER].join("\\");
@@ -143,6 +154,7 @@ function isDeniedByPath(relative: string): OpenSourceBlockerKind | null {
   const normalized = normalizePath(relative);
   const base = path.basename(normalized);
   const top = topLevel(normalized);
+  if (DENYLIST_RELATIVE_FILES.has(normalized)) return "manual_dump_or_debug_artifact";
   if (base === ".env" || (base.startsWith(".env.") && base !== ".env.example")) return "private_env_file";
   if (DENYLIST_FILE_NAMES.has(base)) return "manual_dump_or_debug_artifact";
   if (normalized.startsWith("data/policy-corpus/sources/")) return "raw_benchmark_source";
@@ -155,7 +167,6 @@ function isDeniedDirectory(relative: string): boolean {
 }
 
 function isAllowedForExport(relative: string): boolean {
-  if (EXPORT_EXCLUDE_RELATIVE_FILES.has(normalizePath(relative))) return false;
   if (isDeniedByPath(relative)) return false;
   if (normalizePath(relative).startsWith("docs/")) return PUBLIC_DOCS.has(normalizePath(relative));
   return ALLOWLIST_TOP_LEVEL.has(topLevel(relative));
@@ -164,31 +175,21 @@ function isAllowedForExport(relative: string): boolean {
 function publicExportRelativePath(relative: string): string {
   const normalized = normalizePath(relative);
   return normalized
-    .replace(/^configs\/memory-v2/u, "configs/memory-xx")
     .replace(/^configs\/memory-xx/u, "configs/memory-xx")
-    .replace(/^scripts\/klee-memory-v2-wrapper\.ts$/u, "scripts/memory-xx-wrapper.ts")
-    .replace(/^scripts\/memory-v2-wrapper\.ts$/u, "scripts/memory-xx-wrapper.ts")
     .replace(/^scripts\/memory-xx-wrapper\.ts$/u, "scripts/memory-xx-wrapper.ts")
-    .replace(/^scripts\/functional-test-memory-v2\.sh$/u, "scripts/functional-test-memory-xx.sh")
     .replace(/^scripts\/functional-test-memory-xx\.sh$/u, "scripts/functional-test-memory-xx.sh")
-    .replace(/^scripts\/windows\/start-memory-v2\.ps1$/u, "scripts/windows/start-memory-xx.ps1")
     .replace(/^scripts\/windows\/start-memory-xx\.ps1$/u, "scripts/windows/start-memory-xx.ps1")
-    .replace(/^scripts\/windows\/status-memory-v2\.ps1$/u, "scripts/windows/status-memory-xx.ps1")
     .replace(/^scripts\/windows\/status-memory-xx\.ps1$/u, "scripts/windows/status-memory-xx.ps1")
-    .replace(/^scripts\/windows\/stop-memory-v2\.ps1$/u, "scripts/windows/stop-memory-xx.ps1")
     .replace(/^scripts\/windows\/stop-memory-xx\.ps1$/u, "scripts/windows/stop-memory-xx.ps1")
-    .replace(/^systemd\/memory-v2/u, "systemd/memory-xx")
+    .replace(/^systemd\/memory-xx/u, "systemd/memory-xx")
     .replace(/^systemd\/memory-xx/u, "systemd/memory-xx")
     .replace(/^systemd\/memory-xx-qdrant-projector-worker/u, "systemd/memory-xx-qdrant-projector-worker")
-    .replace(/^deploy\/systemd\/memory-v2/u, "deploy/systemd/memory-xx")
     .replace(/^deploy\/systemd\/memory-xx/u, "deploy/systemd/memory-xx")
-    .replace(/^deploy\/grafana\/memory-v2/u, "deploy/grafana/memory-xx")
     .replace(/^deploy\/grafana\/memory-xx/u, "deploy/grafana/memory-xx");
 }
 
 async function listFiles(root: string): Promise<string[]> {
   const files: string[] = [];
-  const ignoredTopLevelDirs = await loadIgnoredTopLevelDirs(root);
   async function visit(dir: string): Promise<void> {
     let entries: import("node:fs").Dirent[];
     try {
@@ -201,8 +202,7 @@ async function listFiles(root: string): Promise<string[]> {
       const rel = relativePath(root, fullPath);
       if (entry.isDirectory()) {
         if (entry.name === ".git" || entry.name === "node_modules") continue;
-        if (topLevel(rel) === ".runtime" || topLevel(rel) === "dist") continue;
-        if (ignoredTopLevelDirs.has(topLevel(rel)) && isDeniedDirectory(rel)) continue;
+        if (isDeniedDirectory(rel)) continue;
         await visit(fullPath);
         continue;
       }
@@ -213,27 +213,8 @@ async function listFiles(root: string): Promise<string[]> {
   return files.sort();
 }
 
-async function loadIgnoredTopLevelDirs(root: string): Promise<Set<string>> {
-  const content = await readFile(path.join(root, ".gitignore"), "utf8").catch(() => "");
-  const ignored = new Set<string>();
-  for (const rawLine of content.split(/\r?\n/u)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#") || line.startsWith("!")) continue;
-    const match = /^\/?([A-Za-z0-9_.-]+)\/$/u.exec(line);
-    if (match?.[1]) ignored.add(match[1]);
-  }
-  return ignored;
-}
-
 function privatePathFinding(relative: string, line: string, lineNumber: number): OpenSourceAuditFinding | null {
-  if (
-    !line.includes(PRIVATE_LINUX_HOME) &&
-    !line.includes(PRIVATE_WINDOWS_HOME) &&
-    !line.includes(PRIVATE_WINDOWS_C_HOME) &&
-    !/\/home\/[^/\s]+\/services\/memory-v2/u.test(line) &&
-    !/\/mnt\/c\/Users\/[^/\s]+/u.test(line) &&
-    !/[A-Z]:\\/u.test(line)
-  ) return null;
+  if (!line.includes(PRIVATE_LINUX_HOME) && !line.includes(PRIVATE_WINDOWS_HOME) && !line.includes(PRIVATE_WINDOWS_C_HOME) && !/[A-Z]:\\/u.test(line)) return null;
   return {
     kind: "private_path_literal",
     severity: "blocker",
@@ -368,25 +349,25 @@ function sanitizeSecurityTest(content: string): string {
 
 export function sanitizeOpenSourceText(content: string, options: { readonly renameProject?: boolean } = {}): string {
   let output = content
-    .replace(new RegExp(escapeRegExp(PRIVATE_PROJECT_NEXT_ROOT), "gu"), "<project-root>")
     .replace(new RegExp(escapeRegExp(PRIVATE_PROJECT_ROOT), "gu"), "<project-root>")
     .replace(new RegExp(escapeRegExp(PRIVATE_LINUX_HOME), "gu"), "<linux-user-home>")
     .replace(new RegExp(escapeRegExp(PRIVATE_WINDOWS_HOME), "gu"), "<windows-user-home>")
     .replace(new RegExp(escapeRegExp(PRIVATE_WINDOWS_C_HOME), "gu"), "<windows-user-home>")
-    .replace(/\/home\/[^/\s'"]+\/services\/memory-v2/gu, "<project-root>")
-    .replace(/\/mnt\/c\/Users\/[^/\s'"]+/gu, "<windows-user-home>")
     .replace(/[A-Z]:\\/gu, "<windows-drive>\\")
     .replace(/local/gu, "local")
     .replace(new RegExp(PRIVATE_LINUX_USER, "gu"), "local")
     .replace(new RegExp(PRIVATE_WINDOWS_USER, "gu"), "<windows-user>");
   if (options.renameProject === true) {
     output = output
-      .replace(/memory-v2/g, PACKAGE_NAME)
-      .replace(/memory_v2/g, "memory_xx")
-      .replace(/Memory V2/g, "Memory XX")
-      .replace(/Memory-V2/g, "Memory-XX")
-      .replace(/klee-memory-xx-wrapper/gu, "memory-xx-wrapper")
-      .replace(/openclaw-memory-xx-wrapper/gu, "memory-xx-wrapper");
+      .replace(/memory-xx/g, PACKAGE_NAME)
+      .replace(/memory_xx/g, "memory_xx")
+      .replace(/Memory XX/g, "Memory XX")
+      .replace(/Memory-XX/g, "Memory-XX")
+      .replace(/memory-xx/g, PACKAGE_NAME)
+      .replace(/Memory XX/g, "Memory XX")
+      .replace(/Memory XX/g, "Memory XX")
+      .replace(/memory-xx/gu, "memory-xx")
+      .replace(/memory-xx-qdrant-projector-worker/gu, "memory-xx-qdrant-projector-worker");
   }
   return output;
 }

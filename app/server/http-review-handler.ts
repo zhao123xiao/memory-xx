@@ -9,7 +9,7 @@ import { ReviewDecisionService } from "../review/services/review-decision-servic
 import { SupersedeMemoryService } from "../review/services/supersede-memory-service";
 import { TombstoneMemoryService } from "../review/services/tombstone-memory-service";
 import { UpdateCandidateMemoryService } from "../review/services/update-candidate-memory-service";
-import { DEFAULT_AGENT_ID, ReviewState, ScopeType, type JsonObject } from "../shared";
+import { ReviewState, ScopeType, type JsonObject } from "../shared";
 import { parseJsonBody } from "./body";
 import { getDeps, type HandlerDeps } from "./http-handler-deps";
 import { validateReviewBody, validateWriteBody } from "./input-validation";
@@ -79,7 +79,7 @@ export async function handleReview(req: IncomingMessage, res: ServerResponse, ha
       return;
     }
     const requestId = String(payload.requestId ?? randomUUID());
-    const actorId = String(payload.actorId ?? DEFAULT_AGENT_ID);
+    const actorId = String(payload.actorId ?? "memory-xx");
     const serviceDeps = {
       database: deps.writeDatabase,
       cacheInvalidator: new RecallRuntimeCacheInvalidator(deps.recallCache, { database: deps.writeDatabase }),

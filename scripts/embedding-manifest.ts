@@ -163,7 +163,7 @@ async function upsertPreparedManifest(pool: Pool): Promise<EmbeddingGenerationMa
   const qdrantConfig = loadMemoryXXQdrantConfig();
   const redisConfig = loadMemoryRedisConfig();
   const generationId = argValue("--generation-id") || defaultEmbeddingGenerationId();
-  const targetCollection = argValue("--target-collection") || process.env.MEMORY_XX_LOCAL_EMBEDDING_COLLECTION || qdrantConfig.collection_name || "memory-xx-local-qwen8b-int4-v1";
+  const targetCollection = argValue("--target-collection") || process.env.MEMORY_XX_LOCAL_EMBEDDING_COLLECTION || qdrantConfig.collection_name || "memory-xx-default-v1";
   const qdrantAlias = argValue("--alias") || process.env.MEMORY_XX_QDRANT_ALIAS || "memory-xx-active";
   const redisPrefix = argValue("--redis-prefix") || process.env.MEMORY_XX_REDIS_PREFIX || redisConfig.prefix;
   const queryCacheVersion = argValue("--query-cache-version") || process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION || defaultQueryCacheVersion(generationId);
@@ -199,9 +199,9 @@ async function upsertPreparedManifest(pool: Pool): Promise<EmbeddingGenerationMa
     RETURNING *
   `, [
     generationId,
-    argValue("--provider") || process.env.MEMORY_XX_EMBEDDING_PROVIDER || "local-ovms",
-    process.env.EMBEDDING_MODEL || "Qwen3-Embedding-8B",
-    argValue("--precision") || process.env.MEMORY_XX_EMBEDDING_PRECISION || "int4",
+    argValue("--provider") || process.env.MEMORY_XX_EMBEDDING_PROVIDER || "openai-compatible",
+    process.env.EMBEDDING_MODEL || "memory-xx-dev-embedding",
+    argValue("--precision") || process.env.MEMORY_XX_EMBEDDING_PRECISION || "float",
     Number.parseInt(process.env.EMBEDDING_DIMS || "4096", 10),
     hashEmbeddingBase(embeddingBase),
     argValue("--text-strategy") || defaultEmbeddingTextStrategy(),

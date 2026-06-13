@@ -15,6 +15,11 @@ const TEST_COMMAND = {
 } as const;
 const TEST_TIMEOUT_MS = 300_000;
 
+export function classifyMcpToolsContractSeverity(status: number, body: unknown): CheckResult["severity"] {
+  const payload = body && typeof body === "object" ? body as Record<string, unknown> : {};
+  return status === 401 || payload.error === "unauthorized" ? "warning" : "critical";
+}
+
 function check(name: string, passed: boolean, detail: string, severity: CheckResult["severity"] = "critical") {
   report.checks.push({ name, passed, detail, severity });
   const icon = passed ? "PASS" : (severity === "warning" ? "WARN" : "FAIL");
@@ -242,7 +247,8 @@ async function contractTests() {
     const body = resp.body as any;
     const hasTools = Array.isArray(body?.result?.tools);
     check("contract:mcp-tools", hasTools,
-      hasTools ? `tools/list returned ${body.result.tools.length} tools` : `Unexpected response: ${JSON.stringify(body).slice(0, 100)}`);
+      hasTools ? `tools/list returned ${body.result.tools.length} tools` : `Unexpected response: ${JSON.stringify(body).slice(0, 100)}`,
+      classifyMcpToolsContractSeverity(resp.status, body));
   } catch (e: any) {
     check("contract:mcp-tools", false, `Error: ${e.message}`, "warning");
   }
@@ -277,4 +283,7 @@ async function main() {
   process.exit(report.ok ? 0 : 1);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+const entrypoint = process.argv[1] ?? "";
+if (entrypoint.endsWith("scripts/test-harness/layers/L1-unit-contract.ts") || entrypoint.endsWith("scripts\\test-harness\\layers\\L1-unit-contract.ts")) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

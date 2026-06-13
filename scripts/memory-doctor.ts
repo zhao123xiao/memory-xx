@@ -15,6 +15,10 @@ import {
   RUNTIME_COMPONENTS,
   type MemoryRuntimeProfile,
 } from "../app/runtime-profiles.js";
+import {
+  resolveRuntimeModuleState,
+  type RuntimeEnv,
+} from "../app/runtime-modules.js";
 import { validateRuntimeConfig } from "../app/runtime-config-validator.js";
 import { buildSystemdUserEnv } from "../app/ops/systemd-user.js";
 
@@ -402,6 +406,41 @@ function runtimeComponent(name: string) {
   return RUNTIME_COMPONENTS.find((component) => component.name === name);
 }
 
+export function classifyDoctorComponentProfileState(
+  name: string,
+  mode: MemoryRuntimeProfile,
+  env: RuntimeEnv = process.env
+): {
+  readonly name: string;
+  readonly role: "required" | "expected" | "optional" | "unknown";
+  readonly enabled: boolean;
+  readonly blocks_profile: boolean;
+  readonly reason?: string;
+} {
+  const component = runtimeComponent(name);
+  if (!component) {
+    return {
+      name,
+      role: "unknown",
+      enabled: false,
+      blocks_profile: false,
+      reason: "component_unknown",
+    };
+  }
+  const resolved = resolveRuntimeModuleState(component, mode, env);
+  return {
+    name,
+    role: componentRequiredInProfile(component, mode)
+      ? "required"
+      : componentExpectedInProfile(component, mode)
+        ? "expected"
+        : "optional",
+    enabled: resolved.enabled,
+    blocks_profile: resolved.blocks_profile,
+    reason: resolved.reason,
+  };
+}
+
 async function inspectDb(): Promise<Record<string, unknown>> {
   const pool = new Pool({ connectionString: config.dbUrl });
   const schema = quoteIdent(config.dbSchema);
@@ -691,15 +730,17 @@ async function inspectServices(
       const response = await httpGet(url, { timeout: 5000 });
       services[name] = { ok: response.status === 200, status: response.status, url, body: name === "wrapper" || name === "embedding_proxy" ? response.body : undefined };
       if (response.status !== 200) {
-        const component = runtimeComponent(name);
-        if (component && componentRequiredInProfile(component, mode)) addUnique(blockers, `service_${name}_degraded`);
+        const componentState = classifyDoctorComponentProfileState(name, mode);
+        if (componentState.blocks_profile) addUnique(blockers, `service_${name}_degraded`);
+        else if (!componentState.enabled) services[name] = { ...(services[name] as Record<string, unknown>), disabled: true, reason: componentState.reason };
         else if (mode === "full" && name === "gateway") addUnique(blockers, "gateway_probe_port_drift");
         else addUnique(warnings, `service_${name}_degraded`);
       }
     } catch (error) {
       services[name] = { ok: false, url, error: error instanceof Error ? error.message : String(error) };
-      const component = runtimeComponent(name);
-      if (component && componentRequiredInProfile(component, mode)) addUnique(blockers, `service_${name}_unreachable`);
+      const componentState = classifyDoctorComponentProfileState(name, mode);
+      if (componentState.blocks_profile) addUnique(blockers, `service_${name}_unreachable`);
+      else if (!componentState.enabled) services[name] = { ...(services[name] as Record<string, unknown>), disabled: true, reason: componentState.reason };
       else if (mode === "full" && name === "gateway") addUnique(blockers, "gateway_probe_port_drift");
       else addUnique(warnings, `service_${name}_unreachable`);
     }
@@ -801,10 +842,10 @@ function remediationPlan(blockers: readonly string[]): string[] {
     actions.push("Lower embedding concurrency or rely on query embedding cache; confirm no recent embedding 429 before release.");
   }
   if (blockers.includes("embedding_proxy_recent_429")) {
-    actions.push("Run TMPDIR=/tmp npm run memory:embedding-calibrate, then apply the recommended proxy interval/concurrency and restart memory-xx-embedding-proxy-next.service.");
+    actions.push("Run TMPDIR=/tmp npm run memory:embedding-calibrate, then apply the recommended proxy interval/concurrency and restart memory-xx-embedding-proxy.service.");
   }
   if (blockers.includes("embedding_upstream_unavailable")) {
-    actions.push("Run systemctl --user start memory-xx-embedding-upstream.service; it starts <windows-drive>\\ovms\\run-embedding.bat on Windows GPU and verifies http://127.0.0.1:8082/v3 embeddings, then rerun TMPDIR=/tmp npm run memory:doctor -- --target embedding-ready --plan.");
+    actions.push("Verify EMBEDDING_API_BASE, EMBEDDING_MODEL, EMBEDDING_DIMS, and OPENAI_API_KEY point at a reachable OpenAI-compatible embedding provider. If you intentionally use the optional local upstream manager, enable MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1 and start memory-xx-embedding-upstream.service, then rerun TMPDIR=/tmp npm run memory:doctor -- --target embedding-ready --plan.");
   }
   if (blockers.includes("embedding_generation_mismatch") || blockers.includes("embedding_manifest_missing")) {
     actions.push("Run TMPDIR=/tmp npm run memory:embedding-manifest status, then validate/activate the intended generation or rollback to the last known good generation.");
@@ -841,10 +882,10 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
         "content-type": "application/json",
         ...(process.env.EMBEDDING_API_KEY ? { authorization: `Bearer ${process.env.EMBEDDING_API_KEY}` } : {}),
       },
-      body: JSON.stringify({ model: model || "Qwen3-Embedding-8B", input: `memory-xx doctor embedding upstream smoke ${randomUUID()}` }),
+      body: JSON.stringify({ model: model || "memory-xx-dev-embedding", input: `memory-xx doctor embedding upstream smoke ${randomUUID()}` }),
       signal: AbortSignal.timeout(10000),
     });
-    const body = await response.json().catch(() => ({}));
+    const body = await response.json().catch(() => ({})) as any;
     const actualDims = Array.isArray(body?.data?.[0]?.embedding) ? body.data[0].embedding.length : null;
     return {
       ok: response.ok && (dims ? actualDims === dims : actualDims !== null),
@@ -860,7 +901,7 @@ async function embeddingUpstreamSmoke(model?: string, dims?: number): Promise<Re
       url,
       latency_ms: Date.now() - started,
       error: error instanceof Error ? error.message : String(error),
-      remediation: "Start <windows-drive>\\ovms\\run-embedding.bat, then restart/verify memory-xx-embedding-proxy-next.service.",
+      remediation: "Verify the configured OpenAI-compatible embedding provider and memory-xx-embedding-proxy.service. If using the optional local upstream manager, enable MEMORY_XX_EMBEDDING_UPSTREAM_ENABLED=1 and start memory-xx-embedding-upstream.service.",
     };
   }
 }
@@ -1091,24 +1132,27 @@ function inspectOpsReadiness(
     } else if (component.name === "projector") {
       ok = component.service ? userServiceActive(component.service) : false;
       detail = ok ? "systemd active" : "systemd inactive";
-    } else if (component.kind === "http") {
+    } else if (component.service && services?.[component.name]) {
       const service = services?.[component.name];
       ok = service?.ok === true;
       detail = service?.status ? `HTTP ${service.status}` : service?.error ?? "unavailable";
-    } else if (component.kind === "systemd") {
+    } else if (component.service) {
       ok = component.service ? userServiceActive(component.service) : false;
       detail = ok ? "systemd active" : "systemd inactive";
     } else if (component.kind === "gate") {
       ok = true;
       detail = component.command ?? "one-shot gate";
     }
-    const required = componentRequiredInProfile(component, mode);
+    const profileState = classifyDoctorComponentProfileState(component.name, mode);
+    const required = profileState.blocks_profile;
     const expected = componentExpectedInProfile(component, mode);
     return {
       name: component.name,
       label: component.label,
       required,
       expected,
+      enabled: profileState.enabled,
+      role: profileState.role,
       ok,
       detail,
       service: component.service,
@@ -1406,7 +1450,7 @@ async function main(): Promise<void> {
   }
   const wrapperStartedAt = userServiceStartedAt("memory-xx-wrapper.service");
   const fastpathStartedAt = userServiceStartedAt("memory-xx-fastpath.service");
-  const embeddingProxyStartedAt = userServiceStartedAt("memory-xx-embedding-proxy-next.service");
+  const embeddingProxyStartedAt = userServiceStartedAt("memory-xx-embedding-proxy.service");
   checks.logs = {
     since: {
       wrapper_started_at: wrapperStartedAt ? new Date(wrapperStartedAt).toISOString() : null,
@@ -1500,8 +1544,8 @@ async function main(): Promise<void> {
     reranker: { role: "质量增强", degraded_behavior: "回退到本地重排序" },
     gateway: { role: "OpenClaw 集成", degraded_behavior: "记忆服务仍可用，但集成门禁失败" },
     embedding_proxy: { role: "查询/写入向量", degraded_behavior: "回退到旧结果/缓存，或向量能力降级" },
-    ovms_upstream: { role: "Windows GPU 上的本地 Qwen3 embedding 模型", degraded_behavior: "代理在线但无法生成新向量；需要启动 memory-xx-embedding-upstream.service" },
-    reranker_upstream: { role: "Windows GPU 上的本地 Qwen3 reranker 模型", degraded_behavior: "重排序适配器在线但无法调用模型；需要启动 memory-xx-reranker-upstream.service" },
+    ovms_upstream: { role: "OpenAI-compatible embedding provider", degraded_behavior: "代理在线但无法生成新向量；检查远程 provider，或显式启用本地 upstream manager" },
+    reranker_upstream: { role: "OpenAI-compatible reranker provider", degraded_behavior: "重排序适配器在线但无法调用模型；检查远程 provider，或显式启用本地 upstream manager" },
   };
   if (target === "quality-ready" || target === "release-ready") {
     checks.quality_ready = inspectQualityReadiness(blockers, warnings);
@@ -1591,7 +1635,9 @@ async function main(): Promise<void> {
   if (!report.ok) process.exitCode = 1;
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}

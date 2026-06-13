@@ -95,16 +95,16 @@ export function detectPlatformProfile(facts: PlatformFacts): PlatformDetection {
       [
         ...(currentOs === "wsl" ? [] : ["wsl"]),
         ...(facts.hasPowerShell ? [] : ["windows_powershell"]),
-        ...(facts.ovmsDirExists ? [] : ["D:/ovms 或 /mnt/d/ovms"]),
+        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 upstream 目录"]),
       ],
-      "systemctl --user start memory-xx.target；Windows 侧启动 <windows-drive>\\ovms\\start_all.bat",
+      "systemctl --user start memory-xx.target；if needed, start the optional local upstream manager configured by MEMORY_XX_OVMS_DIR",
     ),
     "windows-native": profileStatus(
       "windows-native",
       [
         ...(facts.platform === "win32" ? [] : ["windows"]),
         ...(facts.hasPowerShell ? [] : ["powershell"]),
-        ...(facts.ovmsDirExists ? [] : ["D:/ovms"]),
+        ...(facts.ovmsDirExists ? [] : ["MEMORY_XX_OVMS_DIR 指向的本地 upstream 目录"]),
       ],
       "powershell -ExecutionPolicy Bypass -File scripts/windows/start-memory-xx.ps1",
     ),
@@ -187,14 +187,14 @@ function releaseText(): string {
 }
 
 export function collectPlatformFacts(env: NodeJS.ProcessEnv = process.env): PlatformFacts {
-  const powerShell = env.MEMORY_XX_WINDOWS_POWERSHELL_EXE?.trim() || "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
-  const ovmsDir = env.MEMORY_XX_OVMS_DIR?.trim() || (process.platform === "win32" ? "<windows-drive>\\ovms" : "/mnt/d/ovms");
+  const powerShell = env.MEMORY_XX_WINDOWS_POWERSHELL_EXE?.trim() || "";
+  const ovmsDir = env.MEMORY_XX_OVMS_DIR?.trim() || "<memory-xx-ovms-dir>";
   return {
     platform: process.platform,
     releaseText: releaseText(),
     hasSystemctl: commandExists("systemctl"),
     hasDocker: commandExists("docker"),
-    hasPowerShell: existsSync(powerShell) || commandExists("powershell") || commandExists("pwsh"),
+    hasPowerShell: (powerShell ? existsSync(powerShell) : false) || commandExists("powershell") || commandExists("pwsh"),
     ovmsDirExists: existsSync(ovmsDir),
   };
 }

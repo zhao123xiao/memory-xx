@@ -43,14 +43,14 @@ const CONVERSATION_HEARTBEAT_PATH = path.join(RUNTIME_DIR, "conversation-monitor
 const SERVICE_CONTROLS: readonly ServiceControlDefinition[] = [
   { unit: "memory-xx-wrapper.service", label: "记忆主服务", description: "HTTP/MCP 记忆主入口" },
   { unit: "memory-xx-mem0-extractor.service", label: "记忆抽取器（Mem0）", description: "mem0（记忆抽取框架）抽取侧车" },
-  { unit: "memory-xx-embedding-upstream.service", label: "Embedding 上游模型", description: "Windows GPU 上的 Qwen3 embedding（向量生成）模型常驻管理器" },
-  { unit: "memory-xx-embedding-proxy-next.service", label: "向量生成代理", description: "本地 OVMS（OpenVINO 模型服务）embedding（向量生成）代理" },
+  { unit: "memory-xx-embedding-upstream.service", label: "Embedding 上游管理器", description: "可选本地 OpenAI-compatible embedding provider 管理器" },
+  { unit: "memory-xx-embedding-proxy.service", label: "向量生成代理", description: "OpenAI-compatible embedding provider 代理" },
   { unit: "memory-xx-qdrant-projector-worker.service", label: "向量投影器", description: "异步写入 Qdrant（向量库）的投影 worker" },
-  { unit: "memory-xx-qdrant-proxy-next.service", label: "向量库代理", description: "Qdrant collection（向量集合）代理" },
+  { unit: "memory-xx-qdrant-proxy.service", label: "向量库代理", description: "Qdrant collection（向量集合）代理" },
   { unit: "memory-xx-fastpath.service", label: "快速召回路径", description: "Go 快速召回侧车" },
   { unit: "memory-xx-lexical-sidecar.service", label: "关键词召回侧车", description: "Rust 关键词召回侧车" },
-  { unit: "memory-xx-reranker-upstream.service", label: "Reranker 上游模型", description: "Windows GPU 上的 Qwen3 reranker（重排序）模型常驻管理器" },
-  { unit: "memory-xx-reranker-adapter-next.service", label: "重排序适配器", description: "排序模型 adapter（适配器）" },
+  { unit: "memory-xx-reranker-upstream.service", label: "Reranker 上游管理器", description: "可选本地 OpenAI-compatible reranker provider 管理器" },
+  { unit: "memory-xx-reranker-adapter.service", label: "重排序适配器", description: "排序模型 adapter（适配器）" },
 ];
 
 const AUTO_APPROVAL_CONTROL_DEFINITIONS: readonly AutoApprovalControlStatus[] = [

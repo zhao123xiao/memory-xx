@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -21,8 +21,24 @@ import {
   resetRuntimeSettings,
   updateRuntimeSettingsBatch,
 } from "../scripts/control-panel/settings";
+import { createControlPanelHandler } from "../scripts/control-panel/routes";
 import { buildRuntimeObservabilityRows } from "../scripts/control-panel/runtime-observability-rows";
 import { buildRuntimeObservabilityRetentionPlan } from "../scripts/control-panel/runtime-observability-retention";
+import { resolvePanelHost } from "../scripts/control-panel/utils";
+import { buildComponentStatusesFromRuntimeModules } from "../app/runtime-module-components";
+
+function createMockResponse(): { statusCode: number; body: string; res: any } {
+  const output = { statusCode: 0, body: "", res: undefined as any };
+  output.res = {
+    writeHead(status: number) {
+      output.statusCode = status;
+    },
+    end(payload: string) {
+      output.body = payload;
+    },
+  };
+  return output;
+}
 
 function withRuntimeDir<T>(fn: () => T): T {
   const previous = process.env.MEMORY_XX_RUNTIME_DIR;
@@ -49,6 +65,9 @@ test("runtime registry exposes typed, sourced, safety-labeled settings", () => w
     assert.ok(["safe", "guarded", "high-risk"].includes(item.safety));
     assert.ok(["runtime_json", "restart_pending", "env", "default"].includes(item.source));
     assert.ok(["hot_reload", "pending_restart", "read_only_env", "external_service_owned"].includes(item.effect_status));
+    if (item.service) {
+      assert.doesNotMatch(item.service, /^openclaw-.*\.service$/u);
+    }
     if (item.type === "number") {
       assert.equal(typeof item.default_value, "number");
       assert.ok(item.unit, `${item.key} should expose a display unit`);
@@ -56,6 +75,38 @@ test("runtime registry exposes typed, sourced, safety-labeled settings", () => w
     }
   }
 }));
+
+test("control panel exposes unauthenticated health for compose healthchecks", async () => {
+  const handler = createControlPanelHandler({
+    panelToken: "panel-token",
+    dbSchema: "memory_xx",
+    html: () => "",
+    flowsHtml: () => "",
+    buildSummary: async () => ({}),
+    buildRecentFlows: async () => ({}),
+    buildWriteFlow: async () => ({}),
+    buildRecallFlow: async () => ({}),
+    buildConversationRecent: async () => ({}),
+    buildConversationBatch: async () => ({}),
+    buildConversationSession: async () => ({}),
+    buildGraphSummary: async () => ({}),
+    buildGraphNeighborhood: async () => ({}),
+    buildGraphMemoryDetails: async () => ({}),
+    buildCodeGraphFromUrl: () => ({}),
+    readAutoApprovalRuntimeControls: () => ({}),
+  });
+  const response = createMockResponse();
+
+  await handler({ method: "GET", url: "/health", headers: {} } as any, response.res);
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(JSON.parse(response.body), { ok: true, service: "memory-xx-control-panel" });
+});
+
+test("control panel bind host is configurable for container port publishing", () => {
+  assert.equal(resolvePanelHost({ MEMORY_XX_CONTROL_PANEL_HOST: "0.0.0.0" } as NodeJS.ProcessEnv), "0.0.0.0");
+  assert.equal(resolvePanelHost({} as NodeJS.ProcessEnv), "127.0.0.1");
+});
 
 test("batch update rejects readonly env settings and previews restart requirements", () => withRuntimeDir(() => {
   assert.throws(
@@ -229,3 +280,75 @@ test("runtime observability retention plan keeps current state and prunes histor
   assert.ok(plan.current_state_tables.includes("runtime_tool_invocations"));
   assert.equal(plan.policies.some((policy) => policy.table === "runtime_setting_effective_values"), false);
 });
+
+test("control panel component statuses use runtime module snapshot states", () => {
+  const components = buildComponentStatusesFromRuntimeModules({
+    states: {
+      wrapper: {
+        state: "enabled",
+        role: "required",
+        label: "memory-xx wrapper HTTP API",
+        kind: "core",
+        service: "memory-xx-wrapper.service",
+        degraded_behavior: "HTTP API unavailable",
+      },
+      fastpath: {
+        state: "disabled",
+        role: "expected",
+        label: "Fastpath recall sidecar",
+        kind: "sidecar",
+        service: "memory-xx-fastpath.service",
+        source_path: "sidecars/fastpath/fastpath.mjs",
+        degraded_behavior: "Recall falls back to Node.",
+      },
+      mem0_extractor: {
+        state: "missing_dependency",
+        role: "expected",
+        label: "Mem0-style extraction sidecar",
+        kind: "sidecar",
+        service: "memory-xx-mem0-extractor.service",
+        source_path: "sidecars/mem0-extractor/extractor.py",
+        degraded_behavior: "Smart extraction falls back.",
+        reason: "MEMORY_XX_MEM0_EXTRACTOR_SOURCE_AVAILABLE=disabled",
+      },
+    },
+  });
+
+  const byName = new Map(components.map((component) => [component.name, component]));
+  assert.equal(byName.get("wrapper")?.status, "ok");
+  assert.equal(byName.get("fastpath")?.status, "degraded");
+  assert.equal(byName.get("fastpath")?.detail.includes("disabled"), true);
+  assert.equal(byName.get("mem0_extractor")?.status, "blocked");
+  assert.equal(byName.get("mem0_extractor")?.source, "sidecars/mem0-extractor/extractor.py");
+});
+
+test("control panel component statuses include worker status file failures", () => withRuntimeDir(() => {
+  const statusFile = join(process.env.MEMORY_XX_RUNTIME_DIR ?? "", "write-ticket-worker.status.json");
+  writeFileSync(statusFile, JSON.stringify({
+    worker_id: "write-ticket-worker-test",
+    ok: false,
+    phase: "startup_failed",
+    error: "connect ECONNREFUSED 127.0.0.1:5432",
+    at: "2026-06-04T00:00:00.000Z",
+  }), "utf8");
+
+  const components = buildComponentStatusesFromRuntimeModules({
+    states: {
+      write_ticket_worker: {
+        state: "enabled",
+        role: "expected",
+        label: "Write ticket worker",
+        kind: "worker",
+        service: "memory-xx-write-ticket-worker.service",
+        source_path: "scripts/run-write-ticket-worker.ts",
+        degraded_behavior: "Asynchronous writes are not processed automatically.",
+      },
+    },
+  });
+
+  const worker = components.find((component) => component.name === "write_ticket_worker");
+  assert.equal(worker?.status, "blocked");
+  assert.match(worker?.detail ?? "", /startup_failed/u);
+  assert.match(worker?.detail ?? "", /ECONNREFUSED/u);
+  assert.equal(worker?.source, statusFile);
+}));

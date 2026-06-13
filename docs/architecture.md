@@ -88,12 +88,12 @@ cache/429/latency health.
 | `MEMORY_XX_RUNTIME_PROFILE` | Operational profile: `core`, `enhanced`, or `full` | `core` |
 | `MEMORY_XX_DATABASE_URL` | Postgres truth-ledger connection string | required |
 | `MEMORY_XX_DATABASE_SCHEMA` | Postgres schema | `memory_xx` |
-| `MEMORY_XX_REDIS_URL` | Redis cache/coordination URL | `redis://127.0.0.1:6381/0` in live local env |
-| `MEMORY_XX_REDIS_PREFIX` | Redis key namespace; must match active embedding generation | `memory-xx-local-qwen8b-int4` in live local env |
+| `MEMORY_XX_REDIS_URL` | Redis cache/coordination URL | `redis://127.0.0.1:6379/0` |
+| `MEMORY_XX_REDIS_PREFIX` | Redis key namespace; must match active embedding generation | `memory-xx-default-v1` |
 | `MEMORY_XX_QDRANT_BASE_URL` | Qdrant REST endpoint | `http://127.0.0.1:6333` |
 | `MEMORY_XX_QDRANT_COLLECTION` | Qdrant production alias, not a raw generation collection | `memory-xx-active` |
 | `MEMORY_XX_QDRANT_ALIAS` | Qdrant alias controlled by `memory:embedding-manifest activate/rollback` | `memory-xx-active` |
-| `MEMORY_XX_EMBEDDING_GENERATION_ID` | Active embedding generation manifest id | `local-qwen8b-int4-v1` |
+| `MEMORY_XX_EMBEDDING_GENERATION_ID` | Active embedding generation manifest id | `memory-xx-default-v1` |
 | `MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION` | Query embedding cache namespace; must match active manifest | generation-specific |
 | `MEMORY_XX_WRAPPER_MODE` | Wrapper-internal compatibility mode, not the overall runtime profile | `full` in service env |
 | `MEMORY_XX_SCOPE_POLICY_MODE` | `strict` by default; set `single_user` only for rollback | `strict` |

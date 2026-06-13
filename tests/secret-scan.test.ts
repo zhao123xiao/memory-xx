@@ -26,6 +26,23 @@ test("secret scan still reports unmarked bearer token literals", () => {
   }]);
 });
 
+test("secret scan allows local compose postgres URLs but blocks external postgres passwords", () => {
+  assert.deepEqual(
+    scanTextForSecrets("docker-compose.yml", "MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@postgres:5432/memory_xx\n"),
+    []
+  );
+  assert.deepEqual(
+    scanTextForSecrets("docker.yml", "MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@memory-xx-postgres:5432/memory_xx\n"),
+    []
+  );
+  const externalUrl = "DATABASE_URL=postgres://user" + ":pass@" + "db.example.com:5432/prod\n";
+  assert.deepEqual(scanTextForSecrets("script.sh", externalUrl), [{
+    file: "script.sh",
+    line: 1,
+    rule: "postgres-url-with-password",
+  }]);
+});
+
 test(".env files are ignored and not tracked in the memory-xx repository", () => {
   const tracked = execFileSync("git", ["ls-files", "--", ".env", ".env.local", ".env.production"], {
     cwd: process.cwd(),

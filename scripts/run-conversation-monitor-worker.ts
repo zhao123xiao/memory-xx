@@ -97,14 +97,17 @@ export function batchConversationEventsForPost(
       }
       continue;
     }
+
     const next = [...current, event];
     if (current.length > 0 && (next.length > maxEvents || payloadSize(next) > maxBytes)) {
       batches.push(current);
       current = [event];
       continue;
     }
+
     current = next;
   }
+
   if (current.length > 0) batches.push(current);
   return batches;
 }
@@ -285,7 +288,6 @@ async function readSpoolEvents(): Promise<{ events: Record<string, unknown>[]; s
       }
     }
   }
-  await saveCursor(cursor);
   return { events, sessions: [...sessions.values()], files, cursor };
 }
 
@@ -367,6 +369,7 @@ async function loop(): Promise<void> {
         if (allEvents.length > 0) {
           try {
             const posted = await postConversationEvents(allEvents);
+            await saveCursor(cursor);
             heartbeat = { ...heartbeat, postedEvents: posted };
             lastError = null;
             console.log(JSON.stringify({ level: "info", msg: "conversation_events_posted", count: posted, source_count: sourceEvents.length, spool_count: events.length }));
@@ -374,6 +377,8 @@ async function loop(): Promise<void> {
             lastError = error instanceof Error ? error.message : String(error);
             throw error;
           }
+        } else {
+          await saveCursor(cursor);
         }
         if (flags.conversation_auto_extract) {
           const dbSessions = await pendingSessions(pool, pgConfig.schema).catch((error) => {

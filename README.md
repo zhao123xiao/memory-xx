@@ -1,38 +1,86 @@
 # memory-xx
 
-`memory-xx` 是一套面向本地 AI Agent 的长期记忆框架：PostgreSQL 负责事实账本，Qdrant 负责向量召回投影，Policy Engine 负责写入治理，Control Panel 负责运行控制，HTTP / MCP 接口负责给 Codex、Claude Code、OpenClaw 或其他 Agent 使用。
+`memory-xx` 是一套面向本地 AI Agent、个人工作流和多 Agent 系统的长期记忆框架。它把 PostgreSQL 作为事实账本，把 Qdrant 作为向量召回投影，把 Redis 用于缓存和协同，并通过 HTTP / MCP 接口提供 write、recall、review、agent token、治理和运行状态能力。
 
-当前版本来自一套已长期运行的私有记忆系统的 clean export。核心能力已经导出到 `memory-xx`，源码 parity、开源验证和运行时发布门禁已经通过，因此当前定位为 **public preview release candidate**。
-
-公开版统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径。
+当前公开版本是 `v0.1.0` public preview。仓库已经统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径，包含 Core、enhanced、full 三类运行 profile。Core 能完成基础写入、投影和召回；enhanced/full 模块按环境热插拔，关闭或降级时不应阻断 Core write/recall。
 
 ## 它解决什么问题
 
-普通 RAG 或向量库通常只解决“把文本放进去，再相似搜索出来”。memory-xx 额外处理长期记忆系统必须面对的问题：
+普通 RAG 或向量库通常只处理“存文本”和“相似搜索”。长期记忆系统还需要解决更多运行问题：
 
-- 哪些内容应该写入，哪些应该拒绝、隔离或等待人工审批。
-- 哪些记忆能进入默认召回，哪些只能显式召回或只作为审计证据。
-- 记忆如何被更新、归档、替换、回滚和投影到向量库。
-- 多个 Agent 如何共享记忆，同时保持 scope、token 和权限边界。
-- 运行中的 embedding、Qdrant、worker、policy、pending、canary 状态如何被观察和治理。
+- 哪些内容应该写入，哪些应该拒绝、隔离、等待人工审批或只进入审计证据。
+- 记忆如何被批准、归档、替换、回滚、重新投影到向量库。
+- 多个 Agent 如何共享记忆，同时保持 user、project、workspace、global 等 scope 边界。
+- embedding、Qdrant、Redis、worker、policy、pending、canary 等运行状态如何观察和治理。
+- 当 reranker、fastpath、lexical、Mem0、conversation monitor 等增强组件不可用时，系统如何降级而不是整体不可用。
 
-## 核心能力
+## 当前真实状态
 
-- **事实账本**：PostgreSQL 保存 memory、event、outbox、feedback、trusted agent、knowledge。
-- **向量召回**：embedding 模型是必需项，Qdrant 保存 current / approved / default recall 的 active 投影。
-- **召回增强**：reranker、lexical、graph recall、code graph 可提升复杂查询质量。
-- **写入治理**：Policy Engine 支持 reject、quarantine、pending、approve 和自动审批 sweep。
-- **生命周期**：支持 approve、reject、archive、supersede、tombstone、update candidate、rollback。
-- **多 Agent 接入**：HTTP / MCP / trusted agent / scope grant 支持多 Agent 共享。
-- **知识库**：长文档进入 `knowledge_v1`，短事实进入 memory，避免长报告污染默认召回。
-- **图谱能力**：支持记忆知识图谱和项目级 Code Graph。
-- **控制面板**：本地 Web 控制台支持运行总览、热更新配置、审批治理、图谱和平台预检。
-- **生产门禁**：支持 landing scan、7 天 canary、P0/P1 gate、Qdrant reconcile、production guard。
+- **Core 可运行**：wrapper、PostgreSQL、Redis、Qdrant、embedding proxy、Qdrant projector 是最小链路。
+- **向量 embedding 必需**：需要 OpenAI-compatible embedding endpoint；远程 provider 使用 `OPENAI_API_KEY`，本地 provider 也需要暴露兼容 `/v1/embeddings` 的接口。
+- **热插拔 profile 已公开**：`core`、`enhanced`、`full` profile 都有公开配置和 Compose 入口。
+- **sidecar 已开源**：embedding proxy、Qdrant proxy、reranker adapter、Mem0 extractor、fastpath、lexical sidecar 在 `sidecars/` 下提供公开实现。
+- **full-stack 能力是可选能力包**：知识库、知识图谱、Code Graph、temporal、dreaming、policy evaluation、recall quality、backup、governance、observability、self-improvement 等能力已进入公开模块清单，但需要按环境逐项开启。
+- **public preview 边界**：这不是托管服务，也不是零配置产品；用户仍需要准备 PostgreSQL、Redis、Qdrant 和 embedding provider。
+
+## 功能与模块
+
+### Core
+
+Core 是最小可运行记忆链路：
+
+- HTTP / MCP wrapper
+- PostgreSQL truth ledger
+- Redis cache / coordination
+- Qdrant active projection
+- embedding proxy
+- Qdrant projector worker
+- write / recall / review / approve / reject / archive / health
+
+Core 目标是稳定完成“写入事实账本 -> 生成 embedding -> 投影 Qdrant -> 召回候选 -> 返回给 Agent”。
+
+### Enhanced
+
+Enhanced 面向更好的召回质量、延迟和接入体验，模块可以按需开启：
+
+- fastpath recall
+- lexical sidecar
+- Qdrant proxy
+- reranker adapter / upstream
+- Mem0 extractor
+- conversation monitor
+- trusted agent tooling
+- control panel
+- platform doctor
+
+这些模块不可用时，系统应回退到 Core 路径。
+
+### Full
+
+Full 面向完整治理和生产化运行，包含更多后台、审计和质量能力：
+
+- Knowledge ingest
+- Memory knowledge graph / Code Graph
+- temporal decay / consolidation
+- memory dreaming
+- policy evaluation
+- recall quality
+- auto approval / auto update ops
+- embedding manifest / calibration / local generation
+- backup and restore planning
+- Qdrant reconciliation
+- governance operations
+- runtime observability retention
+- write ticket maintenance
+- release governance gates
+- self-improvement ops
+
+Full 能力默认不应影响 Core 可用性。需要某个模块时，先配置对应依赖和 `MEMORY_XX_*_ENABLED` 开关，再通过 health、Doctor 或 operations 文档确认状态。
 
 ## 架构概览
 
 ```text
-Conversation / API / MCP
+Agent / API / MCP
         |
         v
 Extraction + Policy Engine
@@ -44,7 +92,7 @@ Extraction + Policy Engine
                  v
           PostgreSQL truth ledger
                  |
-                 +--> temporal governance / knowledge graph / audit
+                 +--> governance / graph / audit / lifecycle
                  |
                  v
         embedding generation + Qdrant projection
@@ -56,30 +104,24 @@ Extraction + Policy Engine
         Agent tools / HTTP API / Control Panel
 ```
 
-## 快速启动
+## 快速体验
 
 最小依赖：
 
 - Node.js 20+
-- PostgreSQL 16，建议使用 pgvector 镜像
+- PostgreSQL 16
 - Redis 7+
 - Qdrant
-- OpenAI-compatible embedding endpoint，必需
-- reranker 可选
+- OpenAI-compatible embedding endpoint
 
-安装依赖：
+安装依赖并复制配置：
 
 ```bash
 npm install
-```
-
-复制配置：
-
-```bash
 cp configs/memory-xx.env.example .env.local
 ```
 
-至少配置：
+至少配置这些变量：
 
 ```bash
 MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
@@ -87,39 +129,16 @@ MEMORY_XX_DATABASE_SCHEMA=memory_xx
 MEMORY_XX_REDIS_URL=redis://127.0.0.1:6379/0
 MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
 MEMORY_XX_QDRANT_COLLECTION=memory-xx-active
-EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
-EMBEDDING_DIMS=4096
+EMBEDDING_API_BASE=https://embedding-provider.example/v1
+EMBEDDING_MODEL=<provider-embedding-model-name>
+EMBEDDING_DIMS=<provider-embedding-dimensions>
+OPENAI_API_KEY=<set-private-key>
 MEMORY_XX_API_TOKEN=<set-private-token>
 ```
 
-Embedding 可以使用本地模型，也可以使用 OpenAI-compatible API：
+本地模型也可以使用，只要它提供 OpenAI-compatible embedding API。仓库内的 dev embedding upstream 只适合本地 smoke 和链路验证，不代表真实语义召回质量。
 
-```bash
-# 方案 A：本地 embedding 服务
-EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-8B
-EMBEDDING_DIMS=4096
-
-# 方案 B：远程 API。推荐关注超算互联网：https://www.scnet.cn
-# 当前可参考价格约 0.1 / 百万 token，最终价格和模型名称以官网控制台为准。
-OPENAI_API_KEY=<set-private-key>
-EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1
-EMBEDDING_MODEL=<embedding-model-name>
-EMBEDDING_DIMS=<embedding-dimensions>
-```
-
-主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。
-
-如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
-
-```bash
-MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
-MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
-MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
-```
-
-迁移并启动：
+启动：
 
 ```bash
 set -a
@@ -137,9 +156,7 @@ curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 ```
 
-WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
-
-更完整的启动说明见 [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md)。
+如果想用 Compose 启动本地 Core 链路，见 [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md)。WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
 
 ## 最小 API 示例
 
@@ -174,20 +191,30 @@ curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/rec
   }'
 ```
 
-## 常用命令
+Strict scope 默认开启。上面的示例便于本地理解接口；如果 scoped 操作返回 403，请使用 trusted agent / MCP token / admin token，或仅在本地调试时临时设置 `MEMORY_XX_SCOPE_POLICY_MODE=single_user`。
+
+## Agent 会话接入
+
+memory-xx 可以显式读取 Codex、Claude Code 或 OpenClaw 的历史会话目录。OpenClaw 是可选 adapter；公开 landing scan / canary 默认只要求 Codex / Claude Code source，只有显式传入 `--required-source=openclaw_session` 时才把 OpenClaw 纳入阻塞条件。
 
 ```bash
-TMPDIR=/tmp npm run typecheck
-TMPDIR=/tmp npm test
-TMPDIR=/tmp npm run memory:parity-audit -- --json --fail-on-missing
-TMPDIR=/tmp npm run verify:open-source
-TMPDIR=/tmp npm run check:secrets
-TMPDIR=/tmp npm run audit:prod
-TMPDIR=/tmp npm run memory:status -- --json
-TMPDIR=/tmp npm run memory:pending -- --json
-TMPDIR=/tmp npm run memory:qdrant-reconcile -- --json
-TMPDIR=/tmp npm run memory:control-panel
+MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
+MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
+MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
 ```
+
+开源配置中的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，使用前需要替换成真实路径。
+
+## 运行边界
+
+- Embedding 是必需组件；reranker 是增强组件。
+- Qdrant 是 Core 召回投影依赖；PostgreSQL 仍是事实源。
+- Redis 不可用时缓存和协同能力会降级，但不应替代 PostgreSQL 的事实状态。
+- fastpath、lexical、reranker、Mem0、conversation monitor、control panel 是可选增强模块。
+- Control Panel 是本地运维界面，建议只绑定 `127.0.0.1`，不要直接暴露公网。
+- Markdown projection 是只读 review/export 投影，不支持反向同步。
+- global 自动写入默认不建议开启。
+- real update / supersede / apply 默认不建议直接开启，应先 dry-run 或 canary。
 
 ## 文档导航
 
@@ -195,28 +222,20 @@ TMPDIR=/tmp npm run memory:control-panel
 | --- | --- |
 | 快速启动 | [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md) |
 | 完整功能清单 | [docs/features.zh-CN.md](docs/features.zh-CN.md) |
-| 功能成熟度 | [docs/feature-maturity.zh-CN.md](docs/feature-maturity.zh-CN.md) |
-| memory-v2 镜像 parity 审计 | [docs/memory-v2-full-feature-parity-audit-2026-06-11.md](docs/memory-v2-full-feature-parity-audit-2026-06-11.md) |
-| 开源发布就绪证据 | [docs/open-source-release-readiness-2026-06-13.md](docs/open-source-release-readiness-2026-06-13.md) |
 | 架构和数据流 | [docs/architecture.zh-CN.md](docs/architecture.zh-CN.md) |
 | Agent / MCP 接入 | [docs/agent-integration.zh-CN.md](docs/agent-integration.zh-CN.md) |
 | Policy Engine、自动审批、Supersede | [docs/policy-governance.zh-CN.md](docs/policy-governance.zh-CN.md) |
 | Embedding、Reranker、Qdrant Alias | [docs/vector-runtime.zh-CN.md](docs/vector-runtime.zh-CN.md) |
 | 控制面板和热插拔配置 | [docs/control-panel.zh-CN.md](docs/control-panel.zh-CN.md) |
 | Worker、备份、迁移、systemd、平台检查 | [docs/operations.zh-CN.md](docs/operations.zh-CN.md) |
+| Operations guide | [docs/operations.md](docs/operations.md) |
 | Knowledge 文档治理 | [docs/knowledge.zh-CN.md](docs/knowledge.zh-CN.md) |
 | Canary 与生产就绪 | [docs/canary.zh-CN.md](docs/canary.zh-CN.md) |
 | API 参考 | [docs/api.md](docs/api.md) |
 | Runtime profile | [docs/runtime-profiles.md](docs/runtime-profiles.md) |
-
-## 当前状态与边界
-
-- 本仓库是 public preview release candidate；当前发布证据见 [docs/open-source-release-readiness-2026-06-13.md](docs/open-source-release-readiness-2026-06-13.md)。
-- Embedding 是必需组件；reranker 是增强组件。
-- Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准。
-- global 自动写入默认不建议开启。
-- real update/supersede/dangerous apply 默认不建议开启；所有真实写数据的 apply/repair/rollback 能力必须 dry-run first，再用显式 `--apply` 和可审计计划执行。
-- 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。
+| Module catalog | [docs/module-catalog.md](docs/module-catalog.md) |
+| Release notes | [CHANGELOG.md](CHANGELOG.md) |
+| Open-source release checklist | [docs/release-checklist.md](docs/release-checklist.md) |
 
 ## 许可证
 

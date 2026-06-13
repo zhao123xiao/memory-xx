@@ -2,7 +2,6 @@
 // Skill: Smart Write — extract canonical memory before writing.
 
 import type { SkillDefinition, SkillExecutor } from "../types";
-import { DEFAULT_AGENT_ID } from "../../shared";
 
 export const SMART_WRITE_SKILL: SkillDefinition = {
   id: "smart_write",
@@ -18,7 +17,7 @@ export const SMART_WRITE_SKILL: SkillDefinition = {
     { name: "scope_id", type: "string", description: "Scope id" },
     { name: "user_id", type: "string", description: "User context", default: "current-instance-owner" },
     { name: "workspace_id", type: "string", description: "Workspace context", default: "current-instance" },
-    { name: "author", type: "string", description: "Author identifier", default: DEFAULT_AGENT_ID },
+    { name: "author", type: "string", description: "Author identifier", default: "memory-xx" },
     { name: "mode", type: "string", description: "draft, write, or auto_approve", default: "write" },
   ],
 };
@@ -40,7 +39,7 @@ export function createSmartWriteExecutor(deps: {
       headers,
       body: JSON.stringify({
         text: String(params.content),
-        agent_id: String(params.author ?? DEFAULT_AGENT_ID),
+        agent_id: String(params.author ?? "memory-xx"),
         user_id: userId,
         workspace_id: String(params.workspace_id ?? "current-instance"),
         scope_hint: { scope_type: scopeType, scope_id: scopeId },

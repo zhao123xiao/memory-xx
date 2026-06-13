@@ -1,13 +1,13 @@
 [Unit]
-Description=memory-xx Go fastpath sidecar
+Description=memory-xx fastpath sidecar
 After=network-online.target memory-xx-wrapper.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/services/memory-xx-fastpath
+WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
-EnvironmentFile=-%h/services/memory-xx/.env.fastpath-next
+EnvironmentFile=-%h/services/memory-xx/.env.fastpath
 Environment=MEMORY_XX_FASTPATH_ADDR=:5200
 Environment=MEMORY_XX_WRAPPER_URL=http://127.0.0.1:5100
 Environment=MEMORY_XX_FASTPATH_REDIS_CACHE_ENABLED=true
@@ -15,11 +15,12 @@ Environment=MEMORY_XX_FASTPATH_CACHE_PREFIX=memory-xx-active-fastpath
 Environment=MEMORY_XX_FASTPATH_HYBRID_ENABLED=true
 Environment=MEMORY_XX_FASTPATH_LEXICAL_URL=http://127.0.0.1:5210
 Environment=MEMORY_XX_LEXICAL_URL=http://127.0.0.1:5210
-ExecStart=%h/services/memory-xx-fastpath/memory-xx-fastpath
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts fastpath
+ExecStart=/usr/bin/node %h/services/memory-xx/sidecars/fastpath/fastpath.mjs
 Restart=always
 RestartSec=3
-StandardOutput=append:%h/services/memory-xx-fastpath/fastpath.log
-StandardError=append:%h/services/memory-xx-fastpath/fastpath.error.log
+StandardOutput=append:%h/services/memory-xx/.runtime/fastpath.log
+StandardError=append:%h/services/memory-xx/.runtime/fastpath.error.log
 
 [Install]
 WantedBy=memory-xx.target

@@ -7,7 +7,7 @@ import {
   loadMemoryXXPostgresConfig,
 } from "../app";
 import { ProjectorEmbeddingResolver } from "../app/qdrant-sync/projector-embedding-resolver.js";
-import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider.js";
+import { OpenAICompatibleEmbeddingProvider } from "../app/server/embedding-provider.js";
 import { requireCliPermission } from "../app/server/permissions.js";
 import { buildQdrantProjectionIssue, normalizeAutoRepairPolicy } from "../app/ops";
 
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
     database,
     pointWriter,
     embeddingResolver: new ProjectorEmbeddingResolver({
-      provider: new QwenEmbeddingProviderWrapper(),
+      provider: new OpenAICompatibleEmbeddingProvider(),
       database,
     }),
   });

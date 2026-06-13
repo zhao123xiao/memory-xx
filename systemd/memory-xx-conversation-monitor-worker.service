@@ -1,0 +1,20 @@
+[Unit]
+Description=memory-xx conversation monitor worker
+After=network-online.target memory-xx-wrapper.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
+Environment=TMPDIR=/tmp
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts conversation_monitor
+ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/run-conversation-monitor-worker.ts
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/services/memory-xx/.runtime/conversation-monitor-worker.log
+StandardError=append:%h/services/memory-xx/.runtime/conversation-monitor-worker.error.log
+
+[Install]
+WantedBy=memory-xx.target

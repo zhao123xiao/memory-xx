@@ -1,6 +1,6 @@
 # Migration Rollback Playbook
 
-> **定位**：本文定义 memory-xx-next 所有 schema 迁移的回退策略、down migration 规范和演练流程。
+> **定位**：本文定义 memory-xx 所有 schema 迁移的回退策略、down migration 规范和演练流程。
 
 ---
 

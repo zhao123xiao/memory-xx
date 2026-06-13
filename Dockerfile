@@ -5,19 +5,31 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY app/ app/
+COPY src/ src/
+COPY scripts/ scripts/
+COPY tests/ tests/
 RUN npm run build
 
 # Stage 2: Production image
 FROM node:20-slim
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git python3 python3-requests \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist/ dist/
+COPY docker-compose.yml ./
+COPY tsconfig.json ./
 COPY wrapper-entry.mjs ./
+COPY app/ app/
+COPY src/ src/
+COPY scripts/ scripts/
+COPY sidecars/ sidecars/
 COPY configs/ configs/
 COPY migrations/ migrations/
 
-EXPOSE 5100
+EXPOSE 5100 5200 5210 5220 5221 5222 5223 5310 6334 8084 8085
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:5100/live').then(r=>{process.exit(r.status < 300 ? 0 : 1)}).catch(()=>process.exit(1))"
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=Run memory-xx governance release report
+After=network-online.target memory-xx-wrapper.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
+Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_RUNTIME_DIR=%h/services/memory-xx/.runtime
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts governance_report
+ExecStart=/bin/bash -lc '/usr/bin/npm run memory:pending -- --limit=100; /usr/bin/npm run memory:governance -- --dry-run --json'
+StandardOutput=append:%h/services/memory-xx/.runtime/governance-report.log
+StandardError=append:%h/services/memory-xx/.runtime/governance-report.error.log

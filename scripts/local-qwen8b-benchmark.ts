@@ -180,7 +180,7 @@ function buildMemoryFixtures(): MemoryFixture[] {
       title: `proxy local mapping ${runId}`,
       content: `proxy maps Qwen3-Embedding-8B to qwen3-embedding for local OVMS; token ${frost}`,
       exact_query: frost,
-      semantic_query: "本地 OVMS 的 embedding 模型名映射在哪里处理"
+      semantic_query: "本地 embedding upstream 的模型名映射在哪里处理"
     },
     {
       profile: "terse",
@@ -429,7 +429,8 @@ async function benchmarkKnowledge(): Promise<JsonRecord[]> {
 
 async function benchmarkEmbeddingThroughput(): Promise<JsonRecord[]> {
   const apiBase = "http://127.0.0.1:8082/v3";
-  const apiKey = (await fs.readFile("/mnt/d/ovms/api_key.txt", "utf8").catch(() => "")).trim();
+  const apiKeyFile = process.env.MEMORY_XX_EMBEDDING_UPSTREAM_API_KEY_FILE?.trim();
+  const apiKey = apiKeyFile ? (await fs.readFile(apiKeyFile, "utf8").catch(() => "")).trim() : "";
   const groups = [1, 2, 4];
   const rows: JsonRecord[] = [];
   for (const concurrency of groups) {

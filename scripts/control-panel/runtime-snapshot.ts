@@ -8,6 +8,9 @@ import { buildDatabaseMaintenanceSummary } from "./database-maintenance.js";
 import { persistRuntimeObservabilitySnapshot } from "./runtime-observability-store.js";
 import { serviceControls } from "./service-controls.js";
 import { buildRuntimeRegistry, restartPlan } from "./settings.js";
+import { buildRuntimeModuleSnapshot } from "../../app/runtime-modules.js";
+import { parseMemoryRuntimeProfile } from "../../app/runtime-profiles.js";
+import { buildComponentStatusesFromRuntimeModules } from "../../app/runtime-module-components.js";
 
 export interface RuntimeSnapshot {
   readonly snapshot_id: string;
@@ -60,7 +63,7 @@ function embeddingApiBase(health: Record<string, unknown>): string {
 
 async function embeddingUpstreamProbe(health: Record<string, unknown>): Promise<ComponentStatus> {
   const provider = objectValue(health.embedding_provider);
-  const model = stringValue(provider.model) || process.env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B";
+  const model = stringValue(provider.model) || process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
   const expectedDims = numberValue(provider.dims);
   const started = Date.now();
   try {
@@ -78,27 +81,29 @@ async function embeddingUpstreamProbe(health: Record<string, unknown>): Promise<
     const dims = Array.isArray(first.embedding) ? first.embedding.length : null;
     const ok = response.ok && dims !== null && (expectedDims === null || dims === expectedDims);
     return {
-      name: "ovms_upstream",
-      label: "本地 OVMS embedding 上游",
+      name: "embedding_provider",
+      label: "Embedding provider",
       status: ok ? "ok" : "blocked",
       detail: ok ? `embedding smoke dims=${dims} latency=${Date.now() - started}ms` : `HTTP ${response.status} dims=${dims ?? "n/a"}`,
       source: `${embeddingApiBase(health)}/embeddings`,
-      remediation: ok ? undefined : "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，并验证 127.0.0.1:8082/v3/embeddings。",
+      remediation: ok ? undefined : "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   } catch (error) {
     return {
-      name: "ovms_upstream",
-      label: "本地 OVMS embedding 上游",
+      name: "embedding_provider",
+      label: "Embedding provider",
       status: "blocked",
       detail: error instanceof Error ? error.message : String(error),
       source: `${embeddingApiBase(health)}/embeddings`,
-      remediation: "启动 memory-xx-embedding-upstream.service；它会在 Windows GPU 上拉起 <windows-drive>\\ovms\\run-embedding.bat，并验证 127.0.0.1:8082/v3/embeddings。",
+      remediation: "检查 EMBEDDING_API_BASE、EMBEDDING_MODEL、EMBEDDING_DIMS、OPENAI_API_KEY 和 memory-xx-embedding-proxy.service；如使用本地 upstream manager，再显式启用并启动 memory-xx-embedding-upstream.service。",
     };
   }
 }
 
 async function rerankerUpstreamProbe(): Promise<ComponentStatus> {
-  const url = process.env.MEMORY_XX_RERANKER_UPSTREAM_MODELS_URL?.trim() || "http://127.0.0.1:8084/v3/models";
+  const url = process.env.MEMORY_XX_RERANKER_UPSTREAM_MODELS_URL?.trim()
+    || process.env.MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL?.trim()
+    || "http://127.0.0.1:8084/v3/models";
   const model = process.env.MEMORY_XX_RERANKER_MODEL?.trim() || "qwen3-reranker";
   const started = Date.now();
   try {
@@ -107,20 +112,20 @@ async function rerankerUpstreamProbe(): Promise<ComponentStatus> {
     const ok = response.ok && body.includes(model);
     return {
       name: "reranker_upstream",
-      label: "本地 Qwen3 reranker 上游",
+      label: "Reranker provider",
       status: ok ? "ok" : "blocked",
       detail: ok ? `models contains ${model} latency=${Date.now() - started}ms` : `HTTP ${response.status} missing model=${model}`,
       source: url,
-      remediation: ok ? undefined : "启动 memory-xx-reranker-upstream.service，确认 Windows GPU 上的 <windows-drive>\\ovms\\run-reranker.bat 正常。",
+      remediation: ok ? undefined : "检查 MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL 或 MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL；如使用本地 upstream manager，再显式启用并启动 memory-xx-reranker-upstream.service。",
     };
   } catch (error) {
     return {
       name: "reranker_upstream",
-      label: "本地 Qwen3 reranker 上游",
+      label: "Reranker provider",
       status: "blocked",
       detail: error instanceof Error ? error.message : String(error),
       source: url,
-      remediation: "启动 memory-xx-reranker-upstream.service，确认 Windows GPU 上的 <windows-drive>\\ovms\\run-reranker.bat 正常。",
+      remediation: "检查 MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL 或 MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL；如使用本地 upstream manager，再显式启用并启动 memory-xx-reranker-upstream.service。",
     };
   }
 }
@@ -259,6 +264,40 @@ function componentStatusFromInputs(
   const projectionDiff = objectValue(metrics.qdrant_pg_diff);
   const metricsError = stringValue(metrics.error);
   const generation = objectValue(health.embedding_generation);
+  const moduleStatuses = buildComponentStatusesFromRuntimeModules(objectValue(health.runtime_modules));
+  if (moduleStatuses.length > 0) {
+    return [
+      ...moduleStatuses,
+      {
+        name: "outbox",
+        label: "Outbox（投影事件队列）",
+        status: metricsError ? "blocked" : Number(outbox.dead_letter ?? 0) > 0 ? "blocked" : Number(outbox.pending ?? 0) > 0 ? "degraded" : "ok",
+        detail: metricsError ? `runtime metrics query failed: ${metricsError}` : `pending=${outbox.pending ?? 0} failed=${outbox.failed ?? 0} dead=${outbox.dead_letter ?? 0}`,
+        source: "PostgreSQL outbox_events",
+      },
+      {
+        name: "cache_invalidation",
+        label: "Cache invalidation（缓存失效队列）",
+        status: Number(cache.pending ?? 0) > 0 || Number(cache.failed ?? 0) > 0 ? "degraded" : "ok",
+        detail: `pending=${cache.pending ?? 0} failed=${cache.failed ?? 0} completed=${cache.completed ?? 0}`,
+        source: "PostgreSQL cache_invalidation_requests",
+      },
+      {
+        name: "qdrant_pg_diff",
+        label: "Qdrant/PG diff（向量库与数据库数量差）",
+        status: metricsError ? "blocked" : Number(projectionDiff.diff ?? 0) === 0 ? "ok" : "blocked",
+        detail: metricsError ? `runtime metrics query failed: ${metricsError}` : `PG=${projectionDiff.postgres_effective_recallable ?? "n/a"} Qdrant=${projectionDiff.qdrant_points ?? "n/a"} diff=${projectionDiff.diff ?? "n/a"}`,
+        source: "runtime snapshot reconcile",
+      },
+      {
+        name: "embedding_manifest",
+        label: "Embedding manifest（嵌入清单）",
+        status: generation.ok === true ? "ok" : "blocked",
+        detail: generation.ok === true ? `active=${objectValue(generation.active_generation).generation_id ?? "unknown"}` : stringValue(generation.status) || "manifest unhealthy",
+        source: "wrapper /health",
+      },
+    ];
+  }
   const serviceComponent = (name: string, label: string, unit: string): ComponentStatus => {
     const service = serviceByUnit.get(unit);
     const active = service?.active === true;
@@ -294,15 +333,15 @@ function componentStatusFromInputs(
       detail: qdrant.configured === true ? `collection=${qdrant.collection_name ?? "unknown"}` : "qdrant not configured",
       source: "wrapper /health",
     },
-    serviceComponent("embedding_upstream_manager", "Embedding upstream manager（Windows GPU 模型守护）", "memory-xx-embedding-upstream.service"),
-    serviceComponent("embedding_proxy", "Embedding proxy（向量生成代理）", "memory-xx-embedding-proxy-next.service"),
+    serviceComponent("embedding_upstream_manager", "Embedding upstream manager（可选本地 provider 管理器）", "memory-xx-embedding-upstream.service"),
+    serviceComponent("embedding_proxy", "Embedding proxy（向量生成代理）", "memory-xx-embedding-proxy.service"),
     embeddingComponent,
     serviceComponent("projector", "Qdrant projector（向量投影后台任务）", "memory-xx-qdrant-projector-worker.service"),
     serviceComponent("fastpath", "Fastpath（快速召回路径）", "memory-xx-fastpath.service"),
     serviceComponent("lexical", "Lexical sidecar（关键词召回侧车）", "memory-xx-lexical-sidecar.service"),
-    serviceComponent("reranker_upstream_manager", "Reranker upstream manager（Windows GPU 模型守护）", "memory-xx-reranker-upstream.service"),
+    serviceComponent("reranker_upstream_manager", "Reranker upstream manager（可选本地 provider 管理器）", "memory-xx-reranker-upstream.service"),
     rerankerUpstreamComponent,
-    serviceComponent("reranker", "Reranker adapter（重排序适配器）", "memory-xx-reranker-adapter-next.service"),
+    serviceComponent("reranker", "Reranker adapter（重排序适配器）", "memory-xx-reranker-adapter.service"),
     {
       name: "outbox",
       label: "Outbox（投影事件队列）",
@@ -370,25 +409,33 @@ export async function collectRuntimeSnapshot(options: { readonly persist?: boole
     qdrantProjectionSummary(schema).catch((error) => ({ error: error instanceof Error ? error.message : String(error) })),
   ]);
   const embeddingComponent = await embeddingUpstreamProbe(health).catch((error) => ({
-    name: "ovms_upstream",
-    label: "本地 OVMS embedding 上游",
+    name: "embedding_provider",
+    label: "Embedding provider",
     status: "blocked" as const,
     detail: error instanceof Error ? error.message : String(error),
     source: "embedding probe",
   }));
   const rerankerUpstreamComponent = await rerankerUpstreamProbe().catch((error) => ({
     name: "reranker_upstream",
-    label: "本地 Qwen3 reranker 上游",
+    label: "Reranker provider",
     status: "blocked" as const,
     detail: error instanceof Error ? error.message : String(error),
     source: "reranker probe",
   }));
   const registry = buildRuntimeRegistry();
   const serviceObjects = services as readonly Record<string, unknown>[];
+  const healthObject = objectValue(health);
+  const healthRuntimeModules = objectValue(healthObject.runtime_modules);
+  const healthWithRuntimeModules = {
+    ...healthObject,
+    runtime_modules: objectValue(healthRuntimeModules.states)
+      ? healthRuntimeModules
+      : buildRuntimeModuleSnapshot(parseMemoryRuntimeProfile(stringValue(healthObject.runtime_profile))),
+  };
   const metricsObject = {
     ...(metrics as Record<string, unknown>),
     database,
-    component_statuses: componentStatusFromInputs(health, serviceObjects, metrics as Record<string, unknown>, embeddingComponent, rerankerUpstreamComponent),
+    component_statuses: componentStatusFromInputs(healthWithRuntimeModules, serviceObjects, metrics as Record<string, unknown>, embeddingComponent, rerankerUpstreamComponent),
     client_connections: readMemoryClientConnections(),
     mcp_tool_invocations: readMcpToolInvocationMetrics(),
     writable_runtime_items: registry.filter((item) => item.writable).length,
@@ -405,7 +452,7 @@ export async function collectRuntimeSnapshot(options: { readonly persist?: boole
     collected_at: new Date().toISOString(),
     status: statusFromInputs(health, serviceObjects, metricsObject),
     summary: {
-      wrapper_health: health,
+      wrapper_health: healthWithRuntimeModules,
       services: serviceObjects,
       restart_plan: restartPlan(),
       closure_reasons: closureReasons(registry, metricsObject),

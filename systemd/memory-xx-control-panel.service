@@ -1,0 +1,21 @@
+[Unit]
+Description=memory-xx local control panel
+After=network-online.target memory-xx-wrapper.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/memory-xx
+EnvironmentFile=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
+Environment=TMPDIR=/tmp
+Environment=MEMORY_XX_CONTROL_PANEL_PORT=5310
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts control_panel
+ExecStart=/usr/bin/node --import tsx %h/services/memory-xx/scripts/memory-control-panel.ts
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/services/memory-xx/.runtime/control-panel.log
+StandardError=append:%h/services/memory-xx/.runtime/control-panel.error.log
+
+[Install]
+WantedBy=memory-xx.target

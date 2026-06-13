@@ -24,9 +24,11 @@ const ALLOW_PREFIXES = [
   "artifacts/",
 ];
 const RULES: readonly { name: string; pattern: RegExp }[] = [
-  { name: "old-memory-xx-next-path", pattern: /memory-xx-next/ },
+  { name: "stale-next-project-name", pattern: /memory-xx-next/ },
   { name: "root-services-memory-xx-path", pattern: /\/root\/services\/memory-xx/ },
   { name: "root-local-path", pattern: /\/root\/local/ },
+  { name: "private-ovms-wsl-path", pattern: /\/mnt\/d\/ovms/ },
+  { name: "private-ovms-api-key-path", pattern: /api_key\.txt/ },
 ];
 
 function listCandidateFiles(): string[] {

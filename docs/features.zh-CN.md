@@ -14,49 +14,37 @@
 - **Code Graph**：扫描代码仓库，生成 repository / file / symbol / import / declaration / call reference 等节点和边。
 - **多 Agent / MCP 接入**：支持 scoped recall、write、pending review、feedback 和 orchestrator tools。
 - **Knowledge 层**：把长文档、教程、报告、runbook、项目知识和短事实 memory 分离。
+- **Markdown Projection**：把 PostgreSQL 事实账本导出为只读 Markdown review/export 视图。
 - **控制面板**：本地 Web 控制台，支持运行态总览、热更新设置、图谱、审批治理、安全和平台预检。
 - **Canary 与生产门禁**：支持 landing scan、7 天 canary report、P0/P1 gate、production guard 和 candidate-only exit 判断。
 
 ## 成熟度
 
-> 详细说明见 [功能成熟度](feature-maturity.zh-CN.md)
-
-本项目采用四级成熟度体系：
-
-| 等级 | 标识 | 说明 |
+| 功能 | 状态 | 说明 |
 | --- | --- | --- |
-| **Stable** | 🟢 稳定 | 默认可用，可直接在生产使用 |
-| **Beta** | 🟡 测试 | 可用但需人工复核，用于团队内部试运行 |
-| **Experimental** | 🟠 实验 | 报告/候选为主，不建议生产自动化依赖 |
-| **Dangerous** | 🔴 高风险 | 会批量修改数据，必须先 dry-run 再 apply |
-
-| 功能 | 成熟度 | 说明 |
-| --- | --- | --- |
-| PostgreSQL 写入账本 | 🟢 Stable | 核心事实源，配套 migration 和测试 |
-| Embedding generation | 🟢 Stable | 最小可用链路的必需项 |
-| Review lifecycle | 🟢 Stable | approve / reject / archive / supersede / tombstone |
-| Qdrant projection | 🟢 Stable | 通过 outbox worker 保持投影一致 |
-| Recall API | 🟢 Stable | 支持 Qdrant primary 与 PostgreSQL fallback |
-| Scope / trusted agent | 🟢 Stable | 支持 agent token、scope grant 和 strict mode |
-| MCP / Agent tools | 🟢 Stable | 支持 scoped recall/write/review/feedback |
-| Qdrant audit/reconcile (只读) | 🟢 Stable | collection audit、alias 管理 |
-| Policy engine | 🟡 Beta | 支持 reject/quarantine/pending/approve |
-| Auto approval (scoped) | 🟡 Beta | 支持 production guard、scope enablement |
-| Auto update (dry-run) | 🟡 Beta | 仅 dry-run 模式，apply 为 Dangerous |
-| Memory knowledge graph | 🟡 Beta | episodes、entities、relations、graph health |
-| Code Graph | 🟠 Experimental | 项目隔离测试，项目级代码图谱 |
-| Conversation ingest | 🟡 Beta | Codex / Claude Code / OpenClaw session tail |
-| Knowledge ingest | 🟡 Beta | 知识库导入和检索 |
-| Control panel | 🟡 Beta | 本地运维工具，建议仅本地访问 |
-| Temporal governance | 🟠 Experimental | 时间策略、衰减、整合候选 |
-| Graph recall / dreaming | 🟠 Experimental | 图谱召回、记忆梦境 |
-| 7d canary / production gate | 🟠 Experimental | 适合受控试运行 |
-| Auto update apply | 🔴 Dangerous | 真实 apply 修改记忆状态，需先 dry-run |
-| Qdrant reconcile apply | 🔴 Dangerous | 向量对账 apply，需先 dry-run |
-| Bulk tombstone | 🔴 Dangerous | 批量墓碑删除，不可恢复 |
+| PostgreSQL 写入账本 | Stable | 核心事实源，配套 migration 和测试。 |
+| Embedding generation | Stable | 最小可用链路的必需项。 |
+| Review lifecycle | Stable | approve / reject / archive / supersede / tombstone 已实现。 |
+| Qdrant projection | Stable | 通过 outbox worker 和 reconcile 保持投影一致。 |
+| Recall API | Stable | 支持 Qdrant primary 与 PostgreSQL fallback。 |
+| Scope / trusted agent | Stable | 支持 agent token、scope grant 和 strict mode。 |
+| MCP / Agent tools | Beta | 支持 scoped recall/write/review/feedback。 |
+| Policy engine | Beta | 支持 reject/quarantine/pending/approve。 |
+| Auto approval | Beta | 支持 production guard、candidate-only、scope bypass 和 runtime controls。 |
+| Memory knowledge graph | Beta | 支持 episodes、entities、relations、graph report、graph health 和控制面板图谱视图。 |
+| Code Graph | Beta | 支持扫描代码仓库并生成项目级代码图谱。 |
+| Conversation ingest | Beta | Codex / Claude Code / OpenClaw session tail 已实现，外部环境需要自行配置路径。 |
+| Knowledge ingest | Beta | 支持知识库导入和检索，文档整理策略仍在完善。 |
+| Markdown projection / source mode | Beta | 支持只读 Markdown 投影视图和 drift 检查；PostgreSQL 始终是事实源。 |
+| Control panel | Beta | 支持运行态总览、服务开关、热更新设置、审批控制、图谱、平台预检和安全审计。 |
+| Temporal governance | Beta | 支持 memory layer、fact status、memory strength、episodes、entities、relations、decay 和 consolidation。 |
+| 7d canary / production gate | Experimental | 适合受控试运行，不应作为默认生产开关。 |
+| Auto update / supersede apply | Experimental | 真实生产 apply 默认不建议开启。 |
+| Graph recall / memory dreaming | Experimental | 已有代码和脚本，但公开用户应谨慎启用。 |
 
 ## 默认安全边界
 
+- 非服务型 full-stack 能力包由 `app/full-stack-capabilities.ts` 声明。它覆盖 Knowledge ingest、Memory knowledge graph、Code Graph、Temporal decay/consolidation、Memory dreaming、Policy evaluation、Recall quality、auto-approval/update ops、embedding manifest/calibration、本地 embedding 生成、backup、platform doctor、trusted agent tooling、Qdrant reconciliation、conversation ops、governance operations、runtime observability retention、write-ticket maintenance、deployment/security packaging、release governance gates 和 self-improvement ops 等模块，开源发布门禁会检查这些源码和 CLI 是否随仓库导出。
 - 不默认开放 global 自动写入。
 - 不默认开放 real update/supersede/apply。
 - `candidate_only` 可作为全局 kill switch。

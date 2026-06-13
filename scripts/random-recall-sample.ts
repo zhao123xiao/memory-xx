@@ -1,13 +1,13 @@
 /**
  * Random approved-memory recall sample test.
  *
- * Deterministically samples 20 approved/current records from the live staging
+ * Deterministically samples 20 approved/current records from the configured
  * schema, then uses each sampled record's title (or content snippet fallback)
  * as the query and checks whether the original record can be recalled in top-5.
  *
  * Usage:
  *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_SCHEMA=memory_xx \
  *   node --import tsx scripts/random-recall-sample.ts
  */
 
@@ -35,7 +35,7 @@ type SampledRecord = {
   duplicate_title_count: number;
 };
 
-class QwenEmbeddingProvider implements QueryEmbeddingProvider {
+class ConfiguredEmbeddingProvider implements QueryEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
   private readonly model: string;
@@ -47,8 +47,8 @@ class QwenEmbeddingProvider implements QueryEmbeddingProvider {
       process.env.EMBEDDING_PROXY_URL?.trim() ||
       process.env.EMBEDDING_API_BASE?.trim() ||
       "http://127.0.0.1:5221";
-    this.model = "Qwen3-Embedding-8B";
-    this.dims = 4096;
+    this.model = process.env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding";
+    this.dims = Number.parseInt(process.env.EMBEDDING_DIMS?.trim() || "4096", 10);
   }
 
   async embed_query(input: { query: string; query_terms: string[] }) {
@@ -266,7 +266,7 @@ async function main() {
   const configuredRuntime = createConfiguredRecallRuntime({
     config,
     query_embedding_provider: new ResilientQueryEmbeddingProvider(
-      new QwenEmbeddingProvider(),
+      new ConfiguredEmbeddingProvider(),
       {
         max_retries: 0,
         retry_delay_ms: 250,

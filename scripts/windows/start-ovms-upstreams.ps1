@@ -1,9 +1,13 @@
 param(
-  [string]$OvmsDir = "<windows-drive>\ovms",
+  [string]$OvmsDir = $env:MEMORY_XX_OVMS_DIR,
   [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($OvmsDir)) {
+  $OvmsDir = Join-Path $HOME "ovms"
+}
 
 function Start-BatIfPresent([string]$Name) {
   $path = Join-Path $OvmsDir $Name

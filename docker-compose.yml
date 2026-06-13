@@ -2,20 +2,65 @@ services:
   memory-xx:
     build: .
     ports:
-      - "5100:5100"
+      - "${MEMORY_XX_WRAPPER_HOST_PORT:-5100}:5100"
     environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
       MEMORY_XX_WRAPPER_PORT: "5100"
       MEMORY_XX_BIND_HOST: "0.0.0.0"
-      MEMORY_XX_DATABASE_URL: postgres://postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
       MEMORY_XX_DATABASE_SCHEMA: memory_xx
       MEMORY_XX_REDIS_URL: redis://redis:6379/0
-      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme}
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
+      EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-memory-xx-dev-embedding}
+      EMBEDDING_DIMS: ${EMBEDDING_DIMS:-4096}
+      MEMORY_XX_FASTPATH_URL: http://memory-xx-fastpath:5200
+      MEMORY_XX_RERANKER_ADAPTER_URL: http://memory-xx-reranker-adapter:8085
+      MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL: ${MEMORY_XX_RERANKER_UPSTREAM_HEALTH_URL:-http://memory-xx-dev-reranker-upstream:8084/health}
+      MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/rerank}
+      MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/models}
+      MEMORY_INTELLIGENCE_MEM0_URL: http://memory-xx-mem0-extractor:5220
+      MEMORY_XX_LLM_UPSTREAM_HEALTH_URL: ${MEMORY_XX_LLM_UPSTREAM_HEALTH_URL:-http://memory-xx-dev-chat-upstream:5223/health}
+      MEMORY_INTELLIGENCE_BASE_URL: ${MEMORY_INTELLIGENCE_BASE_URL:-http://memory-xx-dev-chat-upstream:5223/v1}
+      MEMORY_XX_QDRANT_PROXY_ENABLED: ${MEMORY_XX_QDRANT_PROXY_ENABLED:-0}
+      MEMORY_XX_FASTPATH_ENABLED: ${MEMORY_XX_FASTPATH_ENABLED:-0}
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: ${MEMORY_XX_LEXICAL_SIDECAR_ENABLED:-0}
+      MEMORY_XX_RERANKER_UPSTREAM_ENABLED: ${MEMORY_XX_RERANKER_UPSTREAM_ENABLED:-0}
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
+      MEMORY_XX_LLM_UPSTREAM_ENABLED: ${MEMORY_XX_LLM_UPSTREAM_ENABLED:-0}
+      MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
+      MEMORY_XX_CONVERSATION_MONITOR_ENABLED: ${MEMORY_XX_CONVERSATION_MONITOR_ENABLED:-0}
+      MEMORY_XX_CONTROL_PANEL_ENABLED: ${MEMORY_XX_CONTROL_PANEL_ENABLED:-0}
+      MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: ${MEMORY_XX_MARKDOWN_PROJECTION_ENABLED:-0}
+      MEMORY_XX_DREAMING_ENABLED: ${MEMORY_XX_DREAMING_ENABLED:-0}
+      MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED: ${MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED:-0}
+      MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: ${MEMORY_XX_WRITE_TICKET_WORKER_ENABLED:-0}
+      MEMORY_XX_MAINTENANCE_ENABLED: ${MEMORY_XX_MAINTENANCE_ENABLED:-0}
+      MEMORY_XX_CONSOLIDATION_ENABLED: ${MEMORY_XX_CONSOLIDATION_ENABLED:-0}
+      MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED: ${MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED:-0}
+      MEMORY_XX_AUTO_REPAIR_ENABLED: ${MEMORY_XX_AUTO_REPAIR_ENABLED:-0}
+      MEMORY_XX_REPAIR_REPORT_ENABLED: ${MEMORY_XX_REPAIR_REPORT_ENABLED:-0}
+      MEMORY_XX_LANDING_SCAN_ENABLED: ${MEMORY_XX_LANDING_SCAN_ENABLED:-0}
+      MEMORY_XX_CANARY_7D_REPORT_ENABLED: ${MEMORY_XX_CANARY_7D_REPORT_ENABLED:-0}
+      MEMORY_XX_QUALITY_RUNNER_ENABLED: ${MEMORY_XX_QUALITY_RUNNER_ENABLED:-0}
+      MEMORY_XX_GOVERNANCE_REPORT_ENABLED: ${MEMORY_XX_GOVERNANCE_REPORT_ENABLED:-0}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_started
+      memory-xx-migrate:
+        condition: service_completed_successfully
+      memory-xx-embedding-proxy:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:5100/live').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
@@ -23,14 +68,635 @@ services:
       timeout: 5s
       retries: 3
 
+  memory-xx-embedding-proxy:
+    build: .
+    command: ["node", "sidecars/embedding-proxy/embedding-proxy.mjs"]
+    ports:
+      - "${MEMORY_XX_EMBEDDING_PROXY_HOST_PORT:-5221}:5221"
+    environment:
+      MEMORY_XX_EMBEDDING_PROXY_HOST: 0.0.0.0
+      MEMORY_XX_EMBEDDING_PROXY_PORT: "5221"
+      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE: ${EMBEDDING_PROXY_UPSTREAM_BASE:-${EMBEDDING_API_BASE:-http://memory-xx-dev-embedding-upstream:5222/v1}}
+      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL: ${EMBEDDING_PROXY_UPSTREAM_MODEL:-${EMBEDDING_MODEL:-memory-xx-dev-embedding}}
+      MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY: ${EMBEDDING_PROXY_UPSTREAM_API_KEY:-${OPENAI_API_KEY:-changeme}}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5221/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-dev-embedding-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-embedding-upstream/dev-embedding-upstream.mjs"]
+    ports:
+      - "${MEMORY_XX_DEV_EMBEDDING_HOST_PORT:-5222}:5222"
+    environment:
+      MEMORY_XX_DEV_EMBEDDING_HOST: 0.0.0.0
+      MEMORY_XX_DEV_EMBEDDING_PORT: "5222"
+      MEMORY_XX_DEV_EMBEDDING_MODEL: ${MEMORY_XX_DEV_EMBEDDING_MODEL:-memory-xx-dev-embedding}
+      MEMORY_XX_DEV_EMBEDDING_DIMS: ${MEMORY_XX_DEV_EMBEDDING_DIMS:-${EMBEDDING_DIMS:-4096}}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5222/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-dev-reranker-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-reranker-upstream/dev-reranker-upstream.mjs"]
+    ports:
+      - "${MEMORY_XX_DEV_RERANKER_HOST_PORT:-8084}:8084"
+    environment:
+      MEMORY_XX_DEV_RERANKER_HOST: 0.0.0.0
+      MEMORY_XX_DEV_RERANKER_PORT: "8084"
+      MEMORY_XX_DEV_RERANKER_MODEL: ${MEMORY_XX_DEV_RERANKER_MODEL:-memory-xx-dev-reranker}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8084/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-dev-chat-upstream:
+    build: .
+    profiles:
+      - dev
+    command: ["node", "sidecars/dev-chat-upstream/dev-chat-upstream.mjs"]
+    ports:
+      - "${MEMORY_XX_DEV_CHAT_HOST_PORT:-5223}:5223"
+    environment:
+      MEMORY_XX_DEV_CHAT_HOST: 0.0.0.0
+      MEMORY_XX_DEV_CHAT_PORT: "5223"
+      MEMORY_XX_DEV_CHAT_MODEL: ${MEMORY_XX_DEV_CHAT_MODEL:-memory-xx-dev-chat}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5223/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-migrate:
+    build: .
+    command: ["node", "--import", "tsx", "scripts/migrate.ts"]
+    environment:
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-qdrant-projector-worker:
+    build: .
+    command: ["node", "--import", "tsx", "scripts/run-qdrant-projector-worker.ts"]
+    environment:
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE: /app/.runtime/qdrant-projector-worker.status.json
+      EMBEDDING_API_BASE: http://memory-xx-embedding-proxy:5221/v1
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-memory-xx-dev-embedding}
+      EMBEDDING_DIMS: ${EMBEDDING_DIMS:-4096}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      memory-xx-migrate:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+      memory-xx-embedding-proxy:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+  memory-xx-fastpath:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts fastpath || exit 0; exec node sidecars/fastpath/fastpath.mjs"]
+    ports:
+      - "${MEMORY_XX_FASTPATH_HOST_PORT:-5200}:5200"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_FASTPATH_ADDR: 0.0.0.0:5200
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_FASTPATH_LEXICAL_URL: http://memory-xx-lexical-sidecar:5210
+      MEMORY_XX_FASTPATH_ENABLED: ${MEMORY_XX_FASTPATH_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5200/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-lexical-sidecar:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts lexical_sidecar || exit 0; exec node sidecars/lexical-sidecar/lexical-sidecar.mjs"]
+    ports:
+      - "${MEMORY_XX_LEXICAL_HOST_PORT:-5210}:5210"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_LEXICAL_ADDR: 0.0.0.0:5210
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_LEXICAL_SIDECAR_ENABLED: ${MEMORY_XX_LEXICAL_SIDECAR_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5210/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-qdrant-proxy:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts qdrant_proxy || exit 0; exec node sidecars/qdrant-proxy/qdrant-collection-proxy.mjs"]
+    ports:
+      - "${MEMORY_XX_QDRANT_PROXY_HOST_PORT:-6334}:6334"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_QDRANT_PROXY_HOST: 0.0.0.0
+      MEMORY_XX_QDRANT_PROXY_PORT: "6334"
+      MEMORY_XX_QDRANT_PROXY_UPSTREAM: http://qdrant:6333
+      MEMORY_XX_QDRANT_PROXY_FROM_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_QDRANT_PROXY_TO_COLLECTION: ${MEMORY_XX_QDRANT_ACTIVE_COLLECTION:-memory-xx-active}
+      MEMORY_XX_QDRANT_PROXY_ENABLED: ${MEMORY_XX_QDRANT_PROXY_ENABLED:-0}
+    depends_on:
+      qdrant:
+        condition: service_started
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:6334/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-reranker-adapter:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts reranker_adapter || exit 0; exec node sidecars/reranker-adapter/reranker-adapter.mjs"]
+    ports:
+      - "${MEMORY_XX_RERANKER_ADAPTER_HOST_PORT:-8085}:8085"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_RERANKER_ADAPTER_HOST: 0.0.0.0
+      MEMORY_XX_RERANKER_ADAPTER_PORT: "8085"
+      MEMORY_XX_RERANKER_DOWNSTREAM_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/rerank}
+      MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_MODELS_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/models}
+      MEMORY_XX_RERANKER_DOWNSTREAM_BASE_URL: ${MEMORY_XX_RERANKER_DOWNSTREAM_BASE_URL:-http://memory-xx-dev-reranker-upstream:8084/v3/rerank}
+      MEMORY_XX_RERANKER_ADAPTER_ENABLED: ${MEMORY_XX_RERANKER_ADAPTER_ENABLED:-0}
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8085/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-control-panel:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts control_panel || exit 0; exec node --import tsx scripts/memory-control-panel.ts"]
+    ports:
+      - "${MEMORY_XX_CONTROL_PANEL_HOST_PORT:-5310}:5310"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_CONTROL_PANEL_HOST: 0.0.0.0
+      MEMORY_XX_CONTROL_PANEL_PORT: "5310"
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_CONTROL_PANEL_ENABLED: ${MEMORY_XX_CONTROL_PANEL_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5310/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-mem0-extractor:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts mem0_extractor || exit 0; exec python3 sidecars/mem0-extractor/extractor.py"]
+    ports:
+      - "${MEMORY_XX_MEM0_EXTRACTOR_HOST_PORT:-5220}:5220"
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_MEM0_EXTRACTOR_HOST: 0.0.0.0
+      MEMORY_XX_MEM0_EXTRACTOR_PORT: "5220"
+      MEMORY_XX_MEM0_BASE_URL: ${MEMORY_XX_MEM0_BASE_URL:-${MEMORY_INTELLIGENCE_BASE_URL:-http://memory-xx-dev-chat-upstream:5223/v1}}
+      MEMORY_XX_MEM0_MODEL: ${MEMORY_XX_MEM0_MODEL:-${MEMORY_INTELLIGENCE_MODEL:-MiniMax-M2.7-highspeed}}
+      MEMORY_XX_MEM0_API_KEY: ${MEMORY_XX_MEM0_API_KEY:-${MEMORY_INTELLIGENCE_API_KEY:-dev-key}}
+      MEMORY_XX_MEM0_EXTRACTOR_ENABLED: ${MEMORY_XX_MEM0_EXTRACTOR_ENABLED:-0}
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5220/health', timeout=5).status < 300 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  memory-xx-conversation-monitor-worker:
+    build: .
+    profiles:
+      - enhanced
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts conversation_monitor || exit 0; exec node --import tsx scripts/run-conversation-monitor-worker.ts"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_CONVERSATION_MONITOR_ENABLED: ${MEMORY_XX_CONVERSATION_MONITOR_ENABLED:-0}
+      MEMORY_XX_CONVERSATION_MONITOR: ${MEMORY_XX_CONVERSATION_MONITOR:-false}
+      MEMORY_XX_CONVERSATION_AUTO_EXTRACT: ${MEMORY_XX_CONVERSATION_AUTO_EXTRACT:-false}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      disable: true
+
+  memory-xx-markdown-projection:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts markdown_projection || exit 0; exec node --import tsx scripts/run-markdown-projection-worker.ts"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_PROJECTION_ROOT_DIR: /app/memory_projection
+      MEMORY_XX_MARKDOWN_PROJECTION_STATUS_FILE: /app/.runtime/markdown-projection.status.json
+      MEMORY_XX_MARKDOWN_PROJECTION_ENABLED: ${MEMORY_XX_MARKDOWN_PROJECTION_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-dream-worker:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts memory_dreaming || exit 0; exec node --import tsx scripts/run-dream-worker.ts"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_WRAPPER_URL: http://memory-xx:5100
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_DREAMING_ENABLED: ${MEMORY_XX_DREAMING_ENABLED:-0}
+      MEMORY_XX_DREAM_INTERVAL_MS: ${MEMORY_XX_DREAM_INTERVAL_MS:-3600000}
+      MEMORY_XX_DREAM_STATUS_FILE: /app/.runtime/dream-worker.status.json
+    depends_on:
+      memory-xx:
+        condition: service_started
+    restart: on-failure
+    healthcheck:
+      disable: true
+
+  memory-xx-cache-invalidation-worker:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts cache_invalidation_worker || exit 0; exec node --import tsx scripts/run-cache-invalidation-worker.ts"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE: /app/.runtime/cache-invalidation-worker.status.json
+      MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED: ${MEMORY_XX_CACHE_INVALIDATION_WORKER_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      disable: true
+
+  memory-xx-write-ticket-worker:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts write_ticket_worker || exit 0; exec node --import tsx scripts/run-write-ticket-worker.ts"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_WRITE_TICKET_WORKER_STATUS_FILE: /app/.runtime/write-ticket-worker.status.json
+      MEMORY_XX_WRITE_TICKET_WORKER_ENABLED: ${MEMORY_XX_WRITE_TICKET_WORKER_ENABLED:-0}
+      MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS: ${MEMORY_XX_WRITE_TICKET_WORKER_INTERVAL_MS:-1000}
+      MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE: ${MEMORY_XX_WRITE_TICKET_WORKER_BATCH_SIZE:-10}
+      MEMORY_XX_WRITE_TICKET_LEASE_TTL_SECONDS: ${MEMORY_XX_WRITE_TICKET_LEASE_TTL_SECONDS:-120}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      disable: true
+
+  memory-xx-maintenance:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts maintenance_orchestrator || exit 0; exec npm run memory:maintenance -- run --mode auto --json"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_QDRANT_COLLECTION: ${MEMORY_XX_QDRANT_COLLECTION:-memory-xx}
+      MEMORY_XX_MAINTENANCE_ENABLED: ${MEMORY_XX_MAINTENANCE_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-consolidation:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts temporal_consolidation || exit 0; exec npm run memory:consolidate"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_CONSOLIDATION_ENABLED: ${MEMORY_XX_CONSOLIDATION_ENABLED:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-detect:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts runtime_issue_detection || exit 0; npm run memory:auto-repair -- --json || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED: ${MEMORY_XX_RUNTIME_ISSUE_DETECTION_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-auto-repair:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts auto_repair || exit 0; npm run memory:auto-repair -- --apply --json || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_AUTO_REPAIR_ENABLED: ${MEMORY_XX_AUTO_REPAIR_ENABLED:-0}
+    depends_on:
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-repair-report:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts repair_report || exit 0; npm run memory:auto-repair -- --json; npm run memory:doctor -- --target ops-ready --mode full --plan || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_REPAIR_REPORT_ENABLED: ${MEMORY_XX_REPAIR_REPORT_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-landing-scan:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts landing_scan || exit 0; npm run memory:landing-scan -- --json --write-report --max-files=200 || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_LANDING_SCAN_ENABLED: ${MEMORY_XX_LANDING_SCAN_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-canary-7d-report:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts canary_7d_report || exit 0; npm run memory:canary-7d-report -- --json --write-report || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_CANARY_7D_REPORT_ENABLED: ${MEMORY_XX_CANARY_7D_REPORT_ENABLED:-0}
+    depends_on:
+      memory-xx-landing-scan:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-quality-runner:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts quality_runner || exit 0; npm run memory:quality -- --suite all || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_QDRANT_BASE_URL: http://qdrant:6333
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_QUALITY_RUNNER_ENABLED: ${MEMORY_XX_QUALITY_RUNNER_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      memory-xx-qdrant-projector-worker:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  memory-xx-governance-report:
+    build: .
+    profiles:
+      - full
+    command: ["sh", "-lc", "node --import tsx scripts/runtime-module-enabled.ts governance_report || exit 0; npm run memory:pending -- --limit=100; npm run memory:governance -- --dry-run --json || { echo 'memory-xx full profile gate is report-only; see logs for blockers'; exit 0; }"]
+    environment:
+      MEMORY_XX_RUNTIME_PROFILE: ${MEMORY_XX_RUNTIME_PROFILE:-core}
+      MEMORY_XX_PROJECT_ROOT: /app
+      MEMORY_XX_RUNTIME_DIR: /app/.runtime
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme-api}
+      MEMORY_XX_ADMIN_TOKEN: ${MEMORY_XX_ADMIN_TOKEN:-changeme-admin}
+      MEMORY_XX_GOVERNANCE_REPORT_ENABLED: ${MEMORY_XX_GOVERNANCE_REPORT_ENABLED:-0}
+    depends_on:
+      memory-xx:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: memory_xx
     ports:
-      - "5432:5432"
+      - "${MEMORY_XX_POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -42,7 +708,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${MEMORY_XX_REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -51,6 +717,15 @@ services:
       timeout: 5s
       retries: 5
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "${MEMORY_XX_QDRANT_HOST_PORT:-6333}:6333"
+    volumes:
+      - qdrantdata:/qdrant/storage
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
+  qdrantdata:

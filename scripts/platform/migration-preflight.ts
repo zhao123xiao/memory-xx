@@ -25,14 +25,15 @@ function check(name: string, ok: boolean, severity: MigrationPreflightCheck["sev
 }
 
 export async function buildMigrationPreflight(input: {
-  readonly profile: PlatformRuntimeProfile;
+  readonly profile?: PlatformRuntimeProfile;
   readonly projectRoot?: string;
-}): Promise<MigrationPreflightReport> {
+} = {}): Promise<MigrationPreflightReport> {
   const projectRoot = input.projectRoot ?? process.cwd();
   const platform = await collectPlatformDoctor({ profile: input.profile });
+  const profile = platform.requested_profile;
   const secretAudit = runSecretAudit({ roots: [projectRoot, path.resolve(projectRoot, "../mem0")] });
   const checks: MigrationPreflightCheck[] = [
-    check("platform-profile", platform.profiles[input.profile].available, "critical", `profile=${input.profile}, os=${platform.current_os}`),
+    check("platform-profile", platform.profiles[profile].available, "critical", `profile=${profile}, os=${platform.current_os}`),
     check("platform-components", platform.components.every((item) => item.ok), "critical", `components=${platform.components.map((item) => `${item.name}:${item.status}`).join(",")}`),
     check("tracked-secrets", secretAudit.blocker_count === 0, "critical", `tracked_secret_blockers=${secretAudit.blocker_count}`),
     check("env-example", existsSync(path.join(projectRoot, ".env.example")), "critical", ".env.example present"),
@@ -46,7 +47,7 @@ export async function buildMigrationPreflight(input: {
   return {
     ok: failedCritical.length === 0,
     checked_at: new Date().toISOString(),
-    profile: input.profile,
+    profile,
     status: failedCritical.length > 0 ? "blocked" : failedWarnings.length > 0 ? "manual_steps_required" : "ready",
     checks,
     manual_steps: [

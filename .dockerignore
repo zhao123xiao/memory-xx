@@ -6,6 +6,5 @@ dist
 *.status.json
 migration_artifacts/
 docs/
-tests/
 3/
 .claude/

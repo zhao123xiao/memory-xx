@@ -32,8 +32,10 @@ import { createDefaultMcpServer } from "../mcp";
 import { createMcpHttpHandler } from "../mcp/transport-http";
 import { createDefaultSkillRegistry } from "../skills/default-registry";
 import { inspectEmbeddingGenerationHealth, type EmbeddingGenerationHealth } from "../embedding";
+import { buildFullStackCapabilitySnapshot, type FullStackCapabilitySnapshot } from "../full-stack-capabilities";
 import { loadEmbeddingProviderRequestConfig, type EmbeddingProviderRequestConfig } from "./embedding-provider";
-import { buildRuntimeProfilePlan, parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../runtime-profiles";
+import { parseMemoryRuntimeProfile, type MemoryRuntimeProfile } from "../runtime-profiles";
+import { buildRuntimeModuleSnapshot, type RuntimeModuleSnapshot } from "../runtime-modules";
 import { validateRuntimeConfig, type RuntimeConfigValidationResult } from "../runtime-config-validator";
 import { getIntelligenceLlmCircuitHealthSnapshot } from "../intelligence/llm-client";
 import {
@@ -158,6 +160,8 @@ interface WrapperHealthSnapshot {
     readonly expected_components: readonly string[];
     readonly optional_components: readonly string[];
   };
+  readonly runtime_modules: RuntimeModuleSnapshot;
+  readonly full_stack_capabilities: FullStackCapabilitySnapshot;
   readonly security: {
     readonly token_separation: ReturnType<typeof inspectTokenSeparation>;
   };
@@ -392,7 +396,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
   const databaseUrl = process.env.MEMORY_XX_DATABASE_URL?.trim() ?? "";
   const databaseSchema = process.env.MEMORY_XX_DATABASE_SCHEMA?.trim() ?? "public";
   const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
-  const embeddingApiBase = process.env.EMBEDDING_API_BASE?.trim() ?? "https://api.scnet.cn/api/llm/v1";
+  const embeddingApiBase = process.env.EMBEDDING_API_BASE?.trim() ?? "https://embedding-provider.example/v1";
   const redisHealth = await recallCache.getHealthSnapshot();
   const embeddingProviderConfig = loadEmbeddingProviderRequestConfig();
   let embeddingGeneration: WrapperHealthSnapshot["embedding_generation"];
@@ -412,7 +416,13 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
       embeddingProviderConfig.generation_id === activeGeneration.generation_id
     : null;
   const runtimeProfile = parseMemoryRuntimeProfile();
-  const dependencyProfile = buildRuntimeProfilePlan(runtimeProfile);
+  const runtimeModules = buildRuntimeModuleSnapshot(runtimeProfile);
+  const fullStackCapabilities = buildFullStackCapabilitySnapshot();
+  const embeddingManifestRequired = Boolean(
+    ("configured" in embeddingGeneration && embeddingGeneration.configured) ||
+    process.env.MEMORY_XX_EMBEDDING_MANIFEST_ENABLED === "1" ||
+    process.env.MEMORY_XX_EMBEDDING_MANIFEST_ENABLED === "true"
+  );
 
   const tokenSeparation = inspectTokenSeparation(process.env);
   const configValidation = validateRuntimeConfig(process.env);
@@ -421,8 +431,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
   const governanceHealth = await buildGovernanceHealth();
   const baseOk = runtime !== null &&
     vectorStatus.available &&
-    generationOk &&
-    providerMatchesActiveGeneration !== false &&
+    (!embeddingManifestRequired || (generationOk && providerMatchesActiveGeneration !== false)) &&
     tokenSeparation.ok &&
     configValidation.ok;
   const issues = buildHealthRuntimeIssues({
@@ -431,6 +440,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     vectorReason: vectorStatus.reason,
     generationOk,
     providerMatchesActiveGeneration,
+    embeddingManifestRequired,
     tokenSeparationOk: tokenSeparation.ok,
     configValidationOk: configValidation.ok,
   });
@@ -509,10 +519,12 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     },
     dependency_profile: {
       mode: runtimeProfile,
-      required_components: dependencyProfile.required_components.map((component) => component.name),
-      expected_components: dependencyProfile.expected_components.map((component) => component.name),
-      optional_components: dependencyProfile.optional_components.map((component) => component.name),
+      required_components: runtimeModules.required_modules,
+      expected_components: runtimeModules.expected_modules,
+      optional_components: runtimeModules.optional_modules,
     },
+    runtime_modules: runtimeModules,
+    full_stack_capabilities: fullStackCapabilities,
     security: {
       token_separation: tokenSeparation,
     },

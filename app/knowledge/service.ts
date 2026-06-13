@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../db/adapters/postgres-config";
 import { mapMemoryIdToQdrantPointId } from "../qdrant-sync/projector";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
-import { QwenEmbeddingProviderWrapper } from "../server/embedding-provider";
+import { OpenAICompatibleEmbeddingProvider } from "../server/embedding-provider";
 
 export interface KnowledgeSearchRequest {
   readonly query: string;
@@ -55,7 +55,7 @@ const KNOWLEDGE_COLLECTION = process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.
 const KNOWLEDGE_SCHEMA = process.env.MEMORY_XX_KNOWLEDGE_SCHEMA?.trim() || "knowledge_v1";
 const DEFAULT_LIMIT = 8;
 const knowledgeEmbeddingProvider = new ResilientQueryEmbeddingProvider(
-  new QwenEmbeddingProviderWrapper(),
+  new OpenAICompatibleEmbeddingProvider(),
   {
     max_retries: 2,
     retry_delay_ms: 300,

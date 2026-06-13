@@ -2,10 +2,10 @@
 
 ## Runtime Chain And Boundaries
 
-The active production chain is:
+The default online chain is:
 
 ```text
-memory-xx Postgres -> Qdrant active alias -> wrapper/fastpath/OpenClaw
+memory-xx Postgres -> Qdrant active alias -> wrapper/optional fastpath -> agent adapters
 ```
 
 - Postgres schema `memory_xx` is the source of truth.
@@ -17,13 +17,13 @@ memory-xx Postgres -> Qdrant active alias -> wrapper/fastpath/OpenClaw
   retired legacy assets, not audit mirrors for the current runtime. Do not
   treat legacy SQLite pending/stale embedding counts as current runtime
   blockers unless a separate task restores the old chain.
-- OpenClaw must use memory-xx tools (`memory_xx_recall`, `memory_xx_write`, and
-  orchestrator routes) with a scoped trusted-agent token. Keep the admin token
-  for manual operations and CLI checks only.
-- `openclaw memory status --deep` belongs to the stock legacy memorySearch
-  surface. `Memory search disabled` there does not mean memory-xx recall/write
-  is disabled; verify memory-xx through `/health`, scoped recall/write smoke,
-  projector health, and Qdrant alias checks.
+- Optional agent adapters, including OpenClaw, should call memory-xx tools
+  (`memory_xx_recall`, `memory_xx_write`, and orchestrator routes) with scoped
+  trusted-agent tokens. Keep the admin token for manual operations and CLI
+  checks only.
+- Agent-specific legacy memory status commands are not memory-xx health checks.
+  Verify memory-xx through `/health`, scoped recall/write smoke, projector
+  health, and Qdrant alias checks.
 - On WSL, run npm/tsx commands and systemd services with `TMPDIR=/tmp` to avoid
   tsx Unix socket creation under Windows temp paths.
 
@@ -42,6 +42,9 @@ Key fields:
 - `runtime_profile` — `core`, `enhanced`, or `full`; defaults to `core`
 - `dependency_profile` — required/expected/optional components for the active
   runtime profile
+- `runtime_modules.states` — canonical hot-plug state for every module:
+  `enabled`, `disabled`, `degraded`, or `missing_dependency`; the control panel
+  uses the same registry.
 - `vector.available` — Qdrant or pgvector reachable
 - `config.openai_api_key_configured` — embedding API key set
 - `query_embedding_cache.stats.redis_hit_rate` — Redis query embedding cache effectiveness
@@ -129,11 +132,131 @@ TMPDIR=/tmp npm run memory:mode -- plan --mode core
 TMPDIR=/tmp npm run memory:up -- --mode core
 TMPDIR=/tmp npm run memory:up -- --mode enhanced
 TMPDIR=/tmp npm run memory:mode -- plan --mode full
+TMPDIR=/tmp npm run smoke:compose-core-live
+TMPDIR=/tmp npm run smoke:compose-enhanced
+TMPDIR=/tmp npm run smoke:compose-full
+TMPDIR=/tmp npm run smoke:compose-profile-live
+TMPDIR=/tmp npm run verify:open-source-full-stack
+```
+
+`smoke:compose-core-live` starts the public `core` + `dev` Compose profiles with
+alternate host ports and the bundled dev embedding upstream. It then runs
+`smoke:compose-profile-live` and M1 write/project/recall functional smoke.
+Set `MEMORY_XX_COMPOSE_CORE_LIVE_SKIP_FUNCTIONAL=1` when you only want the
+live Core container check.
+
+`smoke:compose-enhanced` starts the public `enhanced` + `dev` Compose profiles
+with alternate host ports, bundled dev embedding/chat/reranker upstreams, and
+the enhanced sidecar switches enabled. It then runs
+`smoke:compose-profile-live` without enabling full-only one-shot governance or
+maintenance modules.
+
+`smoke:compose-full` starts the public `full` + `dev` Compose profiles with
+alternate host ports, bundled dev embedding/chat/reranker upstreams, and all
+full-stack module switches enabled. It then runs `smoke:compose-profile-live`
+and M1 write/recall functional smoke. Set
+`MEMORY_XX_COMPOSE_FULL_SKIP_FUNCTIONAL=1` when you only want the live profile
+container check.
+
+`smoke:compose-profile-live` should be run after a Compose profile is up. It
+compares `docker compose ps --all` with the wrapper `/health` runtime module
+snapshot, so enabled enhanced/full modules must have a matching running
+container while disabled module containers may exit cleanly.
+
+Maintainers can run `TMPDIR=/tmp npm run verify:open-source-full-stack` before
+publishing. It chains typecheck, the full test suite, `verify:open-source`,
+migration and hardcoded-path checks, the stale public compatibility-name scan,
+optional reference parity audit, and enhanced/full Compose smokes. Set
+`MEMORY_XX_PARITY_REFERENCE_ROOT=/path/to/reference-tree` to compare against a
+local reference tree; set `MEMORY_XX_RELEASE_GATE_REQUIRE_PARITY=1` to make that
+reference mandatory; set `MEMORY_XX_RELEASE_GATE_SKIP_COMPOSE=1` for a
+non-Docker release audit.
+
+Public harness layers can be run individually when validating a module. `L1`
+checks the unit and HTTP contract layer, while `L19` exercises the conversation
+monitor path from JSONL spool ingestion through recall. The cache invalidation,
+write ticket, markdown projection, memory dreaming, full ops, policy ops,
+knowledge graph, Qdrant reconciliation, recall quality, temporal ops, backup
+ops, runtime observability, trusted agent, embedding ops, local embedding generation,
+and governance ops
+smokes validate durable background workers, enhanced graph modules, projection
+repair status, recall/reranker quality surfaces, and temporal governance
+against live PostgreSQL, Redis, Qdrant, the configured embedding provider,
+generated projection files, safe degraded dream cycles, dry-run backup and
+deployment packaging reports, retention reports, trusted-agent audits, and
+full-profile maintenance/governance/quality reportability. `smoke:policy-ops`
+uses policy evaluation, auto-approval reporting, and auto-update dry-run paths;
+it does not apply approvals or updates. `smoke:knowledge-graph` uses Knowledge
+Markdown scan, graph health/report, and repository code graph paths without
+ingesting or archiving documents. `smoke:qdrant-reconciliation` runs only
+report/status surfaces and does not replay outbox rows, mark events dispatched,
+or apply Qdrant repairs. `smoke:recall-quality` runs trace replay quality,
+intelligence compare status, trace feedback candidates, and reranker policy
+benchmark paths without writing observations, applying feedback, or running
+repair jobs. `smoke:temporal-ops` runs decay, expiry sweep, temporal policy,
+and consolidation dry-runs; consolidation rolls back its transaction and no
+archive, episode, entity, or relation writes are committed. `smoke:backup-ops`
+runs backup planning, migration preflight, deployment bundle generation into a
+temporary directory, and secrets audit with failure reporting only; it does not
+create database dumps or copy live secrets. Because backup planning is an
+admin operation, set `MEMORY_XX_CLI_TOKEN` or `MEMORY_XX_ADMIN_TOKEN` before
+running it. `smoke:runtime-observability` runs runtime retention, recall trace
+retention, and runtime artifact cleanup in dry-run/report mode; it does not
+delete traces, prune observability rows, or move residue logs. `smoke:trusted-agent`
+runs only trusted-agent and scope-grant audit/list surfaces; it does not
+register, revoke, or modify tokens. `smoke:embedding-ops` reads embedding
+manifest status and runs a small calibration probe only; it does not switch
+aliases, roll back generations, or run local bulk vector jobs.
+`smoke:local-embedding-generation` runs the estimate-only path with a one-record
+limit and concurrency 1; it does not create Qdrant collections, write points, or
+update the embedding manifest. `smoke:governance-ops` runs pending/report/scan
+surfaces only; it does not apply governance actions, freeze/revert actions, run
+cleanup, or modify memory records. `smoke:self-improvement-ops` generates only
+report-only self-improvement proposals, Graphiti shadow exports, and test
+pollution dry-runs; it does not write memory, write markdown, apply, or run
+cleanup:
+
+```bash
+TMPDIR=/tmp npm run test:unit-contract
+TMPDIR=/tmp npm run test:conversation-monitor
+TMPDIR=/tmp npm run smoke:cache-invalidation
+TMPDIR=/tmp npm run smoke:write-ticket
+TMPDIR=/tmp npm run smoke:markdown-projection
+TMPDIR=/tmp npm run smoke:memory-dreaming
+TMPDIR=/tmp npm run smoke:full-ops
+TMPDIR=/tmp npm run smoke:policy-ops
+TMPDIR=/tmp npm run smoke:knowledge-graph
+TMPDIR=/tmp npm run smoke:qdrant-reconciliation
+TMPDIR=/tmp npm run smoke:recall-quality
+TMPDIR=/tmp npm run smoke:temporal-ops
+TMPDIR=/tmp npm run smoke:backup-ops
+TMPDIR=/tmp npm run smoke:runtime-observability
+TMPDIR=/tmp npm run smoke:trusted-agent
+TMPDIR=/tmp npm run smoke:embedding-ops
+TMPDIR=/tmp npm run smoke:local-embedding-generation
+TMPDIR=/tmp npm run smoke:governance-ops
+TMPDIR=/tmp npm run smoke:self-improvement-ops
+```
+
+`L7` validates the optional OpenClaw adapter. It is non-blocking by default in
+the public harness so deployments without OpenClaw can still validate Core,
+enhanced, and full memory-xx modules. Require it only for environments where
+that optional adapter is part of the target deployment:
+
+```bash
+TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7 --require-openclaw
+MEMORY_XX_REQUIRE_OPENCLAW_INTEGRATION=1 TMPDIR=/tmp node --import tsx scripts/test-harness/reports/aggregator.ts --layer=L7
 ```
 
 `memory:mode` probes Postgres, Redis, Qdrant, and local/Windows embedding
-dependencies but does not start those external processes. Existing systemd
-service names are preserved, including historical `*-next` names.
+dependencies but does not start those external processes. Current public
+systemd service names use stable `memory-xx-*.service` units.
+
+`systemd/memory-xx.target` starts only the Core online chain by default:
+wrapper, Qdrant projector worker, and embedding proxy. Start enhanced/full
+modules with `memory:up -- --mode enhanced`, `memory:up -- --mode full`,
+`memory-xx-enhanced.target`, `memory-xx-full.target`, or explicit individual
+systemd units after their model/API dependencies are ready.
 
 ## P1/P2 Production Closure
 
@@ -224,18 +347,19 @@ and recommends `EMBEDDING_PROXY_MAX_CONCURRENCY`,
 default production stance is stability-first: keep interaction timeouts short,
 use cache/stale fallback, and avoid retry storms on 429/503.
 
-For local OVMS embedding, point the proxy upstream at Windows port 8082:
+For an optional local OpenAI-compatible embedding upstream, point the proxy at
+the upstream base URL and model exposed by your local server:
 
 ```bash
-EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:8082/v3
-EMBEDDING_PROXY_UPSTREAM_MODEL=qwen3-embedding
-EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=/mnt/d/ovms/api_key.txt
-EMBEDDING_PROXY_MAX_CONCURRENCY=1
-EMBEDDING_PROXY_MIN_INTERVAL_MS=0
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_BASE=http://127.0.0.1:<port>/v1
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_MODEL=<local-embedding-model-name>
+MEMORY_XX_EMBEDDING_PROXY_UPSTREAM_API_KEY_FILE=<path-to-api-key-file>
+MEMORY_XX_EMBEDDING_PROXY_MAX_CONCURRENCY=1
+MEMORY_XX_EMBEDDING_PROXY_MIN_INTERVAL_MS=0
 ```
 
-The Windows model launcher is `<windows-drive>\ovms\run-embedding.bat`; it should serve
-`<windows-drive>\models\ov\Qwen3-Embedding-8B-int4-ov` as `qwen3-embedding`.
+Local upstream managers are optional. Keep them disabled when the proxy points
+at a remote OpenAI-compatible provider.
 
 ## Embedding Generation Switch
 
@@ -245,8 +369,8 @@ query cache version, and Qdrant payload `embedding_generation`.
 
 ```bash
 TMPDIR=/tmp npm run memory:embedding-manifest -- status
-TMPDIR=/tmp npm run memory:embedding-manifest -- validate --generation-id=local-qwen8b-int4-v1
-TMPDIR=/tmp npm run memory:embedding-manifest -- activate --generation-id=local-qwen8b-int4-v1
+TMPDIR=/tmp npm run memory:embedding-manifest -- validate --generation-id=memory-xx-default-v1
+TMPDIR=/tmp npm run memory:embedding-manifest -- activate --generation-id=memory-xx-default-v1
 TMPDIR=/tmp npm run memory:embedding-manifest -- rollback
 ```
 
@@ -373,10 +497,9 @@ Log level controlled by `MEMORY_XX_LOG_LEVEL` (error/warn/info/debug).
 
 ## Historical `*-next` Residue
 
-Some service names still contain `next` for compatibility, for example
-`memory-xx-embedding-proxy-next.service`. Do not rename them during routine
-performance work. Old `wrapper-next.*` and `qdrant-projector-worker-next.*`
-logs can be archived without deletion:
+Current public service names no longer use the experimental `*-next` suffix.
+Old `wrapper-next.*`, `qdrant-projector-worker-next.*`, and sidecar `*-next.*`
+logs can still be archived without deletion:
 
 ```bash
 TMPDIR=/tmp npm run memory:archive-next-residue
@@ -424,3 +547,25 @@ docker-compose up --build -d
 docker-compose logs -f memory-xx
 docker-compose down
 ```
+
+The default Compose command starts the Core path: wrapper, embedding proxy,
+Qdrant projector worker, Postgres, Redis, and Qdrant. Optional modules are
+exposed through profiles:
+
+```bash
+MEMORY_XX_RUNTIME_PROFILE=enhanced docker-compose --profile enhanced up --build -d
+MEMORY_XX_RUNTIME_PROFILE=full docker-compose --profile full up --build -d
+TMPDIR=/tmp npm run smoke:compose-core-live
+TMPDIR=/tmp npm run smoke:compose-enhanced
+TMPDIR=/tmp npm run smoke:compose-full
+```
+
+`enhanced` starts fastpath, lexical sidecar, Qdrant proxy, reranker adapter, and
+the local control panel. `full` includes the enhanced services and also starts
+Mem0 extraction, the conversation monitor, cache invalidation worker, and the operations/gate modules for
+maintenance, consolidation, issue detection, auto-repair, repair reporting,
+landing scan, and 7-day canary reporting. Those full modules still honor their
+own `MEMORY_XX_*_ENABLED=0` switches and exit without work until enabled.
+Model upstreams remain environment-specific; configure
+`EMBEDDING_PROXY_UPSTREAM_BASE`, `OPENAI_API_KEY`, reranker downstream URLs, and
+Mem0/LLM settings before relying on those modules.

@@ -29,14 +29,18 @@ export function loadEmbeddingProviderRequestConfig(
     env.EMBEDDING_API_BASE?.trim() ??
     "http://127.0.0.1:5221";
   return {
-    model: env.EMBEDDING_MODEL?.trim() || "Qwen3-Embedding-8B",
+    model: env.EMBEDDING_MODEL?.trim() || "memory-xx-dev-embedding",
     dims: readPositiveInt(env, "EMBEDDING_DIMS", 4096),
-    generation_id: env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1",
+    generation_id: env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "memory-xx-default-v1",
     api_base: apiBase,
   };
 }
 
-export class QwenEmbeddingProviderWrapper {
+export function resolveEmbeddingProviderMetricLabel(apiBase: string): "local" | "remote" {
+  return /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(apiBase) ? "local" : "remote";
+}
+
+export class OpenAICompatibleEmbeddingProvider {
   private readonly apiKey: string;
   private readonly apiBase: string;
   private readonly timeoutMs: number;
@@ -76,7 +80,7 @@ export class QwenEmbeddingProviderWrapper {
     query_terms: string[];
   }) {
     const started = Date.now();
-    const provider = this.apiBase.includes("127.0.0.1") || this.apiBase.includes("localhost") ? "local-ovms" : "remote";
+    const provider = resolveEmbeddingProviderMetricLabel(this.apiBase);
     const isLocalProxy = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/u.test(this.apiBase);
     if (!this.apiKey && !isLocalProxy) {
       recordEmbeddingProviderCall({ provider, status: "missing_api_key", latencyMs: Date.now() - started });

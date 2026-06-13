@@ -14,7 +14,6 @@ import {
   isJsonRpcNotification,
 } from "./protocol";
 import { ToolRegistry, ResourceRegistry, type ToolHandler } from "./tool-registry";
-import { DEFAULT_AGENT_ID } from "../shared";
 import { createLogger } from "../shared/logger";
 
 const log = createLogger("mcp:server");
@@ -269,7 +268,7 @@ export function registerMemoryTools(
         },
         scope_id: { type: "string", description: "Scope identifier" },
         title: { type: "string", description: "Optional memory title" },
-        author: { type: "string", description: `Author identifier (default: ${DEFAULT_AGENT_ID})` },
+        author: { type: "string", description: "Author identifier (default: memory-xx)" },
         tags: { type: "array", description: "Tags for categorization" },
       },
       required: ["content", "scope_type", "scope_id"],
@@ -280,7 +279,7 @@ export function registerMemoryTools(
         scopeType: args.scope_type,
         scopeId: args.scope_id,
         requestId: randomUUID(),
-        actorId: (args.author as string) || DEFAULT_AGENT_ID,
+        actorId: (args.author as string) || "memory-xx",
       };
       if (typeof args.title === "string") body.title = args.title;
       if (Array.isArray(args.tags)) body.metadata = { tags: args.tags };
@@ -489,7 +488,7 @@ export function registerMemoryTools(
     async (args) => {
       return post("/api/memory/xx/orchestrator/forget-memory", {
         requestId: randomUUID(),
-        actorId: DEFAULT_AGENT_ID,
+        actorId: "memory-xx",
         memoryId: args.memory_id,
         mode: args.mode === "archive" ? "archive" : "tombstone",
       });

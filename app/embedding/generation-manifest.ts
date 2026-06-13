@@ -108,7 +108,7 @@ export function hashEmbeddingBase(value: string | undefined): string | null {
 }
 
 export function defaultEmbeddingGenerationId(env: NodeJS.ProcessEnv = process.env): string {
-  return env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "local-qwen8b-int4-v1";
+  return env.MEMORY_XX_EMBEDDING_GENERATION_ID?.trim() || "memory-xx-default-v1";
 }
 
 export function defaultEmbeddingTextStrategy(env: NodeJS.ProcessEnv = process.env): string {

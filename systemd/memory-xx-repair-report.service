@@ -9,6 +9,7 @@ WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
 Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
+ExecCondition=/usr/bin/node --import tsx scripts/runtime-module-enabled.ts repair_report
 ExecStart=/bin/bash -lc '/usr/bin/npm run memory:auto-repair -- --json; /usr/bin/npm run memory:doctor -- --target ops-ready --mode full --plan'
 StandardOutput=append:%h/services/memory-xx/repair-report.log
 StandardError=append:%h/services/memory-xx/repair-report.error.log

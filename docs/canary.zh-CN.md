@@ -32,4 +32,11 @@ TMPDIR=/tmp npm run memory:p0-gate
 TMPDIR=/tmp npm run memory:p1-gate
 ```
 
+默认 landing scan 和 7 天 canary 只要求通用的 `codex_session` 和 `claude_code_session` 具备 E2E 证据。OpenClaw 属于可选会话来源；如果你的部署确实要求 OpenClaw 也参与生产门禁，可以显式指定：
+
+```bash
+TMPDIR=/tmp npm run memory:landing-scan -- --json --write-report --required-source=openclaw_session
+TMPDIR=/tmp npm run memory:canary-7d-report -- --json --write-report --required-source=openclaw_session
+```
+
 公开预览版不建议默认开启 global 自动写入，也不建议默认开启 real update/supersede/apply。

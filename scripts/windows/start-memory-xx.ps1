@@ -1,10 +1,15 @@
 param(
-  [string]$WslProjectRoot = "<project-root>",
+  [string]$WslProjectRoot = $env:MEMORY_XX_WSL_PROJECT_ROOT,
   [int]$ControlPanelPort = 5310,
   [switch]$NoBrowser
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($WslProjectRoot)) {
+  $wslUser = if ($env:MEMORY_XX_WSL_USER) { $env:MEMORY_XX_WSL_USER } else { $env:USERNAME }
+  $WslProjectRoot = "/home/$wslUser/services/memory-xx"
+}
 
 function Invoke-WslMemoryXX([string]$Command) {
   wsl.exe bash -lc "cd '$WslProjectRoot' && $Command"
@@ -28,6 +33,6 @@ try {
   Write-Host "WSL 启动失败：$($_.Exception.Message)"
 }
 
-Write-Host "未找到可用 WSL memory-xx。Windows native profile 请先配置 ProjectRoot、PostgreSQL、Redis、Qdrant 和 Node 运行环境。"
-@{ ok = $false; mode = "unavailable"; remediation = "安装/启动 WSL，或按 deployment bundle 配置 windows-native profile。" } | ConvertTo-Json -Depth 5
+Write-Host "未找到可用 WSL memory-xx。请设置 MEMORY_XX_WSL_PROJECT_ROOT，或按 deployment bundle 配置 windows-native profile。"
+@{ ok = $false; mode = "unavailable"; wsl_project_root = $WslProjectRoot; remediation = "设置 MEMORY_XX_WSL_PROJECT_ROOT，安装/启动 WSL，或按 deployment bundle 配置 windows-native profile。" } | ConvertTo-Json -Depth 5
 exit 2
