@@ -1,10 +1,10 @@
 import path from "node:path";
 
 import "./test-harness/config.js";
-import { loadMemoryV2PostgresConfig, runPostgresMigrations } from "../app";
+import { loadMemoryXXPostgresConfig, runPostgresMigrations } from "../app";
 
 async function main(): Promise<void> {
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const result = await runPostgresMigrations({
     config,
     migrationsDirectory: path.resolve(process.cwd(), "migrations")

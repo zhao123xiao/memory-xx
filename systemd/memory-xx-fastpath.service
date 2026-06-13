@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 Go fastpath sidecar
+Description=memory-xx Go fastpath sidecar
 After=network-online.target memory-xx-wrapper.service
 Wants=network-online.target
 
@@ -8,13 +8,13 @@ Type=simple
 WorkingDirectory=%h/services/memory-xx-fastpath
 EnvironmentFile=%h/services/memory-xx/.env
 EnvironmentFile=-%h/services/memory-xx/.env.fastpath-next
-Environment=MEMORY_V2_FASTPATH_ADDR=:5200
-Environment=MEMORY_V2_WRAPPER_URL=http://127.0.0.1:5100
-Environment=MEMORY_V2_FASTPATH_REDIS_CACHE_ENABLED=true
-Environment=MEMORY_V2_FASTPATH_CACHE_PREFIX=memory-xx-active-fastpath
-Environment=MEMORY_V2_FASTPATH_HYBRID_ENABLED=true
-Environment=MEMORY_V2_FASTPATH_LEXICAL_URL=http://127.0.0.1:5210
-Environment=MEMORY_V2_LEXICAL_URL=http://127.0.0.1:5210
+Environment=MEMORY_XX_FASTPATH_ADDR=:5200
+Environment=MEMORY_XX_WRAPPER_URL=http://127.0.0.1:5100
+Environment=MEMORY_XX_FASTPATH_REDIS_CACHE_ENABLED=true
+Environment=MEMORY_XX_FASTPATH_CACHE_PREFIX=memory-xx-active-fastpath
+Environment=MEMORY_XX_FASTPATH_HYBRID_ENABLED=true
+Environment=MEMORY_XX_FASTPATH_LEXICAL_URL=http://127.0.0.1:5210
+Environment=MEMORY_XX_LEXICAL_URL=http://127.0.0.1:5210
 ExecStart=%h/services/memory-xx-fastpath/memory-xx-fastpath
 Restart=always
 RestartSec=3

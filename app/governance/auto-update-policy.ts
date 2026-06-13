@@ -3,6 +3,7 @@ import {
   isRuntimeAutoUpdateApplyScopeEnabled,
   isTestAutoUpdateApplyScope,
   readAutoApprovalRuntimeControlsSync,
+  readAutoApprovalRuntimeControlsStateSync,
 } from "./auto-approval-runtime-controls";
 import {
   hasExplicitGlobalMemoryIntent,
@@ -35,6 +36,7 @@ export interface AutoUpdateCandidateInput {
   readonly agentId: string;
   readonly source: string;
   readonly metadata?: JsonObject | null;
+  readonly recentAppliedCount?: number;
 }
 
 export interface AutoUpdatePolicyResult {
@@ -100,7 +102,7 @@ function updateTypeCanApply(input: AutoUpdateCandidateInput, type: AutoUpdateTyp
   if (BASE_APPLY_ALLOWED_TYPES.has(type)) return updateTypeApplyEnabled(type);
   if (type === "preference_change") {
     return input.scopeType === "user" &&
-      input.scopeId === "current-user" &&
+      (input.scopeId === "current-user" || input.scopeId === "current-instance-owner") &&
       input.memoryType === "preference" &&
       updateTypeApplyEnabled(type);
   }
@@ -114,10 +116,26 @@ function replacementConfidence(input: AutoUpdateCandidateInput, explicit: boolea
 }
 
 function applyGate(input: AutoUpdateCandidateInput, type: AutoUpdateType, blocked: readonly string[]): { allowed: boolean; reason: string | null; why: string } {
+  const controlsState = readAutoApprovalRuntimeControlsStateSync();
+  if (!controlsState.ok) {
+    return {
+      allowed: false,
+      reason: "runtime_controls_invalid",
+      why: `auto-approval runtime controls are invalid: ${controlsState.error ?? "unknown error"}`,
+    };
+  }
+  const hourlyLimit = Math.max(1, controlsState.controls.update_apply.max_hourly_per_scope || 1);
+  if ((input.recentAppliedCount ?? 0) >= hourlyLimit) {
+    return {
+      allowed: false,
+      reason: "hourly_scope_apply_limit_exceeded",
+      why: `scope ${input.scopeType}:${input.scopeId} reached auto-update apply hourly limit recent=${input.recentAppliedCount ?? 0} limit=${hourlyLimit}`,
+    };
+  }
   const scopeApplyEnabled = isAutoUpdateApplyScopeEnabled(input.scopeType, input.scopeId);
   if (!scopeApplyEnabled) {
     const isRealProjectTrialCandidate = input.scopeType === "project" && input.scopeId === "memory-xx";
-    const isRealUserTrialCandidate = input.scopeType === "user" && input.scopeId === "current-user";
+    const isRealUserTrialCandidate = input.scopeType === "user" && (input.scopeId === "current-user" || input.scopeId === "current-instance-owner");
     const isGlobalKeywordCandidate = input.scopeType === "global" && input.scopeId === "global";
     return {
       allowed: false,
@@ -153,7 +171,7 @@ function applyGate(input: AutoUpdateCandidateInput, type: AutoUpdateType, blocke
     why: isTestAutoUpdateApplyScope(input.scopeType, input.scopeId)
       ? "isolated test scope, allowed update type, quality gates, and privacy gates passed"
       : input.scopeType === "user"
-        ? "guarded user:current-user update apply, allowed update type, quality gates, and privacy gates passed"
+        ? `guarded user:${input.scopeId} update apply, allowed update type, quality gates, and privacy gates passed`
         : input.scopeType === "global"
           ? "guarded global keyword-intent update apply, allowed update type, quality gates, and privacy gates passed"
           : "guarded project:memory-xx update apply, allowed update type, quality gates, and privacy gates passed",
@@ -226,10 +244,13 @@ export function evaluateAutoUpdatePolicy(input: AutoUpdateCandidateInput): AutoU
   const conflictAction = input.conflictAction ?? input.operation;
   const explicit = conflictAction === "supersede" || conflictAction === "update" || hasExplicitReplacement(input.content);
   const highQuality = input.qualityScore >= 0.94 && input.confidence >= 0.96;
+  const controls = readAutoApprovalRuntimeControlsSync();
+  const hourlyLimit = Math.max(1, controls.update_apply.max_hourly_per_scope || 1);
 
   if (privacy.blocked) blocked.push("sensitive_content_detected");
   if (privacy.findings.some((finding) => finding.kind === "pii")) blocked.push("pii_requires_human_review");
   if (!highQuality) blocked.push("quality_or_confidence_below_update_threshold");
+  if ((input.recentAppliedCount ?? 0) >= hourlyLimit) blocked.push("hourly_scope_apply_limit_exceeded");
   if (!input.existingMemoryId && !expired(input.metadata)) blocked.push("existing_memory_required");
   if (input.scopeType === "global" && !hasExplicitGlobalMemoryIntent(input.content, input.existingContent) && !hasExplicitGlobalMemoryIntentFromMetadata(input.metadata)) {
     blocked.push("global_explicit_intent_required");

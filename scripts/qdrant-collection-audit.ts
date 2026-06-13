@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { classifyQdrantCollection } from "../app/governance/maintenance-classifiers";
-import { loadMemoryV2QdrantConfig } from "../app/recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../app/recall/qdrant-config";
 import { requireCliPermission } from "../app/server/permissions";
 import { loadDotenvIfPresent, printJson } from "./lib/runtime-env";
 
@@ -36,7 +36,7 @@ function collectReferencedCollections(): string[] {
     ...systemdFiles
   ];
   const refs = new Set<string>();
-  const pattern = /\b(?:MEMORY_V2_QDRANT_COLLECTION|MEMORY_V2_QDRANT_ALIAS|QDRANT_COLLECTION|collection_name)\s*=?\s*["']?([A-Za-z0-9_.:-]+)/gu;
+  const pattern = /\b(?:MEMORY_XX_QDRANT_COLLECTION|MEMORY_XX_QDRANT_ALIAS|QDRANT_COLLECTION|collection_name)\s*=?\s*["']?([A-Za-z0-9_.:-]+)/gu;
   for (const file of files) {
     const content = readFileSafe(file);
     let match: RegExpExecArray | null;
@@ -49,8 +49,8 @@ function collectReferencedCollections(): string[] {
 
 async function main(): Promise<void> {
   await requireCliPermission("memory:governance_read");
-  const config = loadMemoryV2QdrantConfig();
-  if (!config.base_url) throw new Error("MEMORY_V2_QDRANT_BASE_URL is required");
+  const config = loadMemoryXXQdrantConfig();
+  if (!config.base_url) throw new Error("MEMORY_XX_QDRANT_BASE_URL is required");
   const baseUrl = config.base_url.replace(/\/+$/u, "");
   const headers: Record<string, string> = {};
   if (config.api_key) headers["api-key"] = config.api_key;
@@ -66,14 +66,14 @@ async function main(): Promise<void> {
   const names = (parsed.result?.collections ?? []).map((item) => item.name).filter((name): name is string => Boolean(name));
   const active = [
     config.collection_name,
-    process.env.MEMORY_V2_QDRANT_ALIAS?.trim(),
-    process.env.MEMORY_V2_QDRANT_ACTIVE_COLLECTION?.trim(),
+    process.env.MEMORY_XX_QDRANT_ALIAS?.trim(),
+    process.env.MEMORY_XX_QDRANT_ACTIVE_COLLECTION?.trim(),
     ...aliasTargets
-      .filter((alias) => alias.alias_name === config.collection_name || alias.alias_name === process.env.MEMORY_V2_QDRANT_ALIAS?.trim())
+      .filter((alias) => alias.alias_name === config.collection_name || alias.alias_name === process.env.MEMORY_XX_QDRANT_ALIAS?.trim())
       .map((alias) => alias.collection_name)
   ].filter((name): name is string => Boolean(name));
   const knowledge = [
-    process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim(),
+    process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim(),
     "knowledge-v1"
   ].filter((name): name is string => Boolean(name));
   const referenced = collectReferencedCollections();

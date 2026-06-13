@@ -23,7 +23,7 @@ export enum MigrationSourceSystem {
   Qdrant = "qdrant",
   EmbeddingCache = "embedding_cache",
   Mem0 = "mem0",
-  MemoryV2 = "memory_xx"
+  MemoryV2 = "memory_v2"
 }
 
 export enum MigrationAuditStatus {
@@ -41,7 +41,8 @@ export enum ShadowDiffCategory {
   ScopeViolation = "scope_violation",
   ZeroHitRegression = "zero_hit_regression",
   DegradeRegression = "degrade_regression",
-  ResultMismatch = "result_mismatch"
+  ResultMismatch = "result_mismatch",
+  CandidateTimeout = "candidate_timeout"
 }
 
 export enum ShadowDiffSeverity {

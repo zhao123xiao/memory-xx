@@ -34,8 +34,67 @@ test("public env examples use the same default wrapper port", async () => {
   const rootEnv = await fs.readFile(".env.example", "utf8");
   const wrapperEnv = await fs.readFile("configs/memory-xx-wrapper.env.example", "utf8");
 
-  assert.match(rootEnv, /^MEMORY_V2_WRAPPER_PORT=5100$/mu);
-  assert.match(wrapperEnv, /^MEMORY_V2_WRAPPER_PORT=5100$/mu);
+  assert.match(rootEnv, /^MEMORY_XX_WRAPPER_PORT=5100$/mu);
+  assert.match(wrapperEnv, /^MEMORY_XX_WRAPPER_PORT=5100$/mu);
+});
+
+test("public docs and config templates use memory-xx env and API names", async () => {
+  const files = [
+    "README.md",
+    ".env.example",
+    "configs/README.md",
+    "configs/memory-xx.env.example",
+    "configs/memory-xx-wrapper.env.example",
+    "configs/memory-xx-qdrant-projector-worker.env.example",
+    "docs/quickstart.zh-CN.md",
+  ];
+  const stale: string[] = [];
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    if (/MEMORY_V2_|\/api\/memory\/v2/u.test(content)) stale.push(file);
+  }
+
+  assert.deepEqual(stale, []);
+});
+
+test("public systemd bundle provides the unit name used by scripts", async () => {
+  const fs = await import("node:fs/promises");
+  const wrapper = await fs.readFile("systemd/memory-xx-wrapper.service", "utf8");
+
+  assert.match(wrapper, /^Description=memory-xx wrapper$/mu);
+  assert.match(wrapper, /ExecStart=.*wrapper-entry\.mjs/u);
+  await assert.rejects(
+    () => fs.stat("systemd/openclaw-memory-xx-wrapper.service"),
+    /ENOENT/u
+  );
+});
+
+test("README documents required session roots and API embedding option", async () => {
+  const readme = await readFile("README.md", "utf8");
+
+  assert.match(readme, /MEMORY_XX_CODEX_SESSION_ROOTS/u);
+  assert.match(readme, /MEMORY_XX_CLAUDE_SESSION_ROOTS/u);
+  assert.match(readme, /MEMORY_XX_OPENCLAW_SESSION_ROOTS/u);
+  assert.match(readme, /https:\/\/www\.scnet\.cn/u);
+  assert.match(readme, /0\.1\s*\/\s*百万\s*token/u);
+});
+
+test("README links current parity and release readiness evidence", async () => {
+  const readme = await readFile("README.md", "utf8");
+
+  assert.match(readme, /docs\/memory-v2-full-feature-parity-audit-2026-06-11\.md/u);
+  assert.match(readme, /docs\/open-source-release-readiness-2026-06-13\.md/u);
+  assert.match(readme, /memory:parity-audit/u);
+  assert.match(readme, /verify:open-source/u);
+});
+
+test("README presents the current mirror as a public preview release candidate, not alpha", async () => {
+  const readme = await readFile("README.md", "utf8");
+
+  assert.match(readme, /public preview release candidate/u);
+  assert.doesNotMatch(readme, /public preview\s*\/\s*alpha/u);
+  assert.match(readme, /dangerous apply/u);
+  assert.match(readme, /dry-run first/u);
 });
 
 test("MCP test fixtures use the public wrapper port 5100", async () => {
@@ -127,7 +186,10 @@ test("package exposes an open-source verification script without runtime env gat
 
   assert.match(command, /npm run check:secrets/u);
   assert.match(command, /npm run open-source:preaudit/u);
+  assert.match(command, /--fail-on-blockers/u);
+  assert.match(command, /scripts\/verify-open-source-parity\.ts/u);
   assert.match(command, /tests\/open-source-readiness\.test\.ts/u);
+  assert.match(command, /tests\/open-source-release-readiness-doc\.test\.ts/u);
   assert.match(command, /npm run audit:prod/u);
   assert.doesNotMatch(command, /test:gates|test:all-gates/u);
 });

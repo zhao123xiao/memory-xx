@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { RecallCacheAudit, RecallCacheRuntime } from "../cache";
 import { readRuntimeControlNumberSync } from "../runtime-control-settings";
-import { DEFAULT_FILTER_MODE } from "../shared";
+import { DEFAULT_FILTER_MODE, ScopeType } from "../shared";
 import { buildRecallFilterPlan } from "./filter-builder";
 import { buildRetrievalPlan } from "./hybrid-planner";
 import {
@@ -12,14 +12,25 @@ import {
 } from "./metadata-filter-builder";
 import { classifyQuery } from "./query-classifier";
 import { rerankCandidatesWithOptionalModel } from "./model-reranker";
-import { applyRecallConfidenceGate } from "./confidence-gate";
+import {
+  applyRecallConfidenceGate,
+  type AdaptiveRetrievalConfidenceOverride,
+} from "./confidence-gate";
+import {
+  buildRecallContextBundle,
+  buildRecallContextBundleAudit,
+  inferCognitiveType,
+  resolveRecallContextBundleContract,
+  summarizeRecallContextBundle
+} from "./context-bundle";
 import { buildRecallQueryContext } from "./query-context";
 import { fuseRecallCandidatesRrf } from "./fusion";
 import { computeRecallDegradeLevel } from "./degrade-level";
 import {
   resolveAllowedScopeSet,
   type RuntimeScopeContextAdapter,
-  type ScopeAccessPolicy
+  type ScopeAccessPolicy,
+  type TeamScopeInheritancePolicy
 } from "./scope-resolver";
 import { type LexicalRetriever } from "./retrievers/lexical-retriever";
 import { type VectorRetriever } from "./retrievers/vector-retriever";
@@ -29,6 +40,7 @@ import {
   type QueryConstraints,
   QueryType,
   type QueryEmbeddingAudit,
+  type RecallAuditPayload,
   type RecallRequest,
   type RecallResponse,
   type RecallResultItem,
@@ -40,6 +52,7 @@ import {
   fetchRecentApprovedPgFallback,
   type PgQueryable
 } from "./recent-approved-pg-fallback";
+import type { KnowledgeSearchRequest, KnowledgeSearchResponse, KnowledgeSearchResult } from "../knowledge/service";
 
 function buildAuditRef(request: RecallRequest, queryType: string): string {
   const queryPart = request.query
@@ -47,6 +60,16 @@ function buildAuditRef(request: RecallRequest, queryType: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .slice(0, 24);
   return `audit:${queryType}:${queryPart || "query"}`;
+}
+
+function adaptiveRetrievalScopeKeys(request: RecallRequest): readonly string[] {
+  const keys = [
+    ...(request.scope_context.memory_ids ?? []).map((id) => `memory:${id}`),
+    ...(request.scope_context.project_ids ?? []).map((id) => `project:${id}`),
+    request.scope_context.user_id ? `user:${request.scope_context.user_id}` : "",
+    request.scope_context.workspace_id ? `workspace:${request.scope_context.workspace_id}` : "",
+  ].filter(Boolean);
+  return [...new Set(keys.length > 0 ? keys : ["scope:unknown"])];
 }
 
 function mergeCandidates(candidates: RetrieverCandidate[]): RetrieverCandidate[] {
@@ -108,6 +131,11 @@ function mergeCandidates(candidates: RetrieverCandidate[]): RetrieverCandidate[]
 }
 
 function toResultItem(candidate: RetrieverCandidate): RecallResultItem {
+  const cognitiveType = inferCognitiveType({
+    memory_type: candidate.record.memory_type,
+    memory_layer: candidate.record.memory_layer,
+    recall_policy: candidate.record.recallPolicy,
+  });
   return {
     memory_id: candidate.memory_id,
     title: candidate.record.title,
@@ -116,6 +144,10 @@ function toResultItem(candidate: RetrieverCandidate): RecallResultItem {
       type: candidate.record.scope_type,
       id: candidate.record.scope_id
     },
+    memory_type: candidate.record.memory_type,
+    memory_layer: candidate.record.memory_layer,
+    recall_policy: candidate.record.recallPolicy,
+    cognitive_type: cognitiveType,
     score: candidate.score,
     rerank_score: candidate.rerank_score,
     local_score: candidate.local_score,
@@ -234,13 +266,30 @@ function applyRecallCacheHints(
       }
       return {
         ...candidate,
-        score: candidate.score + bonus,
+        score: Math.min(1, candidate.score + bonus),
         recency_scope_bonus: (candidate.recency_scope_bonus ?? 0) + bonus,
         source_retrievers: [...sourceRetrievers],
         why_matched: [...whyMatched]
       };
     })
     .sort((left, right) => right.score - left.score);
+}
+
+function applyTemporalSoftPenalty(candidate: RetrieverCandidate, factor = 0.3): RetrieverCandidate {
+  const scale = (value: number | undefined): number | undefined =>
+    typeof value === "number" && Number.isFinite(value) ? value * factor : value;
+  return {
+    ...candidate,
+    score: candidate.score * factor,
+    lexical_score: scale(candidate.lexical_score),
+    vector_score: scale(candidate.vector_score),
+    graph_score: scale(candidate.graph_score),
+    graph_path_score: scale(candidate.graph_path_score),
+    rrf_score: scale(candidate.rrf_score),
+    local_score: scale(candidate.local_score),
+    final_score: scale(candidate.final_score),
+    why_matched: [...candidate.why_matched, `temporal_soft_penalty:${factor}`]
+  };
 }
 
 function resolveVectorEmbeddingAudit(
@@ -267,28 +316,57 @@ let graphGuardCache: {
   readonly loadedAt: number;
   readonly decision: GraphGuardDecision | undefined;
 } | null = null;
+let graphGuardInflight: {
+  readonly runtimeDir: string;
+  readonly promise: Promise<GraphGuardDecision | undefined>;
+} | null = null;
 
-function configuredGraphWeightCap(): number {
-  const parsed = Number.parseFloat(process.env.MEMORY_V2_GRAPH_WEIGHT_CAP ?? "0.85");
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.85;
+export function configuredGraphWeightCap(): number {
+  const defaultCap = 2.1;
+  const parsed = Number.parseFloat(process.env.MEMORY_XX_GRAPH_WEIGHT_CAP ?? String(defaultCap));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultCap;
 }
 
 export function normalizeGraphHealthCacheTtlMs(ttlMs: number): number {
-  return Math.max(Number.isFinite(ttlMs) ? ttlMs : 60_000, 1_000);
+  return Number.isFinite(ttlMs) && ttlMs >= 0 ? Math.max(1_000, ttlMs) : 60_000;
+}
+
+export function defaultGraphHealthCacheTtlMs(): number {
+  return 30_000;
 }
 
 async function loadRuntimeGraphGuard(capWeight: number): Promise<GraphGuardDecision | undefined> {
-  if (process.env.MEMORY_V2_GRAPH_GUARD_DISABLED === "true") {
+  if (process.env.MEMORY_XX_GRAPH_GUARD_DISABLED === "true") {
     return undefined;
   }
 
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
-  const envTtlMs = Number.parseInt(process.env.MEMORY_V2_GRAPH_HEALTH_TTL_MS ?? "86400000", 10);
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const envTtlMs = Number.parseInt(process.env.MEMORY_XX_GRAPH_HEALTH_TTL_MS ?? String(defaultGraphHealthCacheTtlMs()), 10);
   const ttlMs = readRuntimeControlNumberSync("recall.graph_health_ttl_ms", envTtlMs);
   const cacheTtlMs = normalizeGraphHealthCacheTtlMs(ttlMs);
   if (graphGuardCache && graphGuardCache.runtimeDir === runtimeDir && Date.now() - graphGuardCache.loadedAt < cacheTtlMs) {
     return graphGuardCache.decision;
   }
+  if (graphGuardInflight && graphGuardInflight.runtimeDir === runtimeDir) {
+    return graphGuardInflight.promise;
+  }
+
+  const promise = readRuntimeGraphGuard(runtimeDir, ttlMs, capWeight);
+  graphGuardInflight = { runtimeDir, promise };
+  try {
+    return await promise;
+  } finally {
+    if (graphGuardInflight?.promise === promise) {
+      graphGuardInflight = null;
+    }
+  }
+}
+
+async function readRuntimeGraphGuard(
+  runtimeDir: string,
+  ttlMs: number,
+  capWeight: number
+): Promise<GraphGuardDecision | undefined> {
   try {
     const raw = await fs.readFile(path.join(runtimeDir, "graph-health-latest.json"), "utf8");
     const report = JSON.parse(raw) as {
@@ -318,7 +396,7 @@ async function loadRuntimeGraphGuard(capWeight: number): Promise<GraphGuardDecis
     graphGuardCache = { runtimeDir, loadedAt: Date.now(), decision };
     return decision;
   } catch {
-    if (process.env.MEMORY_V2_GRAPH_GUARD_REQUIRE_HEALTH === "true") {
+    if (process.env.MEMORY_XX_GRAPH_GUARD_REQUIRE_HEALTH === "true") {
       const decision = { cap_weight: capWeight, reason: "graph_health_missing" };
       graphGuardCache = { runtimeDir, loadedAt: Date.now(), decision };
       return decision;
@@ -335,8 +413,42 @@ export interface RecallOrchestratorDependencies {
   recall_cache?: RecallCacheRuntime;
   runtime_scope_adapter?: RuntimeScopeContextAdapter;
   scope_access_policy?: ScopeAccessPolicy;
+  team_scope_inheritance?: TeamScopeInheritancePolicy;
   recent_approved_queryable?: PgQueryable;
   recent_approved_schema?: string;
+  knowledge_search?: (request: KnowledgeSearchRequest) => Promise<KnowledgeSearchResponse>;
+  adaptive_retrieval_override_resolver?: (input: {
+    readonly scope_keys: readonly string[];
+    readonly query_type: QueryType;
+  }) => Promise<AdaptiveRetrievalConfidenceOverride | null> | AdaptiveRetrievalConfidenceOverride | null;
+}
+
+function shouldIncludeKnowledge(request: RecallRequest, queryType: QueryType): boolean {
+  void queryType;
+  return request.include_knowledge === true;
+}
+
+function readPositiveLimit(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value ?? NaN)) return fallback;
+  return Math.max(1, Math.trunc(value!));
+}
+
+function knowledgeResultToRecallItem(item: KnowledgeSearchResult, rank: number): RecallResultItem {
+  return {
+    memory_id: `knowledge:${item.chunk_id}`,
+    title: item.source_path ?? item.document_id ?? item.collection ?? "knowledge",
+    content: item.content,
+    scope: { type: ScopeType.Global, id: item.collection ?? "knowledge" },
+    memory_type: "knowledge",
+    memory_layer: "semantic",
+    score: item.score,
+    final_score: item.score,
+    rrf_score: 1 / (20 + rank),
+    source_retrievers: ["knowledge"],
+    source_path: item.source_path,
+    source_type: "knowledge",
+    matched_terms: [],
+  };
 }
 
 export class RecallOrchestrator {
@@ -351,7 +463,8 @@ export class RecallOrchestrator {
     const scopePrecedence = buildScopePrecedence(scopeConflictPolicy);
     const allowedScopeSet = await resolveAllowedScopeSet(request, {
       runtime_scope_adapter: this.dependencies.runtime_scope_adapter,
-      access_policy: this.dependencies.scope_access_policy
+      access_policy: this.dependencies.scope_access_policy,
+      team_scope_inheritance: this.dependencies.team_scope_inheritance
     });
 
     const classification = classifyQuery({
@@ -469,10 +582,10 @@ export class RecallOrchestrator {
       offset: 0
     };
 
-    const lexicalStatus =
-      await this.dependencies.lexical_retriever.get_backend_status();
-    const vectorStatus =
-      await this.dependencies.vector_retriever.get_backend_status();
+    const [lexicalStatus, vectorStatus] = await Promise.all([
+      this.dependencies.lexical_retriever.get_backend_status(),
+      this.dependencies.vector_retriever.get_backend_status()
+    ]);
     const retrievalPlan = buildRetrievalPlan({
       classification,
       lexical_status: lexicalStatus,
@@ -484,76 +597,149 @@ export class RecallOrchestrator {
       ...retrievalPlan.degrade_reasons
     ];
 
-    const lexicalCandidates: RetrieverCandidate[] = [];
-    const vectorCandidates: RetrieverCandidate[] = [];
-    const graphCandidates: RetrieverCandidate[] = [];
-    const recentApprovedPgFallback = await fetchRecentApprovedPgFallback({
-      queryable: this.dependencies.recent_approved_queryable,
-      schema: this.dependencies.recent_approved_schema,
-      constraints: retrievalConstraints,
-      enabled: vectorStatus.backend === "qdrant" || vectorStatus.primary_backend === "qdrant"
-    }).catch((error) => ({
-      candidates: [],
-      audit: {
-        enabled: process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK !== "false",
-        window_ms: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
-        candidate_cap: Number.parseInt(process.env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
-        candidate_count: 0,
-        reason: error instanceof Error ? `error:${error.message}` : "error"
-      }
-    }));
-
-    if (retrievalPlan.execute_lexical) {
-      try {
-        lexicalCandidates.push(
-          ...(await this.dependencies.lexical_retriever.retrieve(
-            retrievalConstraints
-          ))
-        );
-      } catch (error) {
-        if (!isRecallError(error)) {
-          throw error;
+    const [
+      lexicalRetrieval,
+      vectorRetrieval,
+      graphRetrieval,
+      recentApprovedPgFallback,
+      knowledgeRetrieval
+    ] = await Promise.all([
+      (async (): Promise<{
+        readonly candidates: RetrieverCandidate[];
+        readonly degrade_reasons: string[];
+      }> => {
+        if (!retrievalPlan.execute_lexical) {
+          return { candidates: [], degrade_reasons: [] };
         }
-
-        degradeReasons.push(
-          error.code === "backend_timeout"
-            ? "lexical_backend_timeout"
-            : "lexical_backend_unavailable"
-        );
-      }
-    }
-
-    if (retrievalPlan.execute_vector) {
-      try {
-        vectorCandidates.push(
-          ...(await this.dependencies.vector_retriever.retrieve(
-            retrievalConstraints
-          ))
-        );
-      } catch (error) {
-        if (!isRecallError(error)) {
-          throw error;
+        try {
+          return {
+            candidates: await this.dependencies.lexical_retriever.retrieve(
+              retrievalConstraints
+            ),
+            degrade_reasons: []
+          };
+        } catch (error) {
+          if (!isRecallError(error)) {
+            throw error;
+          }
+          return {
+            candidates: [],
+            degrade_reasons: [
+              error.code === "backend_timeout"
+                ? "lexical_backend_timeout"
+                : "lexical_backend_unavailable"
+            ]
+          };
         }
-
-        degradeReasons.push(
-          error.code === "backend_timeout"
-            ? "vector_backend_timeout"
-            : "vector_backend_unavailable"
-        );
-      }
+      })(),
+      (async (): Promise<{
+        readonly candidates: RetrieverCandidate[];
+        readonly degrade_reasons: string[];
+      }> => {
+        if (!retrievalPlan.execute_vector) {
+          return { candidates: [], degrade_reasons: [] };
+        }
+        try {
+          return {
+            candidates: await this.dependencies.vector_retriever.retrieve(
+              retrievalConstraints
+            ),
+            degrade_reasons: []
+          };
+        } catch (error) {
+          if (!isRecallError(error)) {
+            throw error;
+          }
+          return {
+            candidates: [],
+            degrade_reasons: [
+              error.code === "backend_timeout"
+                ? "vector_backend_timeout"
+                : "vector_backend_unavailable"
+            ]
+          };
+        }
+      })(),
+      (async (): Promise<{
+        readonly candidates: RetrieverCandidate[];
+        readonly degrade_reasons: string[];
+      }> => {
+        if (!this.dependencies.graph_retriever) {
+          return { candidates: [], degrade_reasons: [] };
+        }
+        try {
+          return {
+            candidates: await this.dependencies.graph_retriever.retrieve(
+              retrievalConstraints
+            ),
+            degrade_reasons: []
+          };
+        } catch {
+          return {
+            candidates: [],
+            degrade_reasons: ["graph_retriever_unavailable"]
+          };
+        }
+      })(),
+      fetchRecentApprovedPgFallback({
+        queryable: this.dependencies.recent_approved_queryable,
+        schema: this.dependencies.recent_approved_schema,
+        constraints: retrievalConstraints,
+        enabled: vectorStatus.backend === "qdrant" || vectorStatus.primary_backend === "qdrant"
+      }).catch((error) => ({
+        candidates: [],
+        audit: {
+          enabled: process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK !== "false",
+          window_ms: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS ?? "30000", 10),
+          candidate_cap: Number.parseInt(process.env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_LIMIT ?? "20", 10),
+          candidate_count: 0,
+          reason: error instanceof Error ? `error:${error.message}` : "error"
+        }
+      })),
+      (async (): Promise<{
+        readonly included: boolean;
+        readonly results: readonly KnowledgeSearchResult[];
+        readonly degraded?: boolean;
+        readonly failure_reason?: string;
+      }> => {
+        if (!this.dependencies.knowledge_search || !shouldIncludeKnowledge(request, classification.query_type)) {
+          return { included: false, results: [] };
+        }
+        try {
+          const response = await this.dependencies.knowledge_search({
+            query: effectiveQuery,
+            limit: readPositiveLimit(request.knowledge_budget, Math.min(8, retrievalConstraints.limit)),
+            knowledge_collections: request.knowledge_collections,
+            repos: request.knowledge_repos
+          });
+          return {
+            included: true,
+            results: response.results,
+            degraded: response.degraded,
+            failure_reason: response.failure_reason
+          };
+        } catch (error) {
+          return {
+            included: true,
+            results: [],
+            degraded: true,
+            failure_reason: error instanceof Error ? error.message : "knowledge_search_failed"
+          };
+        }
+      })()
+    ]);
+    const lexicalCandidates = lexicalRetrieval.candidates;
+    const vectorCandidates = vectorRetrieval.candidates;
+    const graphCandidates = graphRetrieval.candidates;
+    const knowledgeResults = knowledgeRetrieval.results;
+    if (knowledgeRetrieval.degraded) {
+      degradeReasons.push("knowledge_retriever_unavailable");
     }
-
-    if (this.dependencies.graph_retriever) {
-      try {
-        graphCandidates.push(
-          ...(await this.dependencies.graph_retriever.retrieve(
-            retrievalConstraints
-          ))
-        );
-      } catch {
-        degradeReasons.push("graph_retriever_unavailable");
-      }
-    }
+    degradeReasons.push(
+      ...lexicalRetrieval.degrade_reasons,
+      ...vectorRetrieval.degrade_reasons,
+      ...graphRetrieval.degrade_reasons
+    );
 
     const graphGuard = await (async () => {
       const highGraphQuery = [
@@ -567,7 +753,7 @@ export class RecallOrchestrator {
         QueryType.DebugRecall,
         QueryType.DebugAuditQuery
       ].includes(classification.query_type);
-      const minCandidates = Number.parseInt(process.env.MEMORY_V2_GRAPH_MIN_QUERY_CANDIDATES ?? "2", 10);
+      const minCandidates = Number.parseInt(process.env.MEMORY_XX_GRAPH_MIN_QUERY_CANDIDATES ?? "2", 10);
       const configuredCap = configuredGraphWeightCap();
       const runtimeGraphGuard = await loadRuntimeGraphGuard(configuredCap);
       if (runtimeGraphGuard) return runtimeGraphGuard;
@@ -608,26 +794,32 @@ export class RecallOrchestrator {
       {
         override_temporal_scope: request.temporal_scope as any,
         override_layers: request.memory_layers as any,
+        explicit_memory_ids: request.scope_context.memory_ids,
       }
     );
     const temporalAllowedIds = new Set(temporalFilterResult.filtered);
-    const temporallyFilteredCandidates = mergedCandidates.filter(
-      (c) => temporalAllowedIds.has(c.memory_id)
-    );
+    const temporallyFilteredCandidates = mergedCandidates.map((candidate) => {
+      if (temporalAllowedIds.has(candidate.memory_id)) {
+        return candidate;
+      }
+      return applyTemporalSoftPenalty(candidate);
+    });
 
     const rerankOutcome = await rerankCandidatesWithOptionalModel(
       temporallyFilteredCandidates,
       queryConstraints
     );
-    const policyRankedRerankCandidates = rankCandidatesByScopePolicy(
-      rerankOutcome.candidates,
-      scopeConflictPolicy,
-      scopePrecedence
-    );
+    const adaptiveRetrievalScopeKeyValues = adaptiveRetrievalScopeKeys(request);
+    const adaptiveRetrievalOverride = await this.dependencies.adaptive_retrieval_override_resolver?.({
+      scope_keys: adaptiveRetrievalScopeKeyValues,
+      query_type: classification.query_type,
+    }) ?? null;
     const confidenceGate = applyRecallConfidenceGate(
-      policyRankedRerankCandidates,
+      rerankOutcome.candidates,
       queryConstraints,
-      rerankOutcome
+      rerankOutcome,
+      process.env,
+      adaptiveRetrievalOverride ?? undefined
     );
     const rerankedCandidates = rankCandidatesByScopePolicy(
       confidenceGate.candidates,
@@ -659,7 +851,7 @@ export class RecallOrchestrator {
       recordRerankerFallback(rerankOutcome.reason ?? "unknown");
     }
     const auditRef = buildAuditRef(request, classification.query_type);
-    const audit = {
+    const audit: RecallAuditPayload = {
       cache: cacheAudit,
       audit_ref: auditRef,
       query_type: classification.query_type,
@@ -687,6 +879,12 @@ export class RecallOrchestrator {
       lexical_hits: lexicalCandidates.length,
       vector_hits: vectorCandidates.length,
       graph_hits: graphCandidates.length,
+      knowledge: {
+        included: knowledgeRetrieval.included,
+        hits: knowledgeResults.length,
+        degraded: knowledgeRetrieval.degraded,
+        failure_reason: knowledgeRetrieval.failure_reason,
+      },
       recent_approved_pg_fallback: recentApprovedPgFallback.audit,
       graph_guard: graphGuard,
       merged_hits: mergedCandidates.length,
@@ -697,8 +895,75 @@ export class RecallOrchestrator {
       scope_precedence: scopePrecedence
     };
 
+    const memoryResults = returnedCandidates.map(toResultItem);
+    const knowledgeItems = knowledgeResults.map((item, index) => knowledgeResultToRecallItem(item, index + 1));
+    const results = knowledgeItems.length === 0
+      ? memoryResults
+      : [...memoryResults, ...knowledgeItems]
+        .sort((left, right) => (right.final_score ?? right.score) - (left.final_score ?? left.score))
+        .slice(0, queryConstraints.limit);
+    const contextBundleContract = resolveRecallContextBundleContract({
+      mode: request.context_bundle,
+      tokenBudget: request.context_bundle_budget
+    });
+    const fullContextBundle = contextBundleContract.mode === "disabled"
+      ? undefined
+      : buildRecallContextBundle({
+          queryType: classification.query_type,
+          results,
+          tokenBudget: contextBundleContract.tokenBudget,
+        });
+    const responseContextBundle = fullContextBundle && contextBundleContract.mode === "summary"
+      ? summarizeRecallContextBundle(fullContextBundle)
+      : fullContextBundle;
+    const contextBundleAudit = buildRecallContextBundleAudit({
+      contract: contextBundleContract,
+      bundle: responseContextBundle,
+      totalInputItems: results.length
+    });
+    audit.context_bundle = contextBundleAudit;
+    audit.adaptive_retrieval = {
+      applied: false,
+      source: "runtime_observation_only",
+      query_type: classification.query_type,
+      scope_keys: adaptiveRetrievalScopeKeyValues,
+      observed_returned_hits: returnedCandidates.length,
+      threshold_decision: {
+        action: "hold",
+        proposed_threshold_delta: "none",
+        sample_size_ok: false,
+        false_positive_guard_ok: true,
+        eligible_for_apply: false,
+        reason: "runtime_observation_not_calibration_cohort",
+        audit: {
+          sample_size: {
+            observed_traces: 1,
+            minimum_traces: 20,
+            ok: false,
+          },
+          feedback: {
+            feedback_count: 0,
+            negative_feedback_rate: 0,
+            false_positive_rate: 0,
+            guard_rate: 0.05,
+            guard_ok: true,
+          },
+          recall_pressure: {
+            empty_recall_rate: returnedCandidates.length === 0 ? 1 : 0,
+            pressure_rate: 0.5,
+            pressure_detected: returnedCandidates.length === 0,
+          },
+          guardrails: {
+            report_only: true,
+          },
+          blockers: ["report_only", "sample_size_below_minimum", "runtime_observation_only"],
+        },
+      },
+    };
+
     const response: RecallResponse = {
-      results: returnedCandidates.map(toResultItem),
+      results,
+      context_bundle: responseContextBundle,
       filter_mode_applied: filterPlan.applied_mode,
       allowed_scope_set: allowedScopeSet.allowed_scope_set,
       degraded: finalDegradeReasons.length > 0,
@@ -735,6 +1000,7 @@ export class RecallOrchestrator {
               lexical_hits: lexicalCandidates.length,
               vector_hits: vectorCandidates.length,
               graph_hits: graphCandidates.length,
+              knowledge_hits: knowledgeResults.length,
               recent_approved_pg_fallback: recentApprovedPgFallback.audit,
               merged_hits: mergedCandidates.length,
               returned_hits: returnedCandidates.length,

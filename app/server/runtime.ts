@@ -1,6 +1,7 @@
 import {
   createConfiguredRecallRuntime
 } from "../recall/postgres-runtime";
+import { loadTeamScopeInheritancePolicy } from "../recall/scope-resolver";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
 import { RedisQueryEmbeddingCache } from "../recall/redis-query-embedding-cache";
 import {
@@ -11,16 +12,24 @@ import {
 } from "../cache";
 import type { PostgresRecallRuntime } from "../recall/postgres-runtime";
 import {
-  loadMemoryV2QdrantConfig,
+  loadMemoryXXQdrantConfig,
   resolveVectorRuntimeMode
 } from "../recall/qdrant-config";
-import { loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
 import { createLogger } from "../shared/logger";
 import { QwenEmbeddingProviderWrapper, loadEmbeddingProviderRequestConfig } from "./embedding-provider";
 import { QdrantProjectionSyncService } from "../qdrant-sync/projector";
 import { HttpQdrantPointWriter } from "../qdrant-sync/qdrant-point-writer";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../runtime-control-settings";
+import {
+  DreamScheduler,
+  DreamWorker,
+  createCandidateAutoApproveTask,
+  createConsolidationRunTask,
+  createDecayArchiveTask,
+  loadDreamSchedulerConfig,
+} from "../dream";
 
 const log = createLogger("runtime");
 
@@ -29,12 +38,25 @@ export let recallCache: RecallCacheRuntime = new NoopRecallCache();
 export let writeDatabase: PostgresWriteDatabase | null = null;
 export let projectionSyncService: QdrantProjectionSyncService | null = null;
 export let queryEmbeddingProvider: ResilientQueryEmbeddingProvider | null = null;
+export let dreamScheduler: DreamScheduler | null = null;
 
 function readPositiveInt(name: string, fallback: number): number {
   const raw = process.env[name]?.trim();
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function createRuntimeDreamScheduler(database: PostgresWriteDatabase): DreamScheduler | null {
+  const config = loadDreamSchedulerConfig(process.env);
+  if (!config.enabled) return null;
+
+  const worker = new DreamWorker();
+  const actorId = process.env.MEMORY_XX_DREAM_ACTOR_ID?.trim() || "dream-worker";
+  worker.registerTask(createDecayArchiveTask({ database, actorId, limit: 50 }));
+  worker.registerTask(createConsolidationRunTask({ database, actorId, limit: 50 }));
+  worker.registerTask(createCandidateAutoApproveTask({ database, actorId, limit: 50 }));
+  return new DreamScheduler(worker, config);
 }
 
 export async function initRuntime(): Promise<void> {
@@ -54,8 +76,8 @@ export async function initRuntime(): Promise<void> {
     "health.qdrant_pg_diff_blocker_threshold",
     "database.connection.idle_timeout_ms",
   ]);
-  const config = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const config = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const redisConfig = loadMemoryRedisConfig();
   const runtimeSelection = resolveVectorRuntimeMode(qdrantConfig);
   const embeddingRequestConfig = loadEmbeddingProviderRequestConfig();
@@ -68,8 +90,8 @@ export async function initRuntime(): Promise<void> {
   const embeddingProvider = new ResilientQueryEmbeddingProvider(
     new QwenEmbeddingProviderWrapper(),
     {
-      max_retries: readPositiveInt("MEMORY_V2_QUERY_EMBEDDING_MAX_RETRIES", 0),
-      retry_delay_ms: readPositiveInt("MEMORY_V2_QUERY_EMBEDDING_RETRY_DELAY_MS", 250),
+      max_retries: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_MAX_RETRIES", 0),
+      retry_delay_ms: readPositiveInt("MEMORY_XX_QUERY_EMBEDDING_RETRY_DELAY_MS", 250),
       retry_backoff_multiplier: 2,
       cache_ttl_ms: readRuntimeControlNumberSync("cache.query_embedding.ttl_ms", 30 * 60 * 1000),
       allow_stale_on_error: true,
@@ -79,7 +101,7 @@ export async function initRuntime(): Promise<void> {
         model: embeddingRequestConfig.model,
         dims: embeddingRequestConfig.dims,
         api_base: embeddingRequestConfig.api_base,
-        version: process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "query-embedding-v1",
+        version: process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION?.trim() || "query-embedding-v1",
       }
     }
   );
@@ -91,11 +113,14 @@ export async function initRuntime(): Promise<void> {
   runtime = createConfiguredRecallRuntime({
     config,
     recall_cache: recallCache,
+    team_scope_inheritance: loadTeamScopeInheritancePolicy(process.env),
     query_embedding_provider: embeddingProvider,
     vector_column_name: "content_embedding",
     qdrant: qdrantConfig
   }).runtime;
   writeDatabase = new PostgresWriteDatabase({ config });
+  dreamScheduler = createRuntimeDreamScheduler(writeDatabase);
+  dreamScheduler?.start();
 
   if (qdrantConfig.base_url && qdrantConfig.collection_name) {
     const pointWriter = new HttpQdrantPointWriter({ config: qdrantConfig });
@@ -105,18 +130,22 @@ export async function initRuntime(): Promise<void> {
     });
   }
 
-  const wrapperMode = process.env.MEMORY_V2_WRAPPER_MODE ?? "recall-only";
+  const wrapperMode = process.env.MEMORY_XX_WRAPPER_MODE ?? "recall-only";
   log.info("Runtime initialised", { mode: wrapperMode, vector: runtimeSelection, redis: redisConfig.url ? "external" : "disabled", projection_sync: projectionSyncService !== null });
 }
 
 export async function closeRuntime(): Promise<void> {
+  if (dreamScheduler) {
+    dreamScheduler.stop();
+    dreamScheduler = null;
+  }
   if (queryEmbeddingProvider) {
     await queryEmbeddingProvider.close();
     queryEmbeddingProvider = null;
   }
   if (writeDatabase) {
     await writeDatabase.close();
-  writeDatabase = null;
+    writeDatabase = null;
   }
   if (runtime) {
     await runtime.close();

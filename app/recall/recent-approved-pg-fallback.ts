@@ -1,7 +1,7 @@
 import type { QueryResult } from "pg";
 
 import { LifecycleStatus, ReviewState, ScopeType } from "../shared";
-import type { QueryConstraints, RecallRecord, RecallScopeRef, RetrieverCandidate } from "./types";
+import type { CognitiveType, QueryConstraints, RecallRecord, RecallScopeRef, RetrieverCandidate } from "./types";
 
 export interface PgQueryable {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -79,6 +79,12 @@ function metadataStringArray(metadata: Record<string, unknown>, key: string): st
     : [];
 }
 
+function readCognitiveType(value: unknown): CognitiveType | undefined {
+  return value === "semantic" || value === "episodic" || value === "procedural" || value === "audit"
+    ? value
+    : undefined;
+}
+
 function termOverlapScore(content: string, terms: readonly string[]): number {
   if (terms.length === 0) return 0.02;
   const haystack = content.toLowerCase();
@@ -108,6 +114,7 @@ function toCandidate(row: RecentApprovedRow, constraints: QueryConstraints): Ret
     isCurrent: true,
     category: typeof metadata.category === "string" ? metadata.category : undefined,
     memory_type: row.memory_type ?? (typeof metadata.memory_type === "string" ? metadata.memory_type : undefined),
+    cognitive_type: readCognitiveType(metadata.cognitive_type),
     memory_layer: row.memory_layer ?? undefined,
     fact_status: row.fact_status ?? undefined,
     valid_at: row.valid_at ?? undefined,
@@ -122,15 +129,16 @@ function toCandidate(row: RecentApprovedRow, constraints: QueryConstraints): Ret
     created_at: row.created_at ?? undefined,
     updated_at: row.updated_at ?? undefined
   };
-  const score = termOverlapScore([row.title, row.summary, content].filter(Boolean).join(" "), constraints.query_terms);
+  const exactMemoryId = (constraints.memory_ids ?? []).includes(row.id);
+  const score = exactMemoryId ? 1 : termOverlapScore([row.title, row.summary, content].filter(Boolean).join(" "), constraints.query_terms);
   return {
     memory_id: row.id,
     record,
     score,
     lexical_score: score,
     local_score: score,
-    matched_terms: constraints.query_terms.filter((term) => content.toLowerCase().includes(term.toLowerCase())).slice(0, 8),
-    why_matched: ["recent_approved_pg_fallback"],
+    matched_terms: exactMemoryId ? [row.id] : constraints.query_terms.filter((term) => content.toLowerCase().includes(term.toLowerCase())).slice(0, 8),
+    why_matched: exactMemoryId ? ["recent_approved_pg_fallback", "exact_memory_id"] : ["recent_approved_pg_fallback"],
     source_retrievers: ["pg_recent"]
   };
 }
@@ -143,9 +151,9 @@ export async function fetchRecentApprovedPgFallback(input: {
   readonly env?: NodeJS.ProcessEnv;
 }): Promise<RecentApprovedPgFallbackResult> {
   const env = input.env ?? process.env;
-  const enabled = input.enabled ?? env.MEMORY_V2_RECENT_APPROVED_PG_FALLBACK !== "false";
-  const windowMs = readPositiveInt(env, "MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS", 30_000);
-  const candidateCap = readPositiveInt(env, "MEMORY_V2_RECENT_APPROVED_PG_FALLBACK_LIMIT", 20);
+  const enabled = input.enabled ?? env.MEMORY_XX_RECENT_APPROVED_PG_FALLBACK !== "false";
+  const windowMs = readPositiveInt(env, "MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_WINDOW_MS", 30_000);
+  const candidateCap = readPositiveInt(env, "MEMORY_XX_RECENT_APPROVED_PG_FALLBACK_LIMIT", 20);
   const baseAudit = {
     enabled,
     window_ms: windowMs,
@@ -163,12 +171,23 @@ export async function fetchRecentApprovedPgFallback(input: {
     return { candidates: [], audit: { ...baseAudit, reason: "no_persistent_scope" } };
   }
 
-  const params: unknown[] = [windowMs, candidateCap];
+  const explicitMemoryIds = input.constraints.memory_ids?.filter((id) => id.trim() !== "") ?? [];
+  const params: unknown[] = explicitMemoryIds.length > 0 ? [] : [windowMs];
+  const limitPlaceholder = `$${params.push(candidateCap)}`;
   const scopeClauses = scopes.map((scope) => {
     params.push(scope.type, scope.id);
     return `(mr.scope_type = $${params.length - 1} AND mr.scope_id = $${params.length})`;
   });
-  const schema = input.schema?.trim() || process.env.MEMORY_V2_DATABASE_SCHEMA?.trim() || "public";
+  const explicitMemoryClause = explicitMemoryIds.length > 0
+    ? `AND mr.id = ANY($${params.push(explicitMemoryIds)}::text[])`
+    : "";
+  const recentWindowClause = explicitMemoryIds.length > 0
+    ? ""
+    : `AND mr.updated_at >= now() - ($1::int * interval '1 millisecond')`;
+  const recallPolicyClause = explicitMemoryIds.length > 0
+    ? ""
+    : `AND COALESCE(mr.metadata->>'recall_policy', mr.metadata->'auto_approval_policy'->'memory_policy'->>'recall_policy', 'default') = 'default'`;
+  const schema = input.schema?.trim() || process.env.MEMORY_XX_DATABASE_SCHEMA?.trim() || "public";
   const rows = await input.queryable.query<RecentApprovedRow>(
     `
       SELECT
@@ -187,23 +206,29 @@ export async function fetchRecentApprovedPgFallback(input: {
       WHERE mr.lifecycle_status = $${params.push(LifecycleStatus.Approved)}
         AND mr.review_state IN ($${params.push(ReviewState.Approved)}, $${params.push(ReviewState.NotRequired)}, $${params.push(ReviewState.SilentApproved)})
         AND mr.is_current IS TRUE
-        AND COALESCE(mr.metadata->>'recall_policy', mr.metadata->'auto_approval_policy'->'memory_policy'->>'recall_policy', 'default') = 'default'
-        AND mr.updated_at >= now() - ($1::int * interval '1 millisecond')
+        ${recallPolicyClause}
+        ${recentWindowClause}
+        ${explicitMemoryClause}
         AND (${scopeClauses.join(" OR ")})
       ORDER BY mr.updated_at DESC
-      LIMIT $2
+      LIMIT ${limitPlaceholder}
     `,
     params
   );
   const candidates = rows.rows
     .map((row) => toCandidate(row, input.constraints))
-    .filter((candidate) => input.constraints.filter_plan.evaluate(candidate.record));
+    .filter((candidate) =>
+      (input.constraints.memory_ids?.includes(candidate.memory_id) ?? false) ||
+      input.constraints.filter_plan.evaluate(candidate.record)
+    );
   return {
     candidates,
     audit: {
       ...baseAudit,
       candidate_count: candidates.length,
-      ...(candidates.length === 0 ? { reason: "no_recent_approved_records" } : {})
+      ...(candidates.length === 0
+        ? { reason: explicitMemoryIds.length > 0 ? "explicit_memory_ids_not_found" : "no_recent_approved_records" }
+        : explicitMemoryIds.length > 0 ? { reason: "explicit_memory_ids" } : {})
     }
   };
 }

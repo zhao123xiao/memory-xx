@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { apiUrl, httpPost } from "./test-harness/lib/http-client.js";
 import { scrollByMemoryId } from "./test-harness/lib/qdrant-helpers.js";
 import { config } from "./test-harness/config.js";
@@ -47,7 +47,7 @@ async function writeUserMemory(input: {
   readonly pool: Pool;
   readonly schema: string;
 }): Promise<Record<string, unknown>> {
-  const write = await httpPost(apiUrl("/api/memory/v2/intelligence/smart-write"), {
+  const write = await httpPost(apiUrl("/api/memory/xx/intelligence/smart-write"), {
     text: input.text,
     agent_id: "codex",
     scope_hint: { scope_type: "user", scope_id: USER_SCOPE_ID },
@@ -94,7 +94,7 @@ async function writeUserMemory(input: {
   let unifiedHit = false;
   let mcpHit = false;
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const recall = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+    const recall = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
       query: input.text,
       scope_type: "user",
       scope_id: USER_SCOPE_ID,
@@ -131,7 +131,7 @@ async function writeUserMemory(input: {
 
   let invisible = false;
   for (let attempt = 0; attempt < 8; attempt += 1) {
-    const recall = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+    const recall = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
       query: input.marker,
       scope_type: "user",
       scope_id: USER_SCOPE_ID,
@@ -161,7 +161,7 @@ async function writeUserMemory(input: {
 
 async function main(): Promise<void> {
   const runId = `user-real-scope-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();

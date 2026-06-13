@@ -18,8 +18,8 @@ const DEFAULT_OPTIONS: DreamSchedulerOptions = {
 
 export function loadDreamSchedulerConfig(env: NodeJS.ProcessEnv): DreamSchedulerOptions {
   return {
-    intervalMs: parseInt(env.MEMORY_V2_DREAM_INTERVAL_MS ?? "", 10) || DEFAULT_OPTIONS.intervalMs,
-    enabled: env.MEMORY_V2_DREAM_ENABLED === "true",
+    intervalMs: parseInt(env.MEMORY_XX_DREAM_INTERVAL_MS ?? "", 10) || DEFAULT_OPTIONS.intervalMs,
+    enabled: env.MEMORY_XX_DREAM_ENABLED === "true",
   };
 }
 

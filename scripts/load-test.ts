@@ -1,6 +1,6 @@
 /**
  * Simple load test for memory-xx HTTP server.
- * Usage: MEMORY_V2_API_TOKEN=xxx node --import tsx scripts/load-test.ts
+ * Usage: MEMORY_XX_API_TOKEN=xxx node --import tsx scripts/load-test.ts
  * Options:
  *   --url=http://localhost:5100   Server base URL
  *   --concurrency=10              Parallel connections
@@ -15,14 +15,14 @@ function getArg(name: string, fallback: string): string {
   return found ? found.slice(prefix.length) : fallback;
 }
 
-const baseUrl = getArg("url", process.env.MEMORY_V2_WRAPPER_URL ?? "http://localhost:5100");
+const baseUrl = getArg("url", process.env.MEMORY_XX_WRAPPER_URL ?? "http://localhost:5100");
 const concurrency = parseInt(getArg("concurrency", "10"), 10);
 const totalReqs = parseInt(getArg("total", "100"), 10);
 const writeRatio = parseFloat(getArg("write-ratio", "0.5"));
-const apiToken = process.env.MEMORY_V2_API_TOKEN ?? "";
+const apiToken = process.env.MEMORY_XX_API_TOKEN ?? "";
 
 if (!apiToken) {
-  console.error("Set MEMORY_V2_API_TOKEN env var before running");
+  console.error("Set MEMORY_XX_API_TOKEN env var before running");
   process.exit(1);
 }
 
@@ -36,7 +36,7 @@ interface Result {
 async function sendWrite(): Promise<Result> {
   const start = Date.now();
   try {
-    const resp = await fetch(`${baseUrl}/api/memory/v2/write`, {
+    const resp = await fetch(`${baseUrl}/api/memory/xx/write`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
       body: JSON.stringify({
@@ -55,7 +55,7 @@ async function sendWrite(): Promise<Result> {
 async function sendRecall(): Promise<Result> {
   const start = Date.now();
   try {
-    const resp = await fetch(`${baseUrl}/api/memory/v2/recall/query`, {
+    const resp = await fetch(`${baseUrl}/api/memory/xx/recall/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
       body: JSON.stringify({

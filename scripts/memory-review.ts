@@ -5,12 +5,12 @@ import { randomUUID } from "node:crypto";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function wrapperUrl(): string {
-  return (process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "")) ||
-    `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+  return (process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "")) ||
+    `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
 }
 
 function authToken(): string {
-  return process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_CLI_TOKEN?.trim() || "";
+  return process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_CLI_TOKEN?.trim() || "";
 }
 
 async function postJson(pathname: string, body: Record<string, unknown>): Promise<unknown> {
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   }
   if (!memoryId) throw new Error("memory_id is required");
   const reason = process.argv.slice(4).join(" ").trim();
-  const result = await postJson(`/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/${action}`, {
+  const result = await postJson(`/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/${action}`, {
     requestId: randomUUID(),
     actorId: "memory:review",
     ...(reason ? { reason } : {}),

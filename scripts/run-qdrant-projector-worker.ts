@@ -164,7 +164,7 @@ async function prepareRuntime(env: NodeJS.ProcessEnv) {
 }
 
 function resolveStatusFilePath(env: NodeJS.ProcessEnv): string {
-  const configured = env.MEMORY_V2_QDRANT_PROJECTOR_STATUS_FILE?.trim();
+  const configured = env.MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE?.trim();
   return configured && configured.length > 0 ? path.resolve(configured) : DEFAULT_STATUS_PATH;
 }
 

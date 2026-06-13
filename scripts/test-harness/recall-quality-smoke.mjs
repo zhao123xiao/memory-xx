@@ -20,18 +20,18 @@ function readEnvFile(filePath) {
   return env;
 }
 
-const envPath = process.env.MEMORY_V2_ENV_PATH || "<project-root>/.env";
+const envPath = process.env.MEMORY_XX_ENV_PATH || "<project-root>/.env";
 const envFile = readEnvFile(envPath);
 function env(key, fallback = "") {
   return process.env[key] || envFile[key] || fallback;
 }
 
-const databaseUrl = env("MEMORY_V2_DATABASE_URL");
-const schema = env("MEMORY_V2_DATABASE_SCHEMA", "memory_xx");
-const wrapperUrl = (env("MEMORY_V2_WRAPPER_URL", `http://127.0.0.1:${env("MEMORY_V2_WRAPPER_PORT", "5100")}`)).replace(/\/+$/, "");
-const token = env("MEMORY_V2_ADMIN_TOKEN", env("MEMORY_V2_API_TOKEN"));
-const sampleSize = Number.parseInt(env("MEMORY_V2_L4_SMOKE_SAMPLE_SIZE", "40"), 10);
-const reportRoot = env("MEMORY_V2_REPORT_DIR", path.join(env("MEMORY_V2_PROJECT_ROOT", process.cwd()), "reports/memory-xx-tests"));
+const databaseUrl = env("MEMORY_XX_DATABASE_URL");
+const schema = env("MEMORY_XX_DATABASE_SCHEMA", "memory_xx");
+const wrapperUrl = (env("MEMORY_XX_WRAPPER_URL", `http://127.0.0.1:${env("MEMORY_XX_WRAPPER_PORT", "5100")}`)).replace(/\/+$/, "");
+const token = env("MEMORY_XX_ADMIN_TOKEN", env("MEMORY_XX_API_TOKEN"));
+const sampleSize = Number.parseInt(env("MEMORY_XX_L4_SMOKE_SAMPLE_SIZE", "40"), 10);
+const reportRoot = env("MEMORY_XX_REPORT_DIR", path.join(env("MEMORY_XX_PROJECT_ROOT", process.cwd()), "reports/memory-xx-tests"));
 const runId = `l4-smoke-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 const outputDir = path.join(reportRoot, "l4-smoke", runId);
 
@@ -94,7 +94,7 @@ async function loadSamples() {
 
 async function recall(body) {
   const started = Date.now();
-  const resp = await fetch(`${wrapperUrl}/api/memory/v2/recall/query`, {
+  const resp = await fetch(`${wrapperUrl}/api/memory/xx/recall/query`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -107,7 +107,7 @@ async function recall(body) {
 }
 
 async function main() {
-  if (!databaseUrl) throw new Error("MEMORY_V2_DATABASE_URL is required");
+  if (!databaseUrl) throw new Error("MEMORY_XX_DATABASE_URL is required");
   await fs.mkdir(outputDir, { recursive: true });
 
   const samples = await loadSamples();

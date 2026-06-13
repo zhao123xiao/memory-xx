@@ -1,7 +1,7 @@
-import { createPostgresRecallRuntime, loadMemoryV2PostgresConfig, FilterMode, type RecallRequest, type PostgresRecallRuntime } from "../app";
+import { createPostgresRecallRuntime, loadMemoryXXPostgresConfig, FilterMode, type RecallRequest, type PostgresRecallRuntime } from "../app";
 
 async function main() {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const runtime: PostgresRecallRuntime = createPostgresRecallRuntime({ config });
 
   const request: RecallRequest = {

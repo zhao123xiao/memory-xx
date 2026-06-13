@@ -285,7 +285,7 @@ async function cleanupGraphFixtures(memoryIds: readonly string[]): Promise<void>
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(process.env.MEMORY_V2_QDRANT_API_KEY ? { "api-key": process.env.MEMORY_V2_QDRANT_API_KEY } : {}),
+        ...(process.env.MEMORY_XX_QDRANT_API_KEY ? { "api-key": process.env.MEMORY_XX_QDRANT_API_KEY } : {}),
       },
       body: JSON.stringify({ points: pointIds }),
       signal: AbortSignal.timeout(10000),
@@ -305,7 +305,7 @@ async function cleanupGraphFixtures(memoryIds: readonly string[]): Promise<void>
 
 async function cleanupRecallCaches(): Promise<void> {
   const prefixes = [...new Set([
-    process.env.MEMORY_V2_REDIS_PREFIX?.trim(),
+    process.env.MEMORY_XX_REDIS_PREFIX?.trim(),
     "memory-xx-local-qwen8b-int4",
     "memory-xx",
   ].filter((value): value is string => Boolean(value)))];
@@ -361,7 +361,7 @@ async function main() {
   let forbiddenScopeHits = 0;
 
   for (const item of CASES) {
-    const response = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const response = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: item.query,
       scopeType: "project",
       scopeId: "local-default",

@@ -22,20 +22,20 @@ import {
   ScopeType,
   createPostgresPoolConfig,
   isEffectiveRecallable,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   runPostgresMigrations,
   withWriteTransaction,
   WriteCommandType
 } from "../app";
 
-test("loadMemoryV2PostgresConfig reads the minimal postgres env surface", () => {
-  const config = loadMemoryV2PostgresConfig({
-    MEMORY_V2_DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/memory_xx",
-    MEMORY_V2_DATABASE_SCHEMA: "memory_xx_test",
-    MEMORY_V2_DATABASE_MAX_CONNECTIONS: "4",
-    MEMORY_V2_DATABASE_IDLE_TIMEOUT_MS: "5000",
-    MEMORY_V2_DATABASE_CONNECTION_TIMEOUT_MS: "3000",
-    MEMORY_V2_DATABASE_SSLMODE: "disable"
+test("loadMemoryXXPostgresConfig reads the minimal postgres env surface", () => {
+  const config = loadMemoryXXPostgresConfig({
+    MEMORY_XX_DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/memory_xx",
+    MEMORY_XX_DATABASE_SCHEMA: "memory_xx_test",
+    MEMORY_XX_DATABASE_MAX_CONNECTIONS: "4",
+    MEMORY_XX_DATABASE_IDLE_TIMEOUT_MS: "5000",
+    MEMORY_XX_DATABASE_CONNECTION_TIMEOUT_MS: "3000",
+    MEMORY_XX_DATABASE_SSLMODE: "disable"
   });
 
   assert.equal(config.databaseUrl, "postgres://postgres:postgres@127.0.0.1:5432/memory_xx");
@@ -47,9 +47,9 @@ test("loadMemoryV2PostgresConfig reads the minimal postgres env surface", () => 
 });
 
 test("snapshotForMemoryIds serializes queries on a single PostgreSQL client", async () => {
-  const config = loadMemoryV2PostgresConfig({
-    MEMORY_V2_DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/memory_xx",
-    MEMORY_V2_DATABASE_SCHEMA: "memory_xx_serial_snapshot"
+  const config = loadMemoryXXPostgresConfig({
+    MEMORY_XX_DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/memory_xx",
+    MEMORY_XX_DATABASE_SCHEMA: "memory_xx_serial_snapshot"
   });
   let inFlight = 0;
   let maxInFlight = 0;
@@ -89,16 +89,16 @@ test("snapshotForMemoryIds serializes queries on a single PostgreSQL client", as
 test(
   "postgres adapter and migration runner persist review lifecycle writes on the PostgreSQL path",
   {
-    skip: process.env.MEMORY_V2_DATABASE_URL
+    skip: process.env.MEMORY_XX_DATABASE_URL
       ? undefined
-      : "Set MEMORY_V2_DATABASE_URL to run the PostgreSQL integration path."
+      : "Set MEMORY_XX_DATABASE_URL to run the PostgreSQL integration path."
   },
   async () => {
     const schema = `memory_xx_test_${randomUUID().replace(/-/g, "_")}`;
-    const config = loadMemoryV2PostgresConfig({
+    const config = loadMemoryXXPostgresConfig({
       ...process.env,
-      MEMORY_V2_DATABASE_URL: process.env.MEMORY_V2_DATABASE_URL,
-      MEMORY_V2_DATABASE_SCHEMA: schema
+      MEMORY_XX_DATABASE_URL: process.env.MEMORY_XX_DATABASE_URL,
+      MEMORY_XX_DATABASE_SCHEMA: schema
     });
     const database = new PostgresWriteDatabase({ config });
     const cleanupPool = new Pool(createPostgresPoolConfig(config));
@@ -177,16 +177,16 @@ test(
 test(
   "postgres fresh schema records recall-feedback through idempotent command chain without memory outbox",
   {
-    skip: process.env.MEMORY_V2_DATABASE_URL
+    skip: process.env.MEMORY_XX_DATABASE_URL
       ? undefined
-      : "Set MEMORY_V2_DATABASE_URL to run the PostgreSQL integration path."
+      : "Set MEMORY_XX_DATABASE_URL to run the PostgreSQL integration path."
   },
   async () => {
     const schema = `memory_xx_feedback_${randomUUID().replace(/-/g, "_")}`;
-    const config = loadMemoryV2PostgresConfig({
+    const config = loadMemoryXXPostgresConfig({
       ...process.env,
-      MEMORY_V2_DATABASE_URL: process.env.MEMORY_V2_DATABASE_URL,
-      MEMORY_V2_DATABASE_SCHEMA: schema
+      MEMORY_XX_DATABASE_URL: process.env.MEMORY_XX_DATABASE_URL,
+      MEMORY_XX_DATABASE_SCHEMA: schema
     });
     const database = new PostgresWriteDatabase({ config });
     const cleanupPool = new Pool(createPostgresPoolConfig(config));
@@ -273,16 +273,16 @@ test(
 test(
   "postgres recall path applies default filter, scope gate, metadata SQL filters, and hybrid degrade",
   {
-    skip: process.env.MEMORY_V2_DATABASE_URL
+    skip: process.env.MEMORY_XX_DATABASE_URL
       ? undefined
-      : "Set MEMORY_V2_DATABASE_URL to run the PostgreSQL integration path."
+      : "Set MEMORY_XX_DATABASE_URL to run the PostgreSQL integration path."
   },
   async () => {
     const schema = `memory_xx_recall_${randomUUID().replace(/-/g, "_")}`;
-    const config = loadMemoryV2PostgresConfig({
+    const config = loadMemoryXXPostgresConfig({
       ...process.env,
-      MEMORY_V2_DATABASE_URL: process.env.MEMORY_V2_DATABASE_URL,
-      MEMORY_V2_DATABASE_SCHEMA: schema
+      MEMORY_XX_DATABASE_URL: process.env.MEMORY_XX_DATABASE_URL,
+      MEMORY_XX_DATABASE_SCHEMA: schema
     });
     const database = new PostgresWriteDatabase({ config });
     const cleanupPool = new Pool(createPostgresPoolConfig(config));

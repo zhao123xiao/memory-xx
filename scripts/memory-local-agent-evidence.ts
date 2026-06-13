@@ -5,7 +5,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 interface SampleMemory {
@@ -32,18 +32,18 @@ function hasFlag(name: string): boolean {
 }
 
 function wrapperUrl(): string {
-  return (process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "")) ||
-    `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
+  return (process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "")) ||
+    `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
 }
 
 function authToken(): string {
-  return process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_CLI_TOKEN?.trim() || process.env.MEMORY_V2_API_TOKEN?.trim() || "";
+  return process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_CLI_TOKEN?.trim() || process.env.MEMORY_XX_API_TOKEN?.trim() || "";
 }
 
 async function postRecall(sample: SampleMemory): Promise<{ ok: boolean; hit: boolean; ids: string[]; error?: string }> {
   const query = `${sample.title?.trim() ?? ""} ${sample.content.slice(0, 220)}`.trim();
   try {
-    const response = await fetch(`${wrapperUrl()}/api/memory/v2/recall/query`, {
+    const response = await fetch(`${wrapperUrl()}/api/memory/xx/recall/query`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   const outDir = argValue("--out-dir") || path.join(process.cwd(), "reports", "memory-xx-cutover");
   const metricsPath = path.join(outDir, "m4-local-agent-gate-metrics.json");
   const summaryPath = path.join(outDir, "m4-local-agent-gate-summary.json");
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   try {

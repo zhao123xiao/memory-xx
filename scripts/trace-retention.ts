@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions";
 import { argValue, hasArg, loadDotenvIfPresent, printJson, quoteIdent } from "./lib/runtime-env";
 
@@ -10,10 +10,10 @@ loadDotenvIfPresent();
 async function main(): Promise<void> {
   const apply = hasArg("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
-  const successDays = Number.parseInt(argValue("--success-days") ?? process.env.MEMORY_V2_TRACE_RETENTION_SUCCESS_DAYS ?? "14", 10);
-  const protectedDays = Number.parseInt(argValue("--protected-days") ?? process.env.MEMORY_V2_TRACE_RETENTION_PROTECTED_DAYS ?? "90", 10);
-  const limit = Number.parseInt(argValue("--limit") ?? process.env.MEMORY_V2_TRACE_RETENTION_LIMIT ?? "1000", 10);
-  const config = loadMemoryV2PostgresConfig();
+  const successDays = Number.parseInt(argValue("--success-days") ?? process.env.MEMORY_XX_TRACE_RETENTION_SUCCESS_DAYS ?? "14", 10);
+  const protectedDays = Number.parseInt(argValue("--protected-days") ?? process.env.MEMORY_XX_TRACE_RETENTION_PROTECTED_DAYS ?? "90", 10);
+  const limit = Number.parseInt(argValue("--limit") ?? process.env.MEMORY_XX_TRACE_RETENTION_LIMIT ?? "1000", 10);
+  const config = loadMemoryXXPostgresConfig();
   const schema = quoteIdent(config.schema);
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

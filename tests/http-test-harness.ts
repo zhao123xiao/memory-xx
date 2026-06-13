@@ -20,6 +20,7 @@ export async function createTestHarness(options?: {
   adminToken?: string;
   env?: NodeJS.ProcessEnv;
   permissions?: PermissionChecker;
+  projectionSyncService?: HandlerDeps["projectionSyncService"];
   rateLimitMax?: number;
   runtime?: HandlerDeps["runtime"];
 }): Promise<TestHarness> {
@@ -28,8 +29,8 @@ export async function createTestHarness(options?: {
   const recallCache = new NoopRecallCache();
 
   const env: Record<string, string> = {};
-  if (options?.authToken) env.MEMORY_V2_API_TOKEN = options.authToken;
-  if (options?.adminToken) env.MEMORY_V2_ADMIN_TOKEN = options.adminToken;
+  if (options?.authToken) env.MEMORY_XX_API_TOKEN = options.authToken;
+  if (options?.adminToken) env.MEMORY_XX_ADMIN_TOKEN = options.adminToken;
   Object.assign(env, options?.env ?? {});
 
   const permissions: PermissionChecker = options?.permissions ?? (options?.authToken
@@ -68,7 +69,7 @@ export async function createTestHarness(options?: {
     runtime: options?.runtime ?? null,
     writeDatabase: database,
     recallCache,
-    projectionSyncService: null,
+    projectionSyncService: options?.projectionSyncService ?? null,
     permissions,
     env: env as NodeJS.ProcessEnv,
   };

@@ -6,7 +6,10 @@ export interface MemoryStatusTruthInput {
   readonly qdrantProjectionBodyOk: boolean;
   readonly projectorOk: boolean;
   readonly p1GateOk: boolean;
+  readonly runtimeControlsOk?: boolean;
   readonly candidateCurrent: number;
+  readonly safeCloseCandidateCurrent?: number;
+  readonly humanReviewCandidateCurrent?: number;
   readonly timerProbeOk: boolean;
   readonly runtimeOnly?: boolean;
 }
@@ -28,10 +31,13 @@ export function buildMemoryStatusTruth(input: MemoryStatusTruthInput): MemorySta
     input.qdrantProjectionOk &&
     input.qdrantProjectionBodyOk &&
     input.projectorOk &&
-    input.p1GateOk;
-  const governanceOk = input.candidateCurrent === 0;
+    input.p1GateOk &&
+    input.runtimeControlsOk !== false;
+  const governanceBacklog = input.safeCloseCandidateCurrent ?? input.candidateCurrent;
+  const governanceOk = governanceBacklog === 0;
   const reasons: string[] = [];
   if (!runtimeOk) reasons.push("runtime_unhealthy");
+  if (input.runtimeControlsOk === false) reasons.push("runtime_controls_invalid");
   if (!governanceOk) reasons.push("governance_backlog");
   if (!input.timerProbeOk) reasons.push("timer_probe_unavailable");
   return {

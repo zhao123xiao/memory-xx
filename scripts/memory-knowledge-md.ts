@@ -20,7 +20,7 @@ import {
   type MarkdownGovernanceCurrentState,
   type MarkdownManifestEntry,
 } from "../app/knowledge/markdown-governance";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
 import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider";
 
 type Command = "scan" | "classify" | "ingest" | "archive";
@@ -273,7 +273,7 @@ function entriesWithContent(manifest: KnowledgeMarkdownManifest, candidates: rea
 }
 
 async function insertKnowledgeRows(rows: KnowledgeMarkdownRows): Promise<void> {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();
   const schema = quoteIdent("knowledge_v1");
@@ -346,18 +346,18 @@ async function insertKnowledgeRows(rows: KnowledgeMarkdownRows): Promise<void> {
 }
 
 function qdrantCollection(): string {
-  return process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
+  return process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
 }
 
 function qdrantBaseUrl(): string | null {
-  const value = process.env.MEMORY_V2_QDRANT_BASE_URL?.trim();
+  const value = process.env.MEMORY_XX_QDRANT_BASE_URL?.trim();
   return value ? value.replace(/\/+$/u, "") : null;
 }
 
 function qdrantHeaders(): Record<string, string> {
   return {
     "content-type": "application/json",
-    ...(process.env.MEMORY_V2_QDRANT_API_KEY?.trim() ? { "api-key": process.env.MEMORY_V2_QDRANT_API_KEY.trim() } : {}),
+    ...(process.env.MEMORY_XX_QDRANT_API_KEY?.trim() ? { "api-key": process.env.MEMORY_XX_QDRANT_API_KEY.trim() } : {}),
   };
 }
 
@@ -380,7 +380,7 @@ async function upsertKnowledgeQdrant(rows: KnowledgeMarkdownRows): Promise<Inges
   const baseUrl = qdrantBaseUrl();
   const collection = qdrantCollection();
   if (!baseUrl) {
-    return { requested: true, ok: false, collection, points_upserted: 0, degraded_reason: "MEMORY_V2_QDRANT_BASE_URL_not_configured" };
+    return { requested: true, ok: false, collection, points_upserted: 0, degraded_reason: "MEMORY_XX_QDRANT_BASE_URL_not_configured" };
   }
   const provider = new QwenEmbeddingProviderWrapper();
   const points: unknown[] = [];

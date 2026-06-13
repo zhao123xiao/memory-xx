@@ -64,6 +64,7 @@ export interface ControlPanelRouteDeps {
   readonly buildGraphMemoryDetails: (memoryId: string) => Promise<Record<string, unknown>>;
   readonly buildCodeGraphFromUrl: (url: URL) => unknown;
   readonly readAutoApprovalRuntimeControls: () => unknown;
+  readonly buildMemoryOsDashboard?: () => Promise<Record<string, unknown>>;
 }
 
 export function sendJson(res: ServerResponse, status: number, payload: unknown): void {
@@ -168,6 +169,14 @@ export function createControlPanelHandler(deps: ControlPanelRouteDeps): (req: In
     }
     if (req.method === "GET" && url.pathname === "/api/runtime/secrets-audit") {
       sendJson(res, 200, runSecretAudit());
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/memory-os/evolve") {
+      if (!deps.buildMemoryOsDashboard) {
+        sendJson(res, 503, { ok: false, error: "memory_os_dashboard_unavailable" });
+        return;
+      }
+      sendJson(res, 200, await deps.buildMemoryOsDashboard());
       return;
     }
     if (req.method === "GET" && url.pathname === "/api/runtime/deployment-preflight") {

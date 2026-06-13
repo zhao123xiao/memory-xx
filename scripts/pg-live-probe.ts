@@ -8,8 +8,8 @@
  * 4) degrade/fallback metadata is visible in the response
  *
  * Usage:
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/pg-live-probe.ts
  */
 
@@ -17,13 +17,13 @@ import { Pool } from "pg";
 import {
   createPostgresRecallRuntime,
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   FilterMode,
   type RecallRequest
 } from "../app";
 
 async function main() {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
   const runtime = createPostgresRecallRuntime({ config });
 

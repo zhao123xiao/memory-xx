@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import "./test-harness/config";
 import {
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
 } from "../app/db/adapters/postgres-config";
 import {
   defaultEmbeddingGenerationId,
@@ -19,7 +19,7 @@ import {
   verifyQdrantPayloadGeneration,
   type EmbeddingGenerationManifest,
 } from "../app/embedding";
-import { loadMemoryV2QdrantConfig } from "../app/recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../app/recall/qdrant-config";
 import { loadMemoryRedisConfig } from "../app/cache";
 import {
   markEmbeddingManifestDirty,
@@ -68,7 +68,7 @@ async function fetchJsonSoft(url: string, init?: RequestInit): Promise<{ ok: boo
   try {
     const response = await fetch(url, {
       ...init,
-      signal: AbortSignal.timeout(Number.parseInt(process.env.MEMORY_V2_OBSERVE_TIMEOUT_MS || "10000", 10)),
+      signal: AbortSignal.timeout(Number.parseInt(process.env.MEMORY_XX_OBSERVE_TIMEOUT_MS || "10000", 10)),
     });
     const text = await response.text();
     const body = text ? JSON.parse(text) : null;
@@ -91,8 +91,8 @@ async function directReconcileManifestCounts(
   pool: Pool,
   manifest: EmbeddingGenerationManifest
 ): Promise<Record<string, unknown>> {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const recordCount = await activeApprovedCount(pool, pgConfig.schema);
   const collectionInfo = await getQdrantCollectionInfo({
     baseUrl: qdrantConfig.base_url,
@@ -159,14 +159,14 @@ async function directReconcileManifestCounts(
 }
 
 async function upsertPreparedManifest(pool: Pool): Promise<EmbeddingGenerationManifest> {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const redisConfig = loadMemoryRedisConfig();
   const generationId = argValue("--generation-id") || defaultEmbeddingGenerationId();
-  const targetCollection = argValue("--target-collection") || process.env.MEMORY_V2_LOCAL_EMBEDDING_COLLECTION || qdrantConfig.collection_name || "memory-xx-local-qwen8b-int4-v1";
-  const qdrantAlias = argValue("--alias") || process.env.MEMORY_V2_QDRANT_ALIAS || "memory-xx-active";
-  const redisPrefix = argValue("--redis-prefix") || process.env.MEMORY_V2_REDIS_PREFIX || redisConfig.prefix;
-  const queryCacheVersion = argValue("--query-cache-version") || process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION || defaultQueryCacheVersion(generationId);
+  const targetCollection = argValue("--target-collection") || process.env.MEMORY_XX_LOCAL_EMBEDDING_COLLECTION || qdrantConfig.collection_name || "memory-xx-local-qwen8b-int4-v1";
+  const qdrantAlias = argValue("--alias") || process.env.MEMORY_XX_QDRANT_ALIAS || "memory-xx-active";
+  const redisPrefix = argValue("--redis-prefix") || process.env.MEMORY_XX_REDIS_PREFIX || redisConfig.prefix;
+  const queryCacheVersion = argValue("--query-cache-version") || process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION || defaultQueryCacheVersion(generationId);
   const embeddingBase = process.env.EMBEDDING_API_BASE?.trim() || process.env.EMBEDDING_PROXY_URL?.trim() || "";
   const recordCount = await activeApprovedCount(pool, pgConfig.schema);
 
@@ -199,9 +199,9 @@ async function upsertPreparedManifest(pool: Pool): Promise<EmbeddingGenerationMa
     RETURNING *
   `, [
     generationId,
-    argValue("--provider") || process.env.MEMORY_V2_EMBEDDING_PROVIDER || "local-ovms",
+    argValue("--provider") || process.env.MEMORY_XX_EMBEDDING_PROVIDER || "local-ovms",
     process.env.EMBEDDING_MODEL || "Qwen3-Embedding-8B",
-    argValue("--precision") || process.env.MEMORY_V2_EMBEDDING_PRECISION || "int4",
+    argValue("--precision") || process.env.MEMORY_XX_EMBEDDING_PRECISION || "int4",
     Number.parseInt(process.env.EMBEDDING_DIMS || "4096", 10),
     hashEmbeddingBase(embeddingBase),
     argValue("--text-strategy") || defaultEmbeddingTextStrategy(),
@@ -217,8 +217,8 @@ async function upsertPreparedManifest(pool: Pool): Promise<EmbeddingGenerationMa
 }
 
 async function switchAlias(aliasName: string, collectionName: string): Promise<void> {
-  const qdrantConfig = loadMemoryV2QdrantConfig();
-  if (!qdrantConfig.base_url) throw new Error("必须配置 MEMORY_V2_QDRANT_BASE_URL。");
+  const qdrantConfig = loadMemoryXXQdrantConfig();
+  if (!qdrantConfig.base_url) throw new Error("必须配置 MEMORY_XX_QDRANT_BASE_URL。");
   const aliases = await fetchJson(`${qdrantConfig.base_url.replace(/\/+$/, "")}/aliases`, {
     headers: qdrantHeaders(qdrantConfig.api_key),
   });
@@ -242,8 +242,8 @@ async function validateManifest(pool: Pool, generationId: string): Promise<{
   checks: Record<string, unknown>;
   blockers: string[];
 }> {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const manifest = await getEmbeddingGenerationById(pool, generationId, pgConfig);
   const blockers: string[] = [];
   const checks: Record<string, unknown> = {};
@@ -303,7 +303,7 @@ async function validateManifest(pool: Pool, generationId: string): Promise<{
 }
 
 async function activateManifest(pool: Pool, generationId: string): Promise<Record<string, unknown>> {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const validation = await validateManifest(pool, generationId);
   if (!validation.ok || !validation.manifest) {
     return { ok: false, validation };
@@ -333,10 +333,10 @@ async function activateManifest(pool: Pool, generationId: string): Promise<Recor
     qdrant_alias: manifest.qdrant_alias,
     target_collection: manifest.target_collection,
     env: {
-      MEMORY_V2_QDRANT_COLLECTION: manifest.qdrant_alias,
-      MEMORY_V2_REDIS_PREFIX: manifest.redis_prefix,
-      MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION: manifest.query_cache_version,
-      MEMORY_V2_EMBEDDING_GENERATION_ID: manifest.generation_id,
+      MEMORY_XX_QDRANT_COLLECTION: manifest.qdrant_alias,
+      MEMORY_XX_REDIS_PREFIX: manifest.redis_prefix,
+      MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION: manifest.query_cache_version,
+      MEMORY_XX_EMBEDDING_GENERATION_ID: manifest.generation_id,
     },
     restart: "systemctl --user restart memory-xx-wrapper.service memory-xx-qdrant-projector-worker.service",
   };
@@ -353,7 +353,7 @@ async function generateManifest(pool: Pool): Promise<Record<string, unknown>> {
     `--alias=${manifest.qdrant_alias}`,
     `--redis-prefix=${manifest.redis_prefix}`,
     `--query-cache-version=${manifest.query_cache_version}`,
-    `--concurrency=${Math.min(2, Math.max(1, Number.parseInt(argValue("--concurrency") || process.env.MEMORY_V2_LOCAL_EMBEDDING_CONCURRENCY || "2", 10)))}`,
+    `--concurrency=${Math.min(2, Math.max(1, Number.parseInt(argValue("--concurrency") || process.env.MEMORY_XX_LOCAL_EMBEDDING_CONCURRENCY || "2", 10)))}`,
   ];
   const passthrough = ["--limit", "--batch-size", "--source-collection", "--text-strategy"];
   for (const name of passthrough) {
@@ -368,7 +368,7 @@ async function generateManifest(pool: Pool): Promise<Record<string, unknown>> {
     cwd: process.cwd(),
     env: { ...process.env, TMPDIR: "/tmp" },
     encoding: "utf8",
-    timeout: Number.parseInt(process.env.MEMORY_V2_GENERATE_EMBEDDINGS_TIMEOUT_MS || "7200000", 10),
+    timeout: Number.parseInt(process.env.MEMORY_XX_GENERATE_EMBEDDINGS_TIMEOUT_MS || "7200000", 10),
     stdio: ["ignore", "pipe", "pipe"],
   });
   return {
@@ -387,13 +387,13 @@ async function generateManifest(pool: Pool): Promise<Record<string, unknown>> {
 }
 
 async function observeManifest(pool: Pool, generationId: string): Promise<Record<string, unknown>> {
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const manifest = await getEmbeddingGenerationById(pool, generationId, pgConfig);
   if (!manifest) return { ok: false, blockers: ["manifest_missing"], generation_id: generationId };
-  const wrapperUrl = (process.env.MEMORY_V2_WRAPPER_URL || "http://127.0.0.1:5100").replace(/\/+$/, "");
+  const wrapperUrl = (process.env.MEMORY_XX_WRAPPER_URL || "http://127.0.0.1:5100").replace(/\/+$/, "");
   const proxyUrl = (process.env.EMBEDDING_PROXY_URL || "http://127.0.0.1:5221/v1").replace(/\/+$/, "");
   const bypassWrapperHealth = process.argv.includes("--bypass-wrapper-health");
-  const token = process.env.MEMORY_V2_ADMIN_TOKEN || process.env.MEMORY_V2_API_TOKEN || process.env.MEMORY_V2_WRAPPER_TOKEN || "";
+  const token = process.env.MEMORY_XX_ADMIN_TOKEN || process.env.MEMORY_XX_API_TOKEN || process.env.MEMORY_XX_WRAPPER_TOKEN || "";
   const headers = {
     "content-type": "application/json",
     ...(token ? { authorization: `Bearer ${token}` } : {}),
@@ -410,7 +410,7 @@ async function observeManifest(pool: Pool, generationId: string): Promise<Record
     ? embeddingSmoke.body.data[0].embedding.length
     : null;
   const directReconcile = await directReconcileManifestCounts(pool, manifest);
-  const recallSmoke = await fetchJsonSoft(`${wrapperUrl}/api/memory/v2/unified/recall`, {
+  const recallSmoke = await fetchJsonSoft(`${wrapperUrl}/api/memory/xx/unified/recall`, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -493,8 +493,8 @@ async function refreshManifest(pool: Pool, generationId: string): Promise<Record
   const forceReconcile = process.argv.includes("--force-reconcile");
   const force = process.argv.includes("--force") || forceReconcile;
   const full = process.argv.includes("--full") || process.argv.includes("--validate");
-  const debounceMs = Number.parseInt(process.env.MEMORY_V2_MANIFEST_REFRESH_DEBOUNCE_MS || "60000", 10);
-  const periodicMs = Number.parseInt(process.env.MEMORY_V2_MANIFEST_REFRESH_PERIODIC_MS || String(15 * 60 * 1000), 10);
+  const debounceMs = Number.parseInt(process.env.MEMORY_XX_MANIFEST_REFRESH_DEBOUNCE_MS || "60000", 10);
+  const periodicMs = Number.parseInt(process.env.MEMORY_XX_MANIFEST_REFRESH_PERIODIC_MS || String(15 * 60 * 1000), 10);
   const state = await readEmbeddingManifestDirtyState();
   const now = Date.now();
   const lastMarked = state?.last_marked_at ? Date.parse(state.last_marked_at) : 0;
@@ -526,7 +526,7 @@ async function refreshManifest(pool: Pool, generationId: string): Promise<Record
 
 async function main(): Promise<void> {
   const command = process.argv[2] || "status";
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {
     if (command === "prepare") {

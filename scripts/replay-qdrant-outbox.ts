@@ -8,10 +8,10 @@
  * - do NOT mutate outbox/cursor unless --mark-dispatched is provided
  *
  * Usage:
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=public \
- *   MEMORY_V2_QDRANT_BASE_URL=http://127.0.0.1:6333 \
- *   MEMORY_V2_QDRANT_COLLECTION=memory-xx \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=public \
+ *   MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333 \
+ *   MEMORY_XX_QDRANT_COLLECTION=memory-xx \
  *   node --import tsx scripts/replay-qdrant-outbox.ts --event-id outbox_event_xxx
  *
  *   # Replay up to 20 failed/pending items for one exporter without moving cursor/state:
@@ -40,7 +40,7 @@ import {
   ReplayQdrantExporterEventsService,
   ReplayQdrantOutboxEventService,
   SnapshotQdrantReplayRepairRepository,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   OutboxDispatchStatus
 } from "../app";
 import { ProjectorEmbeddingResolver } from "../app/qdrant-sync/projector-embedding-resolver.js";
@@ -127,7 +127,7 @@ function parseOutboxStatus(raw: string): OutboxDispatchStatus {
 
 async function main(): Promise<void> {
   const args = parseCliArgs(process.argv);
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const database = new PostgresWriteDatabase({ config });
   const outboxRepository = new DatabaseQdrantSyncOutboxRepository(database);
   const replayRepository = new SnapshotQdrantReplayRepairRepository(database);

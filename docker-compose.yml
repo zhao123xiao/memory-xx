@@ -4,12 +4,12 @@ services:
     ports:
       - "5100:5100"
     environment:
-      MEMORY_V2_WRAPPER_PORT: "5100"
-      MEMORY_V2_BIND_HOST: "0.0.0.0"
-      MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@postgres:5432/memory_xx
-      MEMORY_V2_DATABASE_SCHEMA: memory_xx
-      MEMORY_V2_REDIS_URL: redis://redis:6379/0
-      MEMORY_V2_API_TOKEN: ${MEMORY_V2_API_TOKEN:-changeme}
+      MEMORY_XX_WRAPPER_PORT: "5100"
+      MEMORY_XX_BIND_HOST: "0.0.0.0"
+      MEMORY_XX_DATABASE_URL: postgres://postgres@postgres:5432/memory_xx
+      MEMORY_XX_DATABASE_SCHEMA: memory_xx
+      MEMORY_XX_REDIS_URL: redis://redis:6379/0
+      MEMORY_XX_API_TOKEN: ${MEMORY_XX_API_TOKEN:-changeme}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-changeme}
     depends_on:
       postgres:
@@ -27,7 +27,7 @@ services:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: memory_xx
     ports:
       - "5432:5432"

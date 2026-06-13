@@ -30,10 +30,10 @@ function runWorkerOnce(runtimeDir: string): void {
     env: {
       ...process.env,
       TMPDIR: "/tmp",
-      MEMORY_V2_RUNTIME_DIR: runtimeDir,
-      MEMORY_V2_CONVERSATION_SPOOL_PATH: path.join(runtimeDir, "conversation-events", "*.jsonl"),
-      MEMORY_V2_CONVERSATION_POLL_INTERVAL_MS: "100",
-      MEMORY_V2_CONVERSATION_DEBOUNCE_MS: "60000",
+      MEMORY_XX_RUNTIME_DIR: runtimeDir,
+      MEMORY_XX_CONVERSATION_SPOOL_PATH: path.join(runtimeDir, "conversation-events", "*.jsonl"),
+      MEMORY_XX_CONVERSATION_POLL_INTERVAL_MS: "100",
+      MEMORY_XX_CONVERSATION_DEBOUNCE_MS: "60000",
     },
     encoding: "utf8",
     stdio: "pipe",
@@ -118,13 +118,13 @@ async function main(): Promise<void> {
       const row = memory.rows[0] as any;
       check("worker:candidate-default-review", row?.lifecycle_status === "candidate" && row?.review_state === "pending", `lifecycle=${row?.lifecycle_status}, review=${row?.review_state}`);
 
-      const approve = await httpPost(apiUrl(`/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/approve`), {
+      const approve = await httpPost(apiUrl(`/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/approve`), {
         requestId: `${runId}:approve`,
         actorId: "conversation-worker-test",
       }, { token: config.wrapperToken, timeout: 45_000 });
       check("worker:approve-candidate", approve.status === 200, `status=${approve.status}`);
 
-      const recallA = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+      const recallA = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
         agent_id: "conversation-worker-test",
         query: `conversation worker ${runId} pending candidate`,
         scope_type: "project",
@@ -135,7 +135,7 @@ async function main(): Promise<void> {
       const idsA = idsFromRecall(recallA.body);
       check("worker:recall-project-a", recallA.status === 200 && idsA.includes(memoryId), `status=${recallA.status}, ids=${idsA.join(",")}`);
 
-      const recallB = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+      const recallB = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
         agent_id: "conversation-worker-test",
         query: `conversation worker ${runId} pending candidate`,
         scope_type: "project",
@@ -151,7 +151,7 @@ async function main(): Promise<void> {
     }
   } finally {
     if (memoryId) {
-      await httpPost(apiUrl("/api/memory/v2/unified/forget"), {
+      await httpPost(apiUrl("/api/memory/xx/unified/forget"), {
         memory_id: memoryId,
         agent_id: "conversation-worker-test",
         mode: "tombstone",

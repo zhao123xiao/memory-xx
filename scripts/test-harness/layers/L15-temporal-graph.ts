@@ -66,7 +66,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: "memory-xx",
       explain: true,
       limit: 3,

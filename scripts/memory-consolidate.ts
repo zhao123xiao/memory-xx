@@ -13,8 +13,8 @@ const apply = process.argv.includes("--apply");
 const dryRun = !apply;
 
 async function main(): Promise<void> {
-  if (apply && process.env.MEMORY_V2_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL !== "true") {
-    throw new Error("memory-consolidate apply is blocked: direct lifecycle SQL must be replaced by lifecycle mutation service or explicitly allowed with MEMORY_V2_ALLOW_LEGACY_DIRECT_LIFECYCLE_SQL=true");
+  if (apply) {
+    throw new Error("memory-consolidate apply is disabled: use the governed lifecycle/consolidation executor so memory_events, outbox, projection, and cache invalidation stay consistent.");
   }
   const pool = createPool();
   const client = await pool.connect();
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
           CASE
           WHEN lifecycle_status IN ('tombstone', 'rejected') THEN 'audit'
           WHEN lifecycle_status IN ('archived', 'superseded') THEN 'archival'
-          WHEN lower(COALESCE(source_kind, '') || ' ' || COALESCE(source_ref, '') || ' ' || COALESCE(metadata->>'source', '')) ~ '(daily|log|episode|conversation|agent|openclaw|local)' THEN 'episodic'
+          WHEN lower(COALESCE(source_kind, '') || ' ' || COALESCE(source_ref, '') || ' ' || COALESCE(metadata->>'source', '')) ~ '(daily|log|episode|conversation|agent|openclaw|xiaoxiao)' THEN 'episodic'
           WHEN memory_type = 'procedure' THEN 'procedural'
           WHEN memory_type IN ('preference', 'constraint') THEN 'core'
           WHEN memory_type IN ('fact', 'decision') THEN 'semantic'

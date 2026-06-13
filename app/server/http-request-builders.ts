@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   FilterMode,
+  DEFAULT_AGENT_ID,
   LifecycleStatus,
   ReviewState,
   ScopeType,
@@ -130,7 +131,7 @@ export function buildCreateCommandFromBody(body: Record<string, unknown>): Creat
   }
   return {
     requestId: readOptionalTrimmedString(body.requestId) ?? randomUUID(),
-    actorId: readOptionalTrimmedString(body.actorId) ?? "klee",
+    actorId: readOptionalTrimmedString(body.actorId) ?? DEFAULT_AGENT_ID,
     scopeType,
     scopeId: validated.scopeId.trim(),
     content: validated.content,

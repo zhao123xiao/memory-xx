@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export type RuntimeControlValue = boolean | number | string;
@@ -12,12 +12,26 @@ export interface RuntimeControlSettings {
 
 export const RUNTIME_CONTROL_SETTINGS_FILE = "runtime-control-settings.json";
 
-export function memoryV2RuntimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+export type RuntimeControlSettingsStateReason =
+  | "loaded"
+  | "missing"
+  | "invalid_json"
+  | "read_error";
+
+export interface RuntimeControlSettingsState {
+  readonly ok: boolean;
+  readonly reason: RuntimeControlSettingsStateReason;
+  readonly path: string;
+  readonly settings: RuntimeControlSettings;
+  readonly error?: string;
+}
+
+export function memoryXXRuntimeDir(): string {
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
 }
 
 export function runtimeControlSettingsPath(): string {
-  return join(memoryV2RuntimeDir(), RUNTIME_CONTROL_SETTINGS_FILE);
+  return join(memoryXXRuntimeDir(), RUNTIME_CONTROL_SETTINGS_FILE);
 }
 
 export function defaultRuntimeControlSettings(): RuntimeControlSettings {
@@ -59,10 +73,36 @@ export function normalizeRuntimeControlSettings(value: unknown): RuntimeControlS
 }
 
 export function readRuntimeControlSettingsSync(): RuntimeControlSettings {
+  return readRuntimeControlSettingsStateSync().settings;
+}
+
+export function readRuntimeControlSettingsStateSync(): RuntimeControlSettingsState {
+  const path = runtimeControlSettingsPath();
+  if (!existsSync(path)) {
+    return {
+      ok: true,
+      reason: "missing",
+      path,
+      settings: defaultRuntimeControlSettings(),
+    };
+  }
+
   try {
-    return normalizeRuntimeControlSettings(JSON.parse(readFileSync(runtimeControlSettingsPath(), "utf8")) as unknown);
-  } catch {
-    return defaultRuntimeControlSettings();
+    return {
+      ok: true,
+      reason: "loaded",
+      path,
+      settings: normalizeRuntimeControlSettings(JSON.parse(readFileSync(path, "utf8")) as unknown),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      reason: /JSON/u.test(message) || /Unexpected/u.test(message) ? "invalid_json" : "read_error",
+      path,
+      settings: defaultRuntimeControlSettings(),
+      error: message,
+    };
   }
 }
 

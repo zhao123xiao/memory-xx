@@ -185,7 +185,7 @@ DROP TABLE IF EXISTS memory_xx.zzz;
 
 ```bash
 # 1. 在 shadow 数据库运行 up migration
-MEMORY_V2_ENV_PATH=/path/to/shadow/.env npm run migrate
+MEMORY_XX_ENV_PATH=/path/to/shadow/.env npm run migrate
 
 # 2. 验证 shadow 库结构
 psql $SHADOW_DB_URL -c "\dt memory_xx.*"
@@ -197,11 +197,11 @@ psql $SHADOW_DB_URL -f migrations/0015_down_write_path_hardening.sql
 psql $SHADOW_DB_URL -c "\dt memory_xx.*"
 
 # 5. 重新运行 up migration 确认可恢复
-MEMORY_V2_ENV_PATH=/path/to/shadow/.env npm run migrate
+MEMORY_XX_ENV_PATH=/path/to/shadow/.env npm run migrate
 
 # 6. 运行 typecheck + test 确认应用兼容
-MEMORY_V2_ENV_PATH=/path/to/shadow/.env npm run typecheck
-MEMORY_V2_ENV_PATH=/path/to/shadow/.env npm test
+MEMORY_XX_ENV_PATH=/path/to/shadow/.env npm run typecheck
+MEMORY_XX_ENV_PATH=/path/to/shadow/.env npm test
 ```
 
 ---

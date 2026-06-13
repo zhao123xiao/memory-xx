@@ -1,5 +1,5 @@
 export function readPgBoolean(value: unknown, fieldName = "boolean"): boolean {
-  if (process.env.MEMORY_V2_LEGACY_BOOLEAN_COERCION === "true") {
+  if (process.env.MEMORY_XX_LEGACY_BOOLEAN_COERCION === "true") {
     return Boolean(value);
   }
   if (typeof value === "boolean") return value;
@@ -17,5 +17,10 @@ export function readPgBoolean(value: unknown, fieldName = "boolean"): boolean {
 
 export function readNullablePgBoolean(value: unknown, fieldName = "boolean"): boolean | null {
   if (value === null || value === undefined) return null;
+  return readPgBoolean(value, fieldName);
+}
+
+export function readOptionalPgBoolean(value: unknown, fieldName = "boolean"): boolean {
+  if (value === null || value === undefined) return false;
   return readPgBoolean(value, fieldName);
 }

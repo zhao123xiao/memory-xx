@@ -1,10 +1,10 @@
 import {
   CacheInvalidationRequestRepository,
   PostgresWriteDatabase,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   withWriteTransaction
 } from "../app/db";
-import { RecallRuntimeCacheInvalidator, RedisRecallCache, loadMemoryRedisConfig } from "../app/cache";
+import { CacheInvalidationWorker, RecallRuntimeCacheInvalidator, RedisRecallCache, loadMemoryRedisConfig } from "../app/cache";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../app/runtime-control-settings";
@@ -28,7 +28,7 @@ function argValue(name: string): string | undefined {
 }
 
 function readPositiveInt(name: string, fallback: number): number {
-  const raw = argValue(`--${name}`) ?? process.env[`MEMORY_V2_CACHE_INVALIDATION_${name.toUpperCase()}`];
+  const raw = argValue(`--${name}`) ?? process.env[`MEMORY_XX_CACHE_INVALIDATION_${name.toUpperCase()}`];
   const parsed = Number.parseInt(raw ?? "", 10);
   const envValue = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   const runtimeKey = `worker.cache_invalidation.${name}`;
@@ -43,7 +43,7 @@ function retryDelaySeconds(attempts: number): number {
 }
 
 function statusFilePath(): string {
-  return process.env.MEMORY_V2_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
+  return process.env.MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
     `${process.cwd()}/.runtime/cache-invalidation-worker.status.json`;
 }
 
@@ -55,12 +55,12 @@ async function writeStatus(payload: Record<string, unknown>): Promise<void> {
 
 async function main(): Promise<void> {
   const startedAt = Date.now();
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig() });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig() });
   const redisConfig = loadMemoryRedisConfig();
   const cache = new RedisRecallCache({ config: redisConfig });
   await cache.connect();
   const repo = new CacheInvalidationRequestRepository();
-  const workerId = process.env.MEMORY_V2_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
+  const workerId = process.env.MEMORY_XX_WORKER_ID?.trim() || `cache-invalidation-${process.pid}`;
   const dryRun = hasArg("--dry-run");
   const limit = readPositiveInt("batch_size", Number.parseInt(argValue("--limit") ?? "50", 10) || 50);
   const maxAttempts = readPositiveInt("max_attempts", 10);
@@ -93,44 +93,28 @@ async function main(): Promise<void> {
       return;
     }
 
-    const rows = await withWriteTransaction(db, (tx) => repo.claimNext(tx, {
-      workerId,
-      limit,
-      leaseTtlSeconds,
-      maxAttempts
-    }));
-    let completed = 0;
-    let failed = 0;
-    const errors: Array<{ id: string; scope_type: string; scope_id: string; error: string }> = [];
     const invalidator = new RecallRuntimeCacheInvalidator(cache, {
       database: db,
       strict: true,
       persistFailures: false
     });
-    for (const row of rows) {
-      try {
-        await invalidator.invalidate([{ type: row.scopeType, id: row.scopeId }]);
-        await withWriteTransaction(db, (tx) => repo.markCompleted(tx, row.id));
-        completed += 1;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        failed += 1;
-        errors.push({
-          id: row.id,
-          scope_type: row.scopeType,
-          scope_id: row.scopeId,
-          error: message
-        });
-        await withWriteTransaction(db, (tx) => repo.markFailed(tx, row.id, message, retryDelaySeconds(row.attempts)));
-      }
-    }
+    const worker = new CacheInvalidationWorker({
+      database: db,
+      invalidator,
+      repository: repo,
+      workerId,
+      batchSize: limit,
+      leaseTtlSeconds,
+      maxAttempts,
+      retryDelaySeconds
+    });
+    const result = await worker.processOnce();
     const summary = {
       worker_id: workerId,
       dry_run: false,
-      claimed: rows.length,
-      completed,
-      failed,
-      errors: errors.slice(0, 10),
+      claimed: result.claimed,
+      completed: result.completed,
+      failed: result.failed,
       duration_ms: Date.now() - startedAt,
       at: new Date().toISOString()
     };

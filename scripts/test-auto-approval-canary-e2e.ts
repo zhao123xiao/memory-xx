@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { apiUrl, httpPost } from "./test-harness/lib/http-client.js";
 import { scrollByMemoryId } from "./test-harness/lib/qdrant-helpers.js";
 import { config } from "./test-harness/config.js";
@@ -20,7 +20,7 @@ loadDotenvIfPresent();
 const execFileAsync = promisify(execFile);
 
 function runtimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
 }
 
 function sleep(ms: number): Promise<void> {
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
   const agentId = "codex";
   const canaryPath = join(runtimeDir(), "auto-approval-canary.json");
   const previousCanary = existsSync(canaryPath) ? await readFile(canaryPath, "utf8") : null;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     }, null, 2)}\n`, "utf8");
     await ensureScopeGrant(client, schema, agentId, scopeId);
 
-    const write = await httpPost(apiUrl("/api/memory/v2/intelligence/smart-write"), {
+    const write = await httpPost(apiUrl("/api/memory/xx/intelligence/smart-write"), {
       text: `请记住：memory-xx automatic approval canary requires rollback evidence. ${marker}`,
       agent_id: agentId,
       scope_hint: { scope_type: "project", scope_id: scopeId },
@@ -103,7 +103,7 @@ async function main(): Promise<void> {
     let unifiedHit = false;
     let mcpHit = false;
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const recall = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+      const recall = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
         query: marker,
         scope_type: "project",
         scope_id: scopeId,
@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     let invisible = false;
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      const recall = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+      const recall = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
         query: marker,
         scope_type: "project",
         scope_id: scopeId,

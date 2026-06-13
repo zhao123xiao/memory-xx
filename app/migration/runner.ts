@@ -5,7 +5,7 @@ import path from "node:path";
 import { Pool, type PoolClient } from "pg";
 
 import {
-  type MemoryV2PostgresConfig,
+  type MemoryXXPostgresConfig,
   createPostgresPoolConfig
 } from "../db/adapters/postgres-config";
 import {
@@ -19,10 +19,14 @@ export interface SqlMigration {
   readonly filename: string;
   readonly sql: string;
   readonly checksum: string;
+  readonly rollbackAvailable: boolean;
+  readonly rollbackFilename?: string;
+  readonly rollbackSql?: string;
+  readonly rollbackChecksum?: string;
 }
 
 export interface RunMigrationsOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly migrationsDirectory?: string;
 }
 
@@ -31,14 +35,18 @@ export interface AppliedMigration {
   readonly filename: string;
   readonly checksum: string;
   readonly appliedAt: string;
+  readonly rollbackAvailable: boolean;
+  readonly rollbackFilename?: string;
+  readonly rollbackChecksum?: string;
 }
 
 export interface MigrationRunResult {
   readonly applied: AppliedMigration[];
   readonly skipped: readonly string[];
+  readonly rollbackMissing: readonly string[];
 }
 
-const MIGRATIONS_TABLE = "memory_xx_schema_migrations";
+const MIGRATIONS_TABLE = "memory_v2_schema_migrations";
 
 export async function runPostgresMigrations(
   options: RunMigrationsOptions
@@ -76,6 +84,9 @@ export async function runPostgresMigrations(
             version: string;
             filename: string;
             checksum: string;
+            rollback_available: boolean;
+            rollback_filename: string | null;
+            rollback_checksum: string | null;
             applied_at: Date | string;
           }>(
             `
@@ -83,12 +94,29 @@ export async function runPostgresMigrations(
                 version,
                 filename,
                 checksum,
+                rollback_available,
+                rollback_filename,
+                rollback_checksum,
                 applied_at
               )
-              VALUES ($1, $2, $3, NOW())
-              RETURNING version, filename, checksum, applied_at
+              VALUES ($1, $2, $3, $4, $5, $6, NOW())
+              RETURNING
+                version,
+                filename,
+                checksum,
+                rollback_available,
+                rollback_filename,
+                rollback_checksum,
+                applied_at
             `,
-            [migration.version, migration.filename, migration.checksum]
+            [
+              migration.version,
+              migration.filename,
+              migration.checksum,
+              migration.rollbackAvailable,
+              migration.rollbackFilename ?? null,
+              migration.rollbackChecksum ?? null
+            ]
           );
 
           await client.query("COMMIT");
@@ -98,6 +126,9 @@ export async function runPostgresMigrations(
             version: row.version,
             filename: row.filename,
             checksum: row.checksum,
+            rollbackAvailable: row.rollback_available,
+            ...(row.rollback_filename ? { rollbackFilename: row.rollback_filename } : {}),
+            ...(row.rollback_checksum ? { rollbackChecksum: row.rollback_checksum } : {}),
             appliedAt:
               row.applied_at instanceof Date
                 ? row.applied_at.toISOString()
@@ -111,7 +142,10 @@ export async function runPostgresMigrations(
 
       return {
         applied,
-        skipped
+        skipped,
+        rollbackMissing: migrations
+          .filter((migration) => !migration.rollbackAvailable)
+          .map((migration) => migration.filename)
       };
     } finally {
       client.release();
@@ -125,25 +159,42 @@ export async function loadSqlMigrations(
   migrationsDirectory = path.resolve(process.cwd(), "migrations")
 ): Promise<SqlMigration[]> {
   const files = await fs.readdir(migrationsDirectory);
-  const sqlFiles = files.filter((file) => file.endsWith(".sql")).sort();
+  const forwardSqlFiles = files
+    .filter((file) => file.endsWith(".sql") && !isRollbackMigration(filenameBase(file)))
+    .sort();
+  const rollbackFiles = new Map(
+    files
+      .filter((file) => file.endsWith(".down.sql"))
+      .map((file) => [file.replace(/\.down\.sql$/u, ".sql"), file] as const)
+  );
   const prefixCounts = new Map<string, number>();
 
-  for (const filename of sqlFiles) {
+  for (const filename of forwardSqlFiles) {
     const prefix = migrationPrefix(filename);
     prefixCounts.set(prefix, (prefixCounts.get(prefix) ?? 0) + 1);
   }
 
   const migrations: SqlMigration[] = [];
-  for (const filename of sqlFiles) {
+  for (const filename of forwardSqlFiles) {
     const filePath = path.join(migrationsDirectory, filename);
     const sql = await fs.readFile(filePath, "utf8");
     const prefix = migrationPrefix(filename);
+    const rollbackFilename = rollbackFiles.get(filename);
+    const rollbackSql = rollbackFilename
+      ? await fs.readFile(path.join(migrationsDirectory, rollbackFilename), "utf8")
+      : undefined;
 
     migrations.push({
       version: (prefixCounts.get(prefix) ?? 0) > 1 ? filename.replace(/\.sql$/u, "") : prefix,
       filename,
       sql,
-      checksum: createHash("sha256").update(sql).digest("hex")
+      checksum: createHash("sha256").update(sql).digest("hex"),
+      rollbackAvailable: Boolean(rollbackFilename),
+      ...(rollbackFilename ? { rollbackFilename } : {}),
+      ...(rollbackSql !== undefined ? { rollbackSql } : {}),
+      ...(rollbackSql !== undefined
+        ? { rollbackChecksum: createHash("sha256").update(rollbackSql).digest("hex") }
+        : {})
     });
   }
 
@@ -157,6 +208,14 @@ function migrationPrefix(filename: string): string {
     : filename.slice(0, separatorIndex);
 }
 
+function filenameBase(filename: string): string {
+  return filename.replace(/\.sql$/u, "");
+}
+
+function isRollbackMigration(filenameWithoutSqlExtension: string): boolean {
+  return filenameWithoutSqlExtension.endsWith(".down");
+}
+
 async function ensureMigrationsTable(client: PoolClient, schema: string): Promise<void> {
   await ensureSchema(client, schema);
   await setSearchPath(client, schema);
@@ -166,8 +225,23 @@ async function ensureMigrationsTable(client: PoolClient, schema: string): Promis
         version TEXT PRIMARY KEY,
         filename TEXT NOT NULL,
         checksum TEXT NOT NULL,
+        rollback_available BOOLEAN NOT NULL DEFAULT FALSE,
+        rollback_filename TEXT,
+        rollback_checksum TEXT,
         applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `
+  );
+  await client.query(
+    `ALTER TABLE ${quoteIdentifier(MIGRATIONS_TABLE)}
+       ADD COLUMN IF NOT EXISTS rollback_available BOOLEAN NOT NULL DEFAULT FALSE`
+  );
+  await client.query(
+    `ALTER TABLE ${quoteIdentifier(MIGRATIONS_TABLE)}
+       ADD COLUMN IF NOT EXISTS rollback_filename TEXT`
+  );
+  await client.query(
+    `ALTER TABLE ${quoteIdentifier(MIGRATIONS_TABLE)}
+       ADD COLUMN IF NOT EXISTS rollback_checksum TEXT`
   );
 }

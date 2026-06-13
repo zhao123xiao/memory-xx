@@ -5,14 +5,14 @@
 
 import { createDefaultMcpServer, startStdioTransport } from "../app/mcp";
 
-process.env.MEMORY_V2_LOG_TARGET = process.env.MEMORY_V2_LOG_TARGET || "stderr";
+process.env.MEMORY_XX_LOG_TARGET = process.env.MEMORY_XX_LOG_TARGET || "stderr";
 
 export function resolveMcpApiToken(env: NodeJS.ProcessEnv = process.env): string {
-  return env.MEMORY_V2_MCP_TOKEN?.trim() || env.MEMORY_V2_API_TOKEN?.trim() || "";
+  return env.MEMORY_XX_MCP_TOKEN?.trim() || env.MEMORY_XX_API_TOKEN?.trim() || "";
 }
 
 export async function main(): Promise<void> {
-  const baseUrl = process.env.MEMORY_V2_BASE_URL ?? process.env.MEMORY_V2_WRAPPER_URL ?? "http://127.0.0.1:5100";
+  const baseUrl = process.env.MEMORY_XX_BASE_URL ?? process.env.MEMORY_XX_WRAPPER_URL ?? "http://127.0.0.1:5100";
   const apiToken = resolveMcpApiToken();
 
   const server = createDefaultMcpServer({

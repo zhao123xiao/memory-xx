@@ -2,7 +2,7 @@
 import "./test-harness/config.js";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config.js";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function quoteIdent(value: string): string {
@@ -17,7 +17,7 @@ function hasFlag(name: string): boolean {
 async function main(): Promise<void> {
   await requireCliPermission("memory:governance_apply");
   const apply = hasFlag("--apply");
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   try {

@@ -3,7 +3,7 @@ import type { ArchiveMemoryService } from "../../review/services/archive-memory-
 import type { ReviewDecisionService } from "../../review/services/review-decision-service";
 import type { SupersedeMemoryService } from "../../review/services/supersede-memory-service";
 import type { TombstoneMemoryService } from "../../review/services/tombstone-memory-service";
-import type { MemoryV2HttpRequest, MemoryV2HttpResponse } from "../http";
+import type { MemoryXXHttpRequest, MemoryXXHttpResponse } from "../http";
 import {
   approveMemoryHandler,
   archiveMemoryHandler,
@@ -15,7 +15,7 @@ import {
 export interface ReviewRoute<TBody = unknown, TResponse = unknown> {
   readonly method: "POST";
   readonly path: string;
-  handle(request: MemoryV2HttpRequest<TBody>): Promise<MemoryV2HttpResponse<TResponse>>;
+  handle(request: MemoryXXHttpRequest<TBody>): Promise<MemoryXXHttpResponse<TResponse>>;
 }
 
 export function buildReviewRoutes(

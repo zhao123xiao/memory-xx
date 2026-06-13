@@ -12,7 +12,7 @@
 ## Drill
 
 1. Create an empty shadow DB.
-2. Run `MEMORY_V2_ENV_PATH=<project-root>/.env npm run migrate`.
+2. Run `MEMORY_XX_ENV_PATH=<project-root>/.env npm run migrate`.
 3. Verify `memory_xx_schema_migrations` has unique versions and expected filenames.
 4. For reversible migrations, execute the documented down SQL in the shadow DB.
 5. For irreversible migrations, verify the forward repair script and documented irreversible point.

@@ -5,7 +5,7 @@ import { RecallRuntimeCacheInvalidator } from "../cache";
 import { createMemoryOrchestratorService, type MemoryOrchestratorAction } from "../orchestrator";
 import { ArchiveMemoryService } from "../review/services/archive-memory-service";
 import { TombstoneMemoryService } from "../review/services/tombstone-memory-service";
-import { ScopeType } from "../shared";
+import { DEFAULT_AGENT_ID, ScopeType } from "../shared";
 import { CreateMemoryService } from "../write/services/create-memory-service";
 import { parseJsonBody } from "./body";
 import { getDeps, type HandlerDeps } from "./http-handler-deps";
@@ -62,6 +62,12 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
   if (!rt && (action === "recall_memory" || action === "recall_memory_legacy" || action === "summarize_memory")) {
     throw new Error("运行时尚未初始化");
   }
+  const cacheInvalidator = new RecallRuntimeCacheInvalidator(deps.recallCache, { database: db });
+  const lifecycleDeps = {
+    database: db,
+    cacheInvalidator,
+    projectionSyncService: deps.projectionSyncService ?? undefined,
+  };
   const orchestrator = createMemoryOrchestratorService({
     recallOrchestrator: rt?.orchestrator ?? {
       async execute(): Promise<never> {
@@ -70,13 +76,13 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
     } as never,
     createMemoryService: new CreateMemoryService({
       database: db,
-      cacheInvalidator: new RecallRuntimeCacheInvalidator(deps.recallCache, { database: deps.writeDatabase }),
+      cacheInvalidator,
       projectionSyncService: deps.projectionSyncService ?? undefined,
     }),
-    archiveMemoryService: new ArchiveMemoryService({ database: db }),
-    tombstoneMemoryService: new TombstoneMemoryService({ database: db }),
+    archiveMemoryService: new ArchiveMemoryService(lifecycleDeps),
+    tombstoneMemoryService: new TombstoneMemoryService(lifecycleDeps),
     database: db,
-    cacheInvalidator: new RecallRuntimeCacheInvalidator(deps.recallCache, { database: db }),
+    cacheInvalidator,
   });
   switch (action) {
     case "resolve_scope_plan": {
@@ -136,7 +142,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       }
       return await orchestrator.forget_memory({
         requestId: readOptionalTrimmedString(payload.requestId) ?? randomUUID(),
-        actorId: readOptionalTrimmedString(payload.actorId) ?? "klee",
+        actorId: readOptionalTrimmedString(payload.actorId) ?? DEFAULT_AGENT_ID,
         memoryId: readOptionalTrimmedString(payload.memoryId) ?? readOptionalTrimmedString(payload.memory_id) ?? "",
         mode: payload.mode === "archive" ? "archive" : "tombstone",
       });
@@ -162,7 +168,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       const rawBody = isPlainObject(payload) ? (payload as Record<string, unknown>) : {};
       return await orchestrator.mcp_approve_memory({
         memory_id: String(rawBody.memory_id ?? ""),
-        reviewer_id: String(rawBody.reviewer_id ?? "klee"),
+        reviewer_id: String(rawBody.reviewer_id ?? DEFAULT_AGENT_ID),
         reason: typeof rawBody.reason === "string" ? rawBody.reason : undefined,
       });
     }
@@ -170,7 +176,7 @@ async function executeOrchestratorAction(action: MemoryOrchestratorAction | "rec
       const rawBody = isPlainObject(payload) ? (payload as Record<string, unknown>) : {};
       return await orchestrator.mcp_reject_memory({
         memory_id: String(rawBody.memory_id ?? ""),
-        reviewer_id: String(rawBody.reviewer_id ?? "klee"),
+        reviewer_id: String(rawBody.reviewer_id ?? DEFAULT_AGENT_ID),
         reason: String(rawBody.reason ?? "rejected via MCP"),
       });
     }

@@ -8,10 +8,10 @@ import { HttpQdrantPointWriter } from "./qdrant-point-writer";
 import { QdrantProjectionSyncService } from "./projector";
 import { ProjectorEmbeddingResolver } from "./projector-embedding-resolver";
 import { markEmbeddingManifestDirty } from "../embedding/manifest-refresh";
-import { loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../db/adapters/postgres-write-database";
 import { QwenEmbeddingProviderWrapper } from "../server/embedding-provider";
-import { loadMemoryV2QdrantConfig } from "../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
 import { readRuntimeControlNumberSync } from "../runtime-control-settings";
 import { createLogger } from "../shared/logger";
 import type { WriteTransactionRunner } from "../db/tx/write-transaction";
@@ -66,13 +66,13 @@ export function loadQdrantProjectorWorkerRuntimeConfig(
   env: NodeJS.ProcessEnv = process.env
 ): QdrantProjectorWorkerRuntimeConfig {
   return {
-    exporterName: readStringEnv(env, "MEMORY_V2_QDRANT_PROJECTOR_EXPORTER_NAME", "qdrant_projector"),
-    batchSize: readRuntimePositiveInt(env, "worker.qdrant_projector.batch_size", "MEMORY_V2_QDRANT_PROJECTOR_BATCH_SIZE", 50),
-    maxAttempts: readRuntimePositiveInt(env, "worker.qdrant_projector.max_attempts", "MEMORY_V2_QDRANT_PROJECTOR_MAX_ATTEMPTS", 5),
-    retryDelayMs: readRuntimePositiveInt(env, "worker.qdrant_projector.retry_delay_ms", "MEMORY_V2_QDRANT_PROJECTOR_RETRY_DELAY_MS", 5_000),
-    intervalMs: readRuntimePositiveInt(env, "worker.qdrant_projector.interval_ms", "MEMORY_V2_QDRANT_PROJECTOR_INTERVAL_MS", DEFAULT_LOOP_INTERVAL_MS),
-    idleLogEvery: readPositiveIntEnv(env, "MEMORY_V2_QDRANT_PROJECTOR_IDLE_LOG_EVERY", DEFAULT_IDLE_LOG_EVERY),
-    once: readBooleanEnv(env, "MEMORY_V2_QDRANT_PROJECTOR_ONCE", false)
+    exporterName: readStringEnv(env, "MEMORY_XX_QDRANT_PROJECTOR_EXPORTER_NAME", "qdrant_projector"),
+    batchSize: readRuntimePositiveInt(env, "worker.qdrant_projector.batch_size", "MEMORY_XX_QDRANT_PROJECTOR_BATCH_SIZE", 50),
+    maxAttempts: readRuntimePositiveInt(env, "worker.qdrant_projector.max_attempts", "MEMORY_XX_QDRANT_PROJECTOR_MAX_ATTEMPTS", 5),
+    retryDelayMs: readRuntimePositiveInt(env, "worker.qdrant_projector.retry_delay_ms", "MEMORY_XX_QDRANT_PROJECTOR_RETRY_DELAY_MS", 5_000),
+    intervalMs: readRuntimePositiveInt(env, "worker.qdrant_projector.interval_ms", "MEMORY_XX_QDRANT_PROJECTOR_INTERVAL_MS", DEFAULT_LOOP_INTERVAL_MS),
+    idleLogEvery: readPositiveIntEnv(env, "MEMORY_XX_QDRANT_PROJECTOR_IDLE_LOG_EVERY", DEFAULT_IDLE_LOG_EVERY),
+    once: readBooleanEnv(env, "MEMORY_XX_QDRANT_PROJECTOR_ONCE", false)
   };
 }
 
@@ -281,9 +281,9 @@ export async function createQdrantProjectorWorkerFromEnv(
   readonly config: QdrantProjectorWorkerRuntimeConfig;
 }> {
   const config = loadQdrantProjectorWorkerRuntimeConfig(env);
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(env) });
   const outboxRepository = new DatabaseQdrantSyncOutboxRepository(database);
-  const pointWriter = new HttpQdrantPointWriter({ config: loadMemoryV2QdrantConfig(env) });
+  const pointWriter = new HttpQdrantPointWriter({ config: loadMemoryXXQdrantConfig(env) });
 
   const embeddingProvider = new QwenEmbeddingProviderWrapper();
   const embeddingResolver = new ProjectorEmbeddingResolver({

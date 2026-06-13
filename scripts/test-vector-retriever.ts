@@ -6,17 +6,17 @@
  * the vector retriever returns semantically relevant results.
  *
  * Usage:
- *   EMBEDDING_API_KEY=sk-xxx \
+ *   EMBEDDING_API_KEY=<set-private-key> \
  *   EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1 \
  *   EMBEDDING_MODEL=Qwen3-Embedding-8B \
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/test-vector-retriever.ts
  */
 
 import {
   createPostgresRecallRuntime,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   ScopeType,
   FilterMode,
   type RecallRequest,
@@ -152,7 +152,7 @@ function truncate(s: string, maxLen: number): string {
 // ── Main ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
 
   console.log("=== Vector Retriever Test ===");
   console.log(`Schema: ${config.schema}`);

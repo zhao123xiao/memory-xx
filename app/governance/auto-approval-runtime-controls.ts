@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export interface AutoApprovalRuntimeControls {
@@ -39,8 +39,16 @@ export interface AutoApprovalRuntimeControls {
 
 export const AUTO_APPROVAL_RUNTIME_CONTROLS_FILE = "auto-approval-runtime-controls.json";
 
+export interface AutoApprovalRuntimeControlsReadResult {
+  readonly controls: AutoApprovalRuntimeControls;
+  readonly ok: boolean;
+  readonly exists: boolean;
+  readonly path: string;
+  readonly error?: string;
+}
+
 export function autoApprovalRuntimeControlsPath(): string {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
   return join(runtimeDir, AUTO_APPROVAL_RUNTIME_CONTROLS_FILE);
 }
 
@@ -138,10 +146,34 @@ export function normalizeAutoApprovalRuntimeControls(value: unknown): AutoApprov
 }
 
 export function readAutoApprovalRuntimeControlsSync(): AutoApprovalRuntimeControls {
+  return readAutoApprovalRuntimeControlsStateSync().controls;
+}
+
+export function readAutoApprovalRuntimeControlsStateSync(): AutoApprovalRuntimeControlsReadResult {
+  const file = autoApprovalRuntimeControlsPath();
+  if (!existsSync(file)) {
+    return {
+      controls: defaultAutoApprovalRuntimeControls(),
+      ok: true,
+      exists: false,
+      path: file,
+    };
+  }
   try {
-    return normalizeAutoApprovalRuntimeControls(JSON.parse(readFileSync(autoApprovalRuntimeControlsPath(), "utf8")) as unknown);
-  } catch {
-    return defaultAutoApprovalRuntimeControls();
+    return {
+      controls: normalizeAutoApprovalRuntimeControls(JSON.parse(readFileSync(file, "utf8")) as unknown),
+      ok: true,
+      exists: true,
+      path: file,
+    };
+  } catch (error) {
+    return {
+      controls: defaultAutoApprovalRuntimeControls(),
+      ok: false,
+      exists: true,
+      path: file,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -184,7 +216,7 @@ export function isRuntimeAutoUpdateApplyScopeEnabled(scopeType: string, scopeId:
   if (!controls.update_apply.enabled) return false;
   if (scopeType === "project") return scopeId === "memory-xx" && controls.update_apply.real_project_apply;
   if (scopeType === "workspace") return scopeId === "current-instance" && controls.update_apply.workspace_apply;
-  if (scopeType === "user") return scopeId === "current-user" && controls.update_apply.user_apply;
+  if (scopeType === "user") return (scopeId === "current-user" || scopeId === "current-instance-owner") && controls.update_apply.user_apply;
   if (scopeType === "global") return scopeId === "global" && controls.update_apply.global_apply;
   return false;
 }

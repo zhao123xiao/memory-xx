@@ -1,10 +1,10 @@
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../../app/db/adapters/postgres-config.js";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../../app/db/adapters/postgres-config.js";
 import { quoteIdent } from "../lib/runtime-env.js";
 
 export async function buildFeedbackLoopSummary(limit = 30): Promise<Record<string, unknown>> {
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {

@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     throw new Error(`unsupported_command:${command}`);
   }
 
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
   const cursorPath = argValue("--cursor") || path.join(runtimeDir, "conversation-sources.cursor.json");
   const dryRun = hasArg("--dry-run") || !hasArg("--apply");
   const json = hasArg("--json");

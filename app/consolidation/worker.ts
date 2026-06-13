@@ -8,6 +8,8 @@ export interface ConsolidationDeps {
   readonly mergeDuplicates: (group: DuplicateGroup) => Promise<string | null>;
   readonly resolveConflict: (conflict: ConflictPair) => Promise<string | null>;
   readonly buildEpisodes: (windowHours: number) => Promise<number>;
+  readonly runInJobTransaction?: <TResult>(work: () => Promise<TResult>) => Promise<TResult>;
+  readonly recordCompensation?: (entry: ConsolidationCompensationEntry) => Promise<void>;
 }
 
 export interface DuplicateGroup {
@@ -30,8 +32,14 @@ export interface ConsolidationResult {
   readonly errors: readonly string[];
 }
 
+export interface ConsolidationCompensationEntry {
+  readonly stage: "findDuplicates" | "dedupe" | "findConflicts" | "conflict" | "buildEpisodes";
+  readonly reason: string;
+  readonly target_id?: string;
+}
+
 function readEpisodeWindowHours(): number {
-  const raw = process.env.MEMORY_V2_EPISODE_WINDOW_HOURS?.trim();
+  const raw = process.env.MEMORY_XX_EPISODE_WINDOW_HOURS?.trim();
   if (!raw) return 24;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 24;
@@ -41,41 +49,61 @@ export async function runConsolidation(deps: ConsolidationDeps): Promise<Consoli
   const errors: string[] = [];
   let duplicatesMerged = 0;
   let conflictsResolved = 0;
-
-  try {
-    const duplicates = await deps.findDuplicates();
-    for (const group of duplicates) {
-      try {
-        const merged = await deps.mergeDuplicates(group);
-        if (merged) duplicatesMerged++;
-      } catch (error) {
-        errors.push("dedupe:" + group.dedupe_key + ": " + (error as Error).message);
-      }
-    }
-  } catch (error) {
-    errors.push("findDuplicates: " + (error as Error).message);
-  }
-
-  try {
-    const conflicts = await deps.findConflicts();
-    for (const conflict of conflicts) {
-      try {
-        const resolved = await deps.resolveConflict(conflict);
-        if (resolved) conflictsResolved++;
-      } catch (error) {
-        errors.push("conflict:" + conflict.memory_id_a + ": " + (error as Error).message);
-      }
-    }
-  } catch (error) {
-    errors.push("findConflicts: " + (error as Error).message);
-  }
-
   let episodesCreated = 0;
-  try {
-    episodesCreated = await deps.buildEpisodes(readEpisodeWindowHours());
-  } catch (error) {
-    errors.push("buildEpisodes: " + (error as Error).message);
-  }
+  const runInJobTransaction = deps.runInJobTransaction ?? (async (work) => work());
+  const recordCompensation = async (entry: ConsolidationCompensationEntry) => {
+    try {
+      await deps.recordCompensation?.(entry);
+    } catch (error) {
+      errors.push("recordCompensation:" + entry.stage + ": " + (error as Error).message);
+    }
+  };
+
+  await runInJobTransaction(async () => {
+    try {
+      const duplicates = await deps.findDuplicates();
+      for (const group of duplicates) {
+        try {
+          const merged = await deps.mergeDuplicates(group);
+          if (merged) duplicatesMerged++;
+        } catch (error) {
+          const reason = (error as Error).message;
+          errors.push("dedupe:" + group.dedupe_key + ": " + reason);
+          await recordCompensation({ stage: "dedupe", target_id: group.dedupe_key, reason });
+        }
+      }
+    } catch (error) {
+      const reason = (error as Error).message;
+      errors.push("findDuplicates: " + reason);
+      await recordCompensation({ stage: "findDuplicates", reason });
+    }
+
+    try {
+      const conflicts = await deps.findConflicts();
+      for (const conflict of conflicts) {
+        try {
+          const resolved = await deps.resolveConflict(conflict);
+          if (resolved) conflictsResolved++;
+        } catch (error) {
+          const reason = (error as Error).message;
+          errors.push("conflict:" + conflict.memory_id_a + ": " + reason);
+          await recordCompensation({ stage: "conflict", target_id: conflict.memory_id_a, reason });
+        }
+      }
+    } catch (error) {
+      const reason = (error as Error).message;
+      errors.push("findConflicts: " + reason);
+      await recordCompensation({ stage: "findConflicts", reason });
+    }
+
+    try {
+      episodesCreated = await deps.buildEpisodes(readEpisodeWindowHours());
+    } catch (error) {
+      const reason = (error as Error).message;
+      errors.push("buildEpisodes: " + reason);
+      await recordCompensation({ stage: "buildEpisodes", reason });
+    }
+  });
 
   const result: ConsolidationResult = {
     duplicates_merged: duplicatesMerged,

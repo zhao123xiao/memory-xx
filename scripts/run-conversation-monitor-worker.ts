@@ -11,7 +11,7 @@ import {
   scanConversationSources,
   type ConversationSourceAdapterSummary,
 } from "../app/conversation/session-source-adapters";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { activatePendingRuntimeControlsSync, readRuntimeControlNumberSync } from "../app/runtime-control-settings";
 
 interface RuntimeFlags {
@@ -35,17 +35,19 @@ function quoteIdent(value: string): string {
   return `"${value}"`;
 }
 
-const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
 activatePendingRuntimeControlsSync(["worker.conversation.poll_interval_ms"]);
 const controlsPath = path.join(runtimeDir, "conversation-monitor.json");
 const cursorPath = path.join(runtimeDir, "conversation-events", ".cursor.json");
 const sourceCursorPath = path.join(runtimeDir, "conversation-sources.cursor.json");
 const heartbeatPath = path.join(runtimeDir, "conversation-monitor-heartbeat.json");
-const wrapperUrl = (process.env.MEMORY_V2_WRAPPER_URL?.trim() || "http://127.0.0.1:5100").replace(/\/+$/, "");
-const wrapperToken = process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_API_TOKEN?.trim() || "";
-const pollIntervalMs = readPositiveInt("MEMORY_V2_CONVERSATION_POLL_INTERVAL_MS", 10_000);
-const spoolPattern = process.env.MEMORY_V2_CONVERSATION_SPOOL_PATH?.trim() || ".runtime/conversation-events/*.jsonl";
+const wrapperUrl = (process.env.MEMORY_XX_WRAPPER_URL?.trim() || "http://127.0.0.1:5100").replace(/\/+$/, "");
+const wrapperToken = process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_API_TOKEN?.trim() || "";
+const pollIntervalMs = readPositiveInt("MEMORY_XX_CONVERSATION_POLL_INTERVAL_MS", 10_000);
+const spoolPattern = process.env.MEMORY_XX_CONVERSATION_SPOOL_PATH?.trim() || ".runtime/conversation-events/*.jsonl";
 const once = process.argv.includes("--once");
+const conversationPostMaxBytes = readPositiveInt("MEMORY_XX_CONVERSATION_EVENTS_POST_MAX_BYTES", 750_000);
+const conversationPostMaxEvents = readPositiveInt("MEMORY_XX_CONVERSATION_EVENTS_POST_MAX_EVENTS", 50);
 
 let stopping = false;
 let lastError: string | null = null;
@@ -55,7 +57,7 @@ process.on("SIGTERM", () => { stopping = true; });
 function readPositiveInt(name: string, fallback: number): number {
   const parsed = Number.parseInt(process.env[name] ?? "", 10);
   const envValue = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  if (name === "MEMORY_V2_CONVERSATION_POLL_INTERVAL_MS") {
+  if (name === "MEMORY_XX_CONVERSATION_POLL_INTERVAL_MS") {
     const runtimeValue = readRuntimeControlNumberSync("worker.conversation.poll_interval_ms", envValue);
     return Number.isFinite(runtimeValue) && runtimeValue > 0 ? runtimeValue : envValue;
   }
@@ -73,10 +75,44 @@ function hashContent(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+export function batchConversationEventsForPost(
+  events: readonly Record<string, unknown>[],
+  options: { readonly maxBytes: number; readonly maxEvents: number },
+): Record<string, unknown>[][] {
+  const batches: Record<string, unknown>[][] = [];
+  let current: Record<string, unknown>[] = [];
+  const maxBytes = Math.max(1024, options.maxBytes);
+  const maxEvents = Math.max(1, options.maxEvents);
+
+  function payloadSize(batch: readonly Record<string, unknown>[]): number {
+    return Buffer.byteLength(JSON.stringify({ events: batch }), "utf8");
+  }
+
+  for (const event of events) {
+    const singleSize = payloadSize([event]);
+    if (singleSize > maxBytes) {
+      if (current.length > 0) {
+        batches.push(current);
+        current = [];
+      }
+      continue;
+    }
+    const next = [...current, event];
+    if (current.length > 0 && (next.length > maxEvents || payloadSize(next) > maxBytes)) {
+      batches.push(current);
+      current = [event];
+      continue;
+    }
+    current = next;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
 async function loadFlags(): Promise<RuntimeFlags> {
   const base = {
-    conversation_monitor: boolEnv("MEMORY_V2_CONVERSATION_MONITOR", false),
-    conversation_auto_extract: boolEnv("MEMORY_V2_CONVERSATION_AUTO_EXTRACT", false),
+    conversation_monitor: boolEnv("MEMORY_XX_CONVERSATION_MONITOR", false),
+    conversation_auto_extract: boolEnv("MEMORY_XX_CONVERSATION_AUTO_EXTRACT", false),
   };
   try {
     const parsed = JSON.parse(await readFile(controlsPath, "utf8")) as Partial<RuntimeFlags>;
@@ -165,7 +201,7 @@ async function listSpoolFiles(pattern: string): Promise<string[]> {
   }
 }
 
-function sessionKeyFromEvent(event: Record<string, unknown>): SessionKey | null {
+function sessionKeyFromEvent(event: { readonly [key: string]: unknown }): SessionKey | null {
   const conversationId = typeof event.conversation_id === "string"
     ? event.conversation_id
     : typeof event.conversationId === "string"
@@ -178,6 +214,10 @@ function sessionKeyFromEvent(event: Record<string, unknown>): SessionKey | null 
       ? event.sessionId
       : null;
   return { conversation_id: conversationId, session_id: sessionId || null };
+}
+
+function eventObject(event: { readonly id: string } & object): Record<string, unknown> {
+  return { ...(event as unknown as Record<string, unknown>) };
 }
 
 async function postJson(pathname: string, body: unknown): Promise<Record<string, unknown>> {
@@ -201,6 +241,19 @@ async function postJson(pathname: string, body: unknown): Promise<Record<string,
     throw new Error(`HTTP ${response.status} ${pathname}: ${text.slice(0, 240)}`);
   }
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+}
+
+async function postConversationEvents(events: readonly { readonly [key: string]: unknown }[]): Promise<number> {
+  let posted = 0;
+  const batches = batchConversationEventsForPost(events, {
+    maxBytes: conversationPostMaxBytes,
+    maxEvents: conversationPostMaxEvents,
+  });
+  for (const batch of batches) {
+    await postJson("/api/memory/xx/conversation/events", { events: batch });
+    posted += batch.length;
+  }
+  return posted;
 }
 
 async function readSpoolEvents(): Promise<{ events: Record<string, unknown>[]; sessions: SessionKey[]; files: string[]; cursor: SpoolCursor }> {
@@ -257,7 +310,7 @@ async function flushSessions(sessions: readonly SessionKey[]): Promise<number> {
       force: false,
     };
     try {
-      const result = await postJson("/api/memory/v2/conversation/flush", body);
+      const result = await postJson("/api/memory/xx/conversation/flush", body);
       console.log(JSON.stringify({ level: "info", msg: "conversation_flush", session, result }));
       flushed += 1;
     } catch (error) {
@@ -269,7 +322,7 @@ async function flushSessions(sessions: readonly SessionKey[]): Promise<number> {
 }
 
 async function loop(): Promise<void> {
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   try {
     while (!stopping) {
@@ -288,16 +341,16 @@ async function loop(): Promise<void> {
         cursor: undefined as SpoolCursor | undefined,
       };
       if (flags.conversation_monitor) {
-        const sourceScanEnabled = boolEnv("MEMORY_V2_CONVERSATION_SOURCE_TAIL", true);
+        const sourceScanEnabled = boolEnv("MEMORY_XX_CONVERSATION_SOURCE_TAIL", true);
         const sourceScan = sourceScanEnabled
           ? await scanConversationSources({
             adapters: defaultConversationSourceConfigs(process.env),
             cursorPath: sourceCursorPath,
-            readExisting: boolEnv("MEMORY_V2_CONVERSATION_SOURCE_BACKFILL", false),
+            readExisting: boolEnv("MEMORY_XX_CONVERSATION_SOURCE_BACKFILL", false),
           })
           : null;
         const { events, sessions, files, cursor } = await readSpoolEvents();
-        const sourceEvents = sourceScan?.events ?? [];
+        const sourceEvents = (sourceScan?.events ?? []).map(eventObject);
         const allEvents = [...sourceEvents, ...events];
         const sourceSessions = sourceEvents.map(sessionKeyFromEvent).filter((item): item is SessionKey => item !== null);
         heartbeat = {
@@ -313,10 +366,10 @@ async function loop(): Promise<void> {
         };
         if (allEvents.length > 0) {
           try {
-            await postJson("/api/memory/v2/conversation/events", { events: allEvents });
-            heartbeat = { ...heartbeat, postedEvents: allEvents.length };
+            const posted = await postConversationEvents(allEvents);
+            heartbeat = { ...heartbeat, postedEvents: posted };
             lastError = null;
-            console.log(JSON.stringify({ level: "info", msg: "conversation_events_posted", count: allEvents.length, source_count: sourceEvents.length, spool_count: events.length }));
+            console.log(JSON.stringify({ level: "info", msg: "conversation_events_posted", count: posted, source_count: sourceEvents.length, spool_count: events.length }));
           } catch (error) {
             lastError = error instanceof Error ? error.message : String(error);
             throw error;
@@ -341,7 +394,9 @@ async function loop(): Promise<void> {
   }
 }
 
-loop().catch((error) => {
-  console.error(JSON.stringify({ level: "error", msg: "conversation_monitor_worker_failed", error: error instanceof Error ? error.stack ?? error.message : String(error) }));
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  loop().catch((error) => {
+    console.error(JSON.stringify({ level: "error", msg: "conversation_monitor_worker_failed", error: error instanceof Error ? error.stack ?? error.message : String(error) }));
+    process.exitCode = 1;
+  });
+}

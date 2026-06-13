@@ -46,16 +46,16 @@ function defaultSessionId(now: Date): string {
 
 function defaultScopeContext(): JsonObject {
   return {
-    project_ids: [(process.env.MEMORY_V2_CONVERSATION_DEFAULT_PROJECT_ID ?? "memory-xx").trim() || "memory-xx"],
-    user_id: process.env.MEMORY_V2_CONVERSATION_DEFAULT_USER_ID?.trim() || "current-instance-owner",
-    workspace_id: process.env.MEMORY_V2_CONVERSATION_DEFAULT_WORKSPACE_ID?.trim() || "current-instance",
+    project_ids: [(process.env.MEMORY_XX_CONVERSATION_DEFAULT_PROJECT_ID ?? "memory-xx").trim() || "memory-xx"],
+    user_id: process.env.MEMORY_XX_CONVERSATION_DEFAULT_USER_ID?.trim() || "current-instance-owner",
+    workspace_id: process.env.MEMORY_XX_CONVERSATION_DEFAULT_WORKSPACE_ID?.trim() || "current-instance",
   };
 }
 
 export function defaultCodexSpoolPath(cwd = process.cwd()): string {
-  const explicit = process.env.MEMORY_V2_CODEX_CONVERSATION_SPOOL_PATH?.trim();
+  const explicit = process.env.MEMORY_XX_CODEX_CONVERSATION_SPOOL_PATH?.trim();
   if (explicit) return path.resolve(cwd, explicit);
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(cwd, ".runtime");
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(cwd, ".runtime");
   return path.resolve(cwd, runtimeDir, "conversation-events", "codex.jsonl");
 }
 
@@ -65,11 +65,11 @@ export function buildCodexConversationEvent(input: CodexConversationBridgeInput,
     throw new Error("content_required");
   }
   const conversationId = readString(
-    input.conversation_id ?? process.env.CODEX_CONVERSATION_ID ?? process.env.MEMORY_V2_CONVERSATION_ID,
+    input.conversation_id ?? process.env.CODEX_CONVERSATION_ID ?? process.env.MEMORY_XX_CONVERSATION_ID,
     "codex-local"
   );
   const sessionId = readString(
-    input.session_id ?? process.env.CODEX_SESSION_ID ?? process.env.MEMORY_V2_CONVERSATION_SESSION_ID,
+    input.session_id ?? process.env.CODEX_SESSION_ID ?? process.env.MEMORY_XX_CONVERSATION_SESSION_ID,
     `codex-${defaultSessionId(now)}`
   );
   const contentHash = sha256(content);

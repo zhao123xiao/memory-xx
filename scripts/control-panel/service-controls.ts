@@ -36,7 +36,7 @@ export interface AutoApprovalControlStatus {
 }
 
 const execFileAsync = promisify(execFile);
-const RUNTIME_DIR = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+const RUNTIME_DIR = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
 const CONVERSATION_CONTROL_PATH = path.join(RUNTIME_DIR, "conversation-monitor.json");
 const CONVERSATION_HEARTBEAT_PATH = path.join(RUNTIME_DIR, "conversation-monitor-heartbeat.json");
 
@@ -144,10 +144,10 @@ export async function readConversationControls(): Promise<{ conversation_monitor
   return {
     conversation_monitor: typeof file.conversation_monitor === "boolean"
       ? file.conversation_monitor
-      : envBool("MEMORY_V2_CONVERSATION_MONITOR", false),
+      : envBool("MEMORY_XX_CONVERSATION_MONITOR", false),
     conversation_auto_extract: typeof file.conversation_auto_extract === "boolean"
       ? file.conversation_auto_extract
-      : envBool("MEMORY_V2_CONVERSATION_AUTO_EXTRACT", false),
+      : envBool("MEMORY_XX_CONVERSATION_AUTO_EXTRACT", false),
   };
 }
 

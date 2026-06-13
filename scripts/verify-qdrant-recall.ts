@@ -3,16 +3,16 @@
  * 验证 Qdrant vector recall 是否已修复（vec_hits > 0）
  *
  * 用法：
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/verify-qdrant-recall.ts
  */
 
-import { createQdrantPrimaryRecallRuntime, loadMemoryV2PostgresConfig, loadMemoryV2QdrantConfig, FilterMode, type RecallRequest } from "../app";
+import { createQdrantPrimaryRecallRuntime, loadMemoryXXPostgresConfig, loadMemoryXXQdrantConfig, FilterMode, type RecallRequest } from "../app";
 
 async function main() {
-  const pgConfig = loadMemoryV2PostgresConfig();
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   console.log("Qdrant config:", JSON.stringify(qdrantConfig));
   const runtime = createQdrantPrimaryRecallRuntime({
     config: pgConfig,

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import readline from "node:readline";
 import { createHash } from "node:crypto";
 import { Pool } from "pg";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../app/db/adapters/postgres-config";
 import { buildKnowledgeDocumentId, mapKnowledgeChunkIdToPointId } from "../app/knowledge/service";
 
 interface ExportLine {
@@ -18,10 +18,10 @@ if (!inputPath) {
   throw new Error("Usage: node --import tsx scripts/import-knowledge-chroma-export.ts <chroma-export.jsonl>");
 }
 
-const qdrantBase = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "");
-const qdrantCollection = process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
-const qdrantApiKey = process.env.MEMORY_V2_QDRANT_API_KEY?.trim();
-const batchSize = Number.parseInt(process.env.MEMORY_V2_KNOWLEDGE_IMPORT_BATCH_SIZE || "64", 10);
+const qdrantBase = process.env.MEMORY_XX_QDRANT_BASE_URL?.replace(/\/+$/, "");
+const qdrantCollection = process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
+const qdrantApiKey = process.env.MEMORY_XX_QDRANT_API_KEY?.trim();
+const batchSize = Number.parseInt(process.env.MEMORY_XX_KNOWLEDGE_IMPORT_BATCH_SIZE || "64", 10);
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -40,7 +40,7 @@ function hashEmbedding(values: readonly number[]): string {
 }
 
 async function ensureQdrantCollection(): Promise<void> {
-  if (!qdrantBase) throw new Error("MEMORY_V2_QDRANT_BASE_URL is not configured.");
+  if (!qdrantBase) throw new Error("MEMORY_XX_QDRANT_BASE_URL is not configured.");
   const get = await fetch(`${qdrantBase}/collections/${encodeURIComponent(qdrantCollection)}`, {
     headers: qdrantApiKey ? { "api-key": qdrantApiKey } : undefined
   });
@@ -74,7 +74,7 @@ async function upsertQdrant(points: unknown[]): Promise<void> {
 
 async function main(): Promise<void> {
   await ensureQdrantCollection();
-  const pgConfig = loadMemoryV2PostgresConfig();
+  const pgConfig = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();
   let processed = 0;

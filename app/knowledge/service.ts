@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Pool } from "pg";
-import { loadMemoryV2PostgresConfig, createPostgresPoolConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig, createPostgresPoolConfig } from "../db/adapters/postgres-config";
 import { mapMemoryIdToQdrantPointId } from "../qdrant-sync/projector";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
 import { QwenEmbeddingProviderWrapper } from "../server/embedding-provider";
@@ -35,10 +35,24 @@ export interface KnowledgeSearchResponse {
   readonly results: readonly KnowledgeSearchResult[];
   readonly degraded?: boolean;
   readonly failure_reason?: string;
+  readonly diagnostics?: KnowledgeFallbackDiagnostics;
 }
 
-const KNOWLEDGE_COLLECTION = process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
-const KNOWLEDGE_SCHEMA = process.env.MEMORY_V2_KNOWLEDGE_SCHEMA?.trim() || "knowledge_v1";
+export interface KnowledgeFallbackDiagnostics {
+  readonly qdrant?: {
+    readonly failure_reason: string;
+    readonly latency_ms?: number;
+  };
+  readonly fallback?: {
+    readonly attempted: boolean;
+    readonly count: number;
+    readonly latency_ms?: number;
+    readonly mode: KnowledgePostgresSearchMode;
+  };
+}
+
+const KNOWLEDGE_COLLECTION = process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
+const KNOWLEDGE_SCHEMA = process.env.MEMORY_XX_KNOWLEDGE_SCHEMA?.trim() || "knowledge_v1";
 const DEFAULT_LIMIT = 8;
 const knowledgeEmbeddingProvider = new ResilientQueryEmbeddingProvider(
   new QwenEmbeddingProviderWrapper(),
@@ -58,17 +72,21 @@ function clampLimit(value: number | undefined): number {
 }
 
 function readQdrantBaseUrl(): string {
-  const base = process.env.MEMORY_V2_QDRANT_BASE_URL?.trim();
-  if (!base) throw new Error("尚未配置 MEMORY_V2_QDRANT_BASE_URL。");
+  const base = process.env.MEMORY_XX_QDRANT_BASE_URL?.trim();
+  if (!base) throw new Error("尚未配置 MEMORY_XX_QDRANT_BASE_URL。");
   return base.replace(/\/+$/, "");
 }
 
 function readQdrantApiKey(): string | undefined {
-  return process.env.MEMORY_V2_QDRANT_API_KEY?.trim() || undefined;
+  return process.env.MEMORY_XX_QDRANT_API_KEY?.trim() || undefined;
 }
 
 function normalizeStringArray(value: readonly string[] | undefined): string[] {
   return Array.isArray(value) ? value.map((item) => item.trim()).filter(Boolean) : [];
+}
+
+function objectRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
 function readAllowlist(name: string): Set<string> | null {
@@ -84,6 +102,143 @@ function validateAllowed(values: readonly string[], allowlist: Set<string> | nul
 
 function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, "\"\"")}"`;
+}
+
+export type KnowledgePostgresSearchMode = "phrase" | "phrase_or_terms";
+
+export interface KnowledgePostgresSearchQueryInput {
+  readonly query: string;
+  readonly limit: number;
+  readonly collections: readonly string[];
+  readonly repos: readonly string[];
+  readonly schema?: string;
+  readonly tenantId?: string;
+  readonly availableColumns?: ReadonlySet<string>;
+}
+
+export interface KnowledgePostgresSearchQueryPlan {
+  readonly sql: string;
+  readonly params: unknown[];
+  readonly mode: KnowledgePostgresSearchMode;
+}
+
+export interface KnowledgeFallbackDiagnosticsInput {
+  readonly failureReason: string;
+  readonly qdrantLatencyMs?: number;
+  readonly fallbackLatencyMs?: number;
+  readonly fallbackCount: number;
+  readonly fallbackMode: KnowledgePostgresSearchMode;
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`);
+}
+
+function columnOrNull(columns: ReadonlySet<string> | undefined, column: string, alias = column): string {
+  if (!columns || columns.has(column)) return column;
+  return `NULL AS ${alias}`;
+}
+
+function extractKnowledgeQueryTerms(query: string): string[] {
+  const seen = new Set<string>();
+  const terms = query
+    .normalize("NFKC")
+    .match(/[\p{L}\p{N}][\p{L}\p{N}_./:-]{1,}/gu) ?? [];
+  for (const raw of terms) {
+    const term = raw.toLowerCase();
+    if (term.length < 2) continue;
+    seen.add(term);
+    if (seen.size >= 8) break;
+  }
+  return [...seen];
+}
+
+export function buildKnowledgeFallbackDiagnostics(input: KnowledgeFallbackDiagnosticsInput): KnowledgeFallbackDiagnostics {
+  return {
+    qdrant: {
+      failure_reason: input.failureReason,
+      ...(input.qdrantLatencyMs === undefined ? {} : { latency_ms: input.qdrantLatencyMs }),
+    },
+    fallback: {
+      attempted: true,
+      count: input.fallbackCount,
+      ...(input.fallbackLatencyMs === undefined ? {} : { latency_ms: input.fallbackLatencyMs }),
+      mode: input.fallbackMode,
+    },
+  };
+}
+
+export function buildKnowledgePostgresSearchQuery(input: KnowledgePostgresSearchQueryInput): KnowledgePostgresSearchQueryPlan {
+  const schema = quoteIdentifier(input.schema?.trim() || KNOWLEDGE_SCHEMA);
+  const phrase = `%${escapeLikePattern(input.query.trim())}%`;
+  const params: unknown[] = [phrase, input.limit];
+  const terms = extractKnowledgeQueryTerms(input.query);
+  const termMatchExpressions: string[] = [];
+  for (const term of terms) {
+    params.push(`%${escapeLikePattern(term)}%`);
+    termMatchExpressions.push(`content ILIKE $${params.length} ESCAPE '\\'`);
+  }
+
+  const termScore = termMatchExpressions.length > 0
+    ? termMatchExpressions.map((expression) => `(CASE WHEN ${expression} THEN 1 ELSE 0 END)`).join(" + ")
+    : "0";
+  const minTermMatches = Math.min(2, termMatchExpressions.length);
+  const clauses: string[] = [];
+  const tenantId = input.tenantId?.trim();
+  if (tenantId) {
+    params.push(tenantId);
+    clauses.push(`tenant_id = $${params.length}`);
+  }
+  if (!input.availableColumns || input.availableColumns.has("visibility")) {
+    clauses.push(`visibility IN ('public', 'shared', 'research')`);
+  }
+  if (input.collections.length > 0) {
+    params.push(input.collections);
+    clauses.push(`collection = ANY($${params.length}::text[])`);
+  }
+  if (input.repos.length > 0) {
+    params.push(input.repos);
+    clauses.push(`repo = ANY($${params.length}::text[])`);
+  }
+
+  return {
+    mode: termMatchExpressions.length > 0 ? "phrase_or_terms" : "phrase",
+    params,
+    sql: `
+      WITH ranked AS (
+        SELECT id, document_id, collection, repo, source_path,
+               ${columnOrNull(input.availableColumns, "chunk_index")},
+               ${columnOrNull(input.availableColumns, "start_line")},
+               ${columnOrNull(input.availableColumns, "end_line")},
+               content, metadata,
+               ${columnOrNull(input.availableColumns, "content_hash")},
+               ${columnOrNull(input.availableColumns, "embedding_hash")},
+               updated_at,
+               (content ILIKE $1 ESCAPE '\\') AS exact_phrase_match,
+               (${termScore}) AS term_match_count
+        FROM ${schema}.chunks
+        WHERE ${clauses.join(" AND ")}
+      )
+        SELECT id, document_id, collection, repo, source_path, chunk_index, start_line, end_line,
+               content, metadata, content_hash, embedding_hash
+        FROM ranked
+        WHERE ${termMatchExpressions.length > 0 ? `exact_phrase_match OR term_match_count >= ${minTermMatches}` : "exact_phrase_match"}
+        ORDER BY exact_phrase_match DESC, term_match_count DESC, updated_at DESC
+        LIMIT $2
+      `,
+  };
+}
+
+async function readKnowledgeChunkColumns(pool: Pool, schema: string): Promise<Set<string>> {
+  const result = await pool.query<{ column_name: string }>(
+    `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = $1 AND table_name = 'chunks'
+    `,
+    [schema],
+  );
+  return new Set(result.rows.map((row) => row.column_name));
 }
 
 function qdrantFilter(collections: readonly string[], repos: readonly string[]): Record<string, unknown> | undefined {
@@ -114,7 +269,7 @@ function mapPayload(point: any): KnowledgeSearchResult | null {
     end_line: typeof payload.end_line === "number" ? payload.end_line : undefined,
     content,
     score: typeof point.score === "number" ? point.score : 0,
-    metadata: payload.metadata && typeof payload.metadata === "object" ? payload.metadata : undefined,
+    metadata: objectRecord(payload.metadata),
     content_hash: typeof payload.content_hash === "string" ? payload.content_hash : undefined,
     embedding_hash: typeof payload.embedding_hash === "string" ? payload.embedding_hash : undefined
   };
@@ -135,22 +290,30 @@ export async function searchKnowledge(request: KnowledgeSearchRequest): Promise<
   }
   const collections = normalizeStringArray(request.knowledge_collections);
   const repos = normalizeStringArray(request.repos);
-  if (!validateAllowed(collections, readAllowlist("MEMORY_V2_KNOWLEDGE_ALLOWED_COLLECTIONS"))) {
+  if (!validateAllowed(collections, readAllowlist("MEMORY_XX_KNOWLEDGE_ALLOWED_COLLECTIONS"))) {
     return { ok: false, collection: KNOWLEDGE_COLLECTION, results: [], degraded: true, failure_reason: "knowledge_collection_not_allowed" };
   }
-  if (!validateAllowed(repos, readAllowlist("MEMORY_V2_KNOWLEDGE_ALLOWED_REPOS"))) {
+  if (!validateAllowed(repos, readAllowlist("MEMORY_XX_KNOWLEDGE_ALLOWED_REPOS"))) {
     return { ok: false, collection: KNOWLEDGE_COLLECTION, results: [], degraded: true, failure_reason: "knowledge_repo_not_allowed" };
   }
 
   const embedded = await knowledgeEmbeddingProvider.embed_query({ query, query_terms: [] });
   if (!embedded.embedding || embedded.embedding.length === 0) {
+    const fallbackStartedAt = Date.now();
     const fallback = await searchKnowledgePostgres(query, clampLimit(request.limit), collections, repos);
+    const failureReason = embedded.audit.final_error ?? "embedding_unavailable";
     return {
       ok: fallback.length > 0,
       collection: KNOWLEDGE_COLLECTION,
       results: fallback,
       degraded: true,
-      failure_reason: embedded.audit.final_error ?? "embedding_unavailable"
+      failure_reason: failureReason,
+      diagnostics: buildKnowledgeFallbackDiagnostics({
+        failureReason,
+        fallbackCount: fallback.length,
+        fallbackLatencyMs: Date.now() - fallbackStartedAt,
+        fallbackMode: fallback.mode,
+      })
     };
   }
 
@@ -163,10 +326,11 @@ export async function searchKnowledge(request: KnowledgeSearchRequest): Promise<
   const filter = qdrantFilter(collections, repos);
   if (filter) body.filter = filter;
 
-  const timeoutMs = Number.parseInt(process.env.MEMORY_V2_KNOWLEDGE_QDRANT_TIMEOUT_MS ?? "800", 10);
+  const timeoutMs = Number.parseInt(process.env.MEMORY_XX_KNOWLEDGE_QDRANT_TIMEOUT_MS ?? "800", 10);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 800);
   let response: Response;
+  const qdrantStartedAt = Date.now();
   try {
     response = await fetch(`${readQdrantBaseUrl()}/collections/${encodeURIComponent(KNOWLEDGE_COLLECTION)}/points/search`, {
       method: "POST",
@@ -178,28 +342,75 @@ export async function searchKnowledge(request: KnowledgeSearchRequest): Promise<
       signal: controller.signal
     });
   } catch (error) {
+    const qdrantLatencyMs = Date.now() - qdrantStartedAt;
+    const fallbackStartedAt = Date.now();
     const fallback = await searchKnowledgePostgres(query, clampLimit(request.limit), collections, repos);
+    const failureReason = error instanceof Error && error.name === "AbortError" ? "qdrant_timeout" : "qdrant_unavailable";
     return {
       ok: fallback.length > 0,
       collection: KNOWLEDGE_COLLECTION,
       results: fallback,
       degraded: true,
-      failure_reason: error instanceof Error && error.name === "AbortError" ? "qdrant_timeout" : "qdrant_unavailable"
+      failure_reason: failureReason,
+      diagnostics: buildKnowledgeFallbackDiagnostics({
+        failureReason,
+        qdrantLatencyMs,
+        fallbackCount: fallback.length,
+        fallbackLatencyMs: Date.now() - fallbackStartedAt,
+        fallbackMode: fallback.mode,
+      })
     };
   } finally {
     clearTimeout(timeout);
   }
   if (!response.ok) {
+    const qdrantLatencyMs = Date.now() - qdrantStartedAt;
+    const fallbackStartedAt = Date.now();
     const fallback = await searchKnowledgePostgres(query, clampLimit(request.limit), collections, repos);
-    return { ok: fallback.length > 0, collection: KNOWLEDGE_COLLECTION, results: fallback, degraded: true, failure_reason: `qdrant_${response.status}` };
+    const failureReason = `qdrant_${response.status}`;
+    return {
+      ok: fallback.length > 0,
+      collection: KNOWLEDGE_COLLECTION,
+      results: fallback,
+      degraded: true,
+      failure_reason: failureReason,
+      diagnostics: buildKnowledgeFallbackDiagnostics({
+        failureReason,
+        qdrantLatencyMs,
+        fallbackCount: fallback.length,
+        fallbackLatencyMs: Date.now() - fallbackStartedAt,
+        fallbackMode: fallback.mode,
+      })
+    };
   }
 
   const data = await response.json() as { result?: unknown; points?: unknown };
   const points = Array.isArray(data.result) ? data.result : Array.isArray(data.points) ? data.points : [];
+  const results = points.map(mapPayload).filter((item): item is KnowledgeSearchResult => item !== null);
+  if (results.length === 0) {
+    const fallbackStartedAt = Date.now();
+    const fallback = await searchKnowledgePostgres(query, clampLimit(request.limit), collections, repos);
+    if (fallback.length > 0) {
+      return {
+        ok: true,
+        collection: KNOWLEDGE_COLLECTION,
+        results: fallback,
+        degraded: true,
+        failure_reason: "qdrant_empty",
+        diagnostics: buildKnowledgeFallbackDiagnostics({
+          failureReason: "qdrant_empty",
+          qdrantLatencyMs: Date.now() - qdrantStartedAt,
+          fallbackCount: fallback.length,
+          fallbackLatencyMs: Date.now() - fallbackStartedAt,
+          fallbackMode: fallback.mode,
+        }),
+      };
+    }
+  }
   return {
     ok: true,
     collection: KNOWLEDGE_COLLECTION,
-    results: points.map(mapPayload).filter((item): item is KnowledgeSearchResult => item !== null)
+    results
   };
 }
 
@@ -208,39 +419,38 @@ async function searchKnowledgePostgres(
   limit: number,
   collections: readonly string[],
   repos: readonly string[]
-): Promise<KnowledgeSearchResult[]> {
-  const config = loadMemoryV2PostgresConfig();
+): Promise<KnowledgeSearchResult[] & { mode: KnowledgePostgresSearchMode }> {
+  type KnowledgeChunkSearchRow = {
+    id: unknown;
+    document_id: unknown;
+    collection: unknown;
+    repo: unknown;
+    source_path: unknown;
+    chunk_index: unknown;
+    start_line: unknown;
+    end_line: unknown;
+    content: unknown;
+    metadata: unknown;
+    content_hash: unknown;
+    embedding_hash: unknown;
+  };
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
+  let mode: KnowledgePostgresSearchMode = "phrase";
   try {
-    const params: unknown[] = [`%${query}%`, limit];
-    const clauses = ["content ILIKE $1"];
-    const tenantId = process.env.MEMORY_V2_KNOWLEDGE_TENANT_ID?.trim();
-    if (tenantId) {
-      params.push(tenantId);
-      clauses.push(`tenant_id = $${params.length}`);
-    }
-    clauses.push(`visibility IN ('public', 'shared', 'research')`);
-    if (collections.length > 0) {
-      params.push(collections);
-      clauses.push(`collection = ANY($${params.length}::text[])`);
-    }
-    if (repos.length > 0) {
-      params.push(repos);
-      clauses.push(`repo = ANY($${params.length}::text[])`);
-    }
-    const schema = quoteIdentifier(KNOWLEDGE_SCHEMA);
-    const result = await pool.query(
-      `
-        SELECT id, document_id, collection, repo, source_path, chunk_index, start_line, end_line,
-               content, metadata, content_hash, embedding_hash
-        FROM ${schema}.chunks
-        WHERE ${clauses.join(" AND ")}
-        ORDER BY updated_at DESC
-        LIMIT $2
-      `,
-      params
-    );
-    return result.rows.map((row) => ({
+    const schemaName = process.env.MEMORY_XX_KNOWLEDGE_SCHEMA?.trim() || KNOWLEDGE_SCHEMA;
+    const availableColumns = await readKnowledgeChunkColumns(pool, schemaName);
+    const plan = buildKnowledgePostgresSearchQuery({
+      query,
+      limit,
+      collections,
+      repos,
+      schema: schemaName,
+      tenantId: process.env.MEMORY_XX_KNOWLEDGE_TENANT_ID?.trim(),
+      availableColumns,
+    });
+    mode = plan.mode;
+    const rows = (await pool.query<KnowledgeChunkSearchRow>(plan.sql, plan.params)).rows.map((row) => ({
       chunk_id: String(row.id),
       document_id: String(row.document_id),
       collection: String(row.collection),
@@ -251,19 +461,20 @@ async function searchKnowledgePostgres(
       end_line: row.end_line === null ? undefined : Number(row.end_line),
       content: String(row.content),
       score: 0.1,
-      metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : undefined,
+      metadata: objectRecord(row.metadata),
       content_hash: row.content_hash === null ? undefined : String(row.content_hash),
       embedding_hash: row.embedding_hash === null ? undefined : String(row.embedding_hash)
     }));
+    return Object.assign(rows, { mode });
   } catch {
-    return [];
+    return Object.assign([], { mode });
   } finally {
     await pool.end();
   }
 }
 
 export async function getKnowledgeStatus(): Promise<Record<string, unknown>> {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
     const chunks = await pool.query(`

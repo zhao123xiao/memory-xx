@@ -1,4 +1,5 @@
 import type { ExtractedMemoryClass } from "../intelligence/types";
+import { inferCognitiveType, type CognitiveType } from "../shared/cognitive-type";
 import type { JsonObject } from "../shared/types";
 import type {
   MemoryLifecycleIntent,
@@ -38,6 +39,7 @@ export interface PendingAutonomousClosureItem {
   readonly id: string;
   readonly autonomous_action: AutonomousAction;
   readonly memory_class: ExtractedMemoryClass;
+  readonly cognitive_type: CognitiveType;
   readonly storage_target: MemoryStorageTarget;
   readonly recall_policy: MemoryRecallPolicy;
   readonly lifecycle_intent: MemoryLifecycleIntent;
@@ -142,6 +144,13 @@ function makeItem(
     id: row.id,
     autonomous_action: autonomousAction,
     memory_class: fields.memoryClass,
+    cognitive_type: inferCognitiveType({
+      memory_type: row.memory_type,
+      memory_layer: typeof row.metadata.memory_layer === "string" ? row.metadata.memory_layer : null,
+      recall_policy: fields.recallPolicy,
+      memory_class: fields.memoryClass,
+      assistant_memory_kind: fields.assistantMemoryKind,
+    }),
     storage_target: fields.storageTarget,
     recall_policy: fields.recallPolicy,
     lifecycle_intent: fields.lifecycleIntent,

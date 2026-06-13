@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import {
-  loadMemoryV2QdrantConfig,
+  loadMemoryXXQdrantConfig,
   resolveVectorRuntimeMode,
   buildQdrantDockerConfigHint
 } from "../recall/qdrant-config";
@@ -48,14 +48,14 @@ import { withWriteTransaction } from "../db";
 
 const log = createLogger("http-server");
 
-const PORT = parseInt(process.env.MEMORY_V2_WRAPPER_PORT ?? "5100", 10);
-const BIND_HOST = process.env.MEMORY_V2_BIND_HOST?.trim() || "127.0.0.1";
+const PORT = parseInt(process.env.MEMORY_XX_WRAPPER_PORT ?? "5100", 10);
+const BIND_HOST = process.env.MEMORY_XX_BIND_HOST?.trim() || "127.0.0.1";
 const REQUEST_TIMEOUT_MS = 120_000;
 const MAX_CONNECTIONS = 50;
 
 const skillRegistry = createDefaultSkillRegistry({
   baseUrl: `http://127.0.0.1:${PORT}`,
-  apiToken: process.env.MEMORY_V2_API_TOKEN?.trim() || undefined,
+  apiToken: process.env.MEMORY_XX_API_TOKEN?.trim() || undefined,
 });
 
 export interface CorsConfig {
@@ -64,8 +64,8 @@ export interface CorsConfig {
 }
 
 export function loadCorsConfig(env: NodeJS.ProcessEnv): CorsConfig {
-  const enabled = env.MEMORY_V2_CORS_ENABLED !== "false";
-  const originsRaw = (env.MEMORY_V2_CORS_ORIGINS ?? "").trim();
+  const enabled = env.MEMORY_XX_CORS_ENABLED !== "false";
+  const originsRaw = (env.MEMORY_XX_CORS_ORIGINS ?? "").trim();
   const allowedOrigins = originsRaw
     ? originsRaw.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
@@ -183,7 +183,7 @@ interface WrapperHealthSnapshot {
 }
 
 async function readCacheInvalidationWorkerStatus(): Promise<Record<string, unknown> | null> {
-  const file = process.env.MEMORY_V2_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
+  const file = process.env.MEMORY_XX_CACHE_INVALIDATION_STATUS_FILE?.trim() ||
     `${process.cwd()}/.runtime/cache-invalidation-worker.status.json`;
   try {
     return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
@@ -258,7 +258,7 @@ async function buildGovernanceHealth(): Promise<Record<string, unknown>> {
     return { configured: true, available: false, reason: "write_database_not_initialised" };
   }
   const timeoutMinutes = Number.parseInt(
-    process.env.MEMORY_V2_GOVERNANCE_STUCK_TIMEOUT_MINUTES?.trim() || "30",
+    process.env.MEMORY_XX_GOVERNANCE_STUCK_TIMEOUT_MINUTES?.trim() || "30",
     10
   );
   try {
@@ -332,7 +332,7 @@ function buildP1HealthSummaries(configValidation: RuntimeConfigValidationResult)
   | "intelligence_llm"
   | "dlq_recovery"
 > {
-  const runtimeDir = process.env.MEMORY_V2_RUNTIME_DIR?.trim() || `${process.cwd()}/.runtime`;
+  const runtimeDir = process.env.MEMORY_XX_RUNTIME_DIR?.trim() || `${process.cwd()}/.runtime`;
   return {
     cutover_gate: {
       evidence_dir: "reports/memory-xx-cutover",
@@ -347,8 +347,8 @@ function buildP1HealthSummaries(configValidation: RuntimeConfigValidationResult)
     },
     graph_health: {
       latest_report: `${runtimeDir}/graph-health-latest.json`,
-      guard_enabled: process.env.MEMORY_V2_GRAPH_GUARD_DISABLED !== "true",
-      guard_requires_health: process.env.MEMORY_V2_GRAPH_GUARD_REQUIRE_HEALTH === "true"
+      guard_enabled: process.env.MEMORY_XX_GRAPH_GUARD_DISABLED !== "true",
+      guard_requires_health: process.env.MEMORY_XX_GRAPH_GUARD_REQUIRE_HEALTH === "true"
     },
     decay_health: {
       command: "npm run memory:decay -- run --mode report --json",
@@ -374,7 +374,7 @@ function buildP1HealthSummaries(configValidation: RuntimeConfigValidationResult)
 }
 
 async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const redisConfig = loadMemoryRedisConfig();
   const runtimeSelection = resolveVectorRuntimeMode(qdrantConfig);
   const vectorStatus = runtime
@@ -389,8 +389,8 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
         fallback_available: false
       };
 
-  const databaseUrl = process.env.MEMORY_V2_DATABASE_URL?.trim() ?? "";
-  const databaseSchema = process.env.MEMORY_V2_DATABASE_SCHEMA?.trim() ?? "public";
+  const databaseUrl = process.env.MEMORY_XX_DATABASE_URL?.trim() ?? "";
+  const databaseSchema = process.env.MEMORY_XX_DATABASE_SCHEMA?.trim() ?? "public";
   const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
   const embeddingApiBase = process.env.EMBEDDING_API_BASE?.trim() ?? "https://api.scnet.cn/api/llm/v1";
   const redisHealth = await recallCache.getHealthSnapshot();
@@ -480,7 +480,7 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     service_status: deriveMemoryServiceStatus({ baseOk, issues: surfacedIssues, repairSummary }),
     runtime_initialised: runtime !== null,
     runtime_profile: runtimeProfile,
-    wrapper_mode: process.env.MEMORY_V2_WRAPPER_MODE ?? "recall-only",
+    wrapper_mode: process.env.MEMORY_XX_WRAPPER_MODE ?? "recall-only",
     runtime_selection: runtimeSelection,
     vector: {
       available: vectorStatus.available,
@@ -493,8 +493,8 @@ async function buildHealthSnapshot(): Promise<WrapperHealthSnapshot> {
     qdrant: {
       ...buildQdrantDockerConfigHint(qdrantConfig),
       runtime: getQdrantRuntimeSnapshot({
-        queryTimeoutMs: Number.parseInt(process.env.MEMORY_V2_QDRANT_QUERY_TIMEOUT_MS?.trim() || "1200", 10),
-        writeTimeoutMs: Number.parseInt(process.env.MEMORY_V2_QDRANT_WRITE_TIMEOUT_MS?.trim() || "5000", 10),
+        queryTimeoutMs: Number.parseInt(process.env.MEMORY_XX_QDRANT_QUERY_TIMEOUT_MS?.trim() || "1200", 10),
+        writeTimeoutMs: Number.parseInt(process.env.MEMORY_XX_QDRANT_WRITE_TIMEOUT_MS?.trim() || "5000", 10),
       })
     },
     redis: redisHealth,
@@ -640,55 +640,55 @@ export function createRequestHandler(deps: RequestHandlerDeps): (req: IncomingMe
       requestIdentity = authz.identity;
     }
 
-    if (pathname === "/api/memory/v2/recall/query" || pathname === "/api/memory/v2/recall" || pathname === "/recall") {
+    if (pathname === "/api/memory/xx/recall/query" || pathname === "/api/memory/xx/recall" || pathname === "/recall") {
       await handleRecall(req, res, hd);
       return;
     }
-    if (pathname.startsWith("/api/memory/v2/write") || pathname === "/write") {
+    if (pathname.startsWith("/api/memory/xx/write") || pathname === "/write") {
       await handleWrite(req, res, hd);
       return;
     }
-    if (pathname.startsWith("/api/memory/v2/review/memories/")) {
+    if (pathname.startsWith("/api/memory/xx/review/memories/")) {
       await handleReview(req, res, hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/resolve-scope-plan") {
+    if (pathname === "/api/memory/xx/orchestrator/resolve-scope-plan") {
       await handleOrchestrator(req, res, "resolve_scope_plan", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/write-memory") {
+    if (pathname === "/api/memory/xx/orchestrator/write-memory") {
       await handleOrchestrator(req, res, "write_memory", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/recall-memory") {
+    if (pathname === "/api/memory/xx/orchestrator/recall-memory") {
       await handleOrchestrator(req, res, "recall_memory", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/recall-memory-legacy") {
+    if (pathname === "/api/memory/xx/orchestrator/recall-memory-legacy") {
       await handleOrchestrator(req, res, "recall_memory_legacy", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/summarize-memory") {
+    if (pathname === "/api/memory/xx/orchestrator/summarize-memory") {
       await handleOrchestrator(req, res, "summarize_memory", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/memory-counts") {
+    if (pathname === "/api/memory/xx/orchestrator/memory-counts") {
       await handleOrchestrator(req, res, "memory_counts", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/forget-memory") {
+    if (pathname === "/api/memory/xx/orchestrator/forget-memory") {
       await handleOrchestrator(req, res, "forget_memory", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/read-memory") {
+    if (pathname === "/api/memory/xx/orchestrator/read-memory") {
       await handleOrchestrator(req, res, "read_memory" satisfies MemoryOrchestratorAction, hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/audit-memory-consistency") {
+    if (pathname === "/api/memory/xx/orchestrator/audit-memory-consistency") {
       await handleOrchestrator(req, res, "audit_memory_consistency", hd);
       return;
     }
-    if (pathname === "/api/memory/v2/orchestrator/repair-memory-consistency") {
+    if (pathname === "/api/memory/xx/orchestrator/repair-memory-consistency") {
       await handleOrchestrator(req, res, "repair_memory_consistency", hd);
       return;
     }
@@ -699,79 +699,79 @@ export function createRequestHandler(deps: RequestHandlerDeps): (req: IncomingMe
     };
 
     // Intelligence API routes
-    if (pathname === "/api/memory/v2/intelligence/extract") {
+    if (pathname === "/api/memory/xx/intelligence/extract") {
       await handleIntelligenceExtract(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/intelligence/smart-write") {
+    if (pathname === "/api/memory/xx/intelligence/smart-write") {
       await handleIntelligenceSmartWrite(req, res, authContext);
       return;
     }
     {
-      const match = pathname.match(/^\/api\/memory\/v2\/intelligence\/write-tickets\/([^/]+)$/);
+      const match = pathname.match(/^\/api\/memory\/xx\/intelligence\/write-tickets\/([^/]+)$/);
       if (match) {
         await handleWriteTicket(req, res, decodeURIComponent(match[1] ?? ""), authContext);
         return;
       }
     }
-    if (pathname === "/api/memory/v2/mcp/list-pending") {
+    if (pathname === "/api/memory/xx/mcp/list-pending") {
       await handleOrchestrator(req, res, "list_pending_memories" satisfies MemoryOrchestratorAction, hd);
       return;
     }
-    if (pathname === "/api/memory/v2/mcp/approve") {
+    if (pathname === "/api/memory/xx/mcp/approve") {
       await handleOrchestrator(req, res, "mcp_approve_memory" satisfies MemoryOrchestratorAction, hd);
       return;
     }
-    if (pathname === "/api/memory/v2/mcp/reject") {
+    if (pathname === "/api/memory/xx/mcp/reject") {
       await handleOrchestrator(req, res, "mcp_reject_memory" satisfies MemoryOrchestratorAction, hd);
       return;
     }
-    if (pathname === "/api/memory/v2/mcp/smart-write") {
+    if (pathname === "/api/memory/xx/mcp/smart-write") {
       await handleMcpSmartWrite(req, res, authContext);
       return;
     }
 
     // Conversation listener API routes.
-    if (pathname === "/api/memory/v2/conversation/events") {
+    if (pathname === "/api/memory/xx/conversation/events") {
       await handleConversationEvents(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/conversation/ingest") {
+    if (pathname === "/api/memory/xx/conversation/ingest") {
       await handleConversationIngest(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/conversation/flush") {
+    if (pathname === "/api/memory/xx/conversation/flush") {
       await handleConversationFlush(req, res, authContext);
       return;
     }
 
     // Unified Agent API routes (P5)
-    if (pathname === "/api/memory/v2/unified/remember") {
+    if (pathname === "/api/memory/xx/unified/remember") {
       await unified.handleRemember(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/unified/recall") {
+    if (pathname === "/api/memory/xx/unified/recall") {
       await unified.handleRecall(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/unified/reflect") {
+    if (pathname === "/api/memory/xx/unified/reflect") {
       await unified.handleReflect(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/unified/forget") {
+    if (pathname === "/api/memory/xx/unified/forget") {
       await unified.handleForget(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/unified/audit") {
+    if (pathname === "/api/memory/xx/unified/audit") {
       await unified.handleAudit(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/unified/feedback") {
+    if (pathname === "/api/memory/xx/unified/feedback") {
       await unified.handleFeedback(req, res, authContext);
       return;
     }
     {
-      const feedbackAlias = pathname.match(/^\/api\/memory\/v2\/feedback\/memories\/([^/]+)\/([^/]+)$/);
+      const feedbackAlias = pathname.match(/^\/api\/memory\/xx\/feedback\/memories\/([^/]+)\/([^/]+)$/);
       if (feedbackAlias) {
         await unified.handleFeedbackAlias(
           req,
@@ -783,27 +783,27 @@ export function createRequestHandler(deps: RequestHandlerDeps): (req: IncomingMe
         return;
       }
     }
-    if (pathname === "/api/memory/v2/unified/recall-feedback") {
+    if (pathname === "/api/memory/xx/unified/recall-feedback") {
       await unified.handleRecallFeedback(req, res, authContext);
       return;
     }
 
     // Knowledge-v1 API routes. Knowledge is opt-in and does not enter default memory recall.
-    if (pathname === "/api/memory/v2/knowledge/ingest") {
+    if (pathname === "/api/memory/xx/knowledge/ingest") {
       await handleKnowledgeIngest(req, res, authContext);
       return;
     }
-    if (pathname === "/api/memory/v2/knowledge/search") {
+    if (pathname === "/api/memory/xx/knowledge/search") {
       await handleKnowledgeSearch(req, res, authContext);
       return;
     }
 
     // Built-in high-level memory skills.
-    if (pathname === "/api/memory/v2/skills") {
+    if (pathname === "/api/memory/xx/skills") {
       await handleListSkills(req, res, skillRegistry);
       return;
     }
-    if (pathname === "/api/memory/v2/skills/execute") {
+    if (pathname === "/api/memory/xx/skills/execute") {
       const requestToken = extractAuthToken(req) || undefined;
       const requestSkillRegistry = createDefaultSkillRegistry({
         baseUrl: `http://127.0.0.1:${PORT}`,
@@ -819,7 +819,7 @@ export function createRequestHandler(deps: RequestHandlerDeps): (req: IncomingMe
     }
 
     if (pathname === "/mcp") {
-      const requestToken = extractAuthToken(req) || process.env.MEMORY_V2_MCP_TOKEN?.trim() || process.env.MEMORY_V2_API_TOKEN?.trim() || undefined;
+      const requestToken = extractAuthToken(req) || process.env.MEMORY_XX_MCP_TOKEN?.trim() || process.env.MEMORY_XX_API_TOKEN?.trim() || undefined;
       const requestMcpServer = createDefaultMcpServer({
         baseUrl: `http://127.0.0.1:${PORT}`,
         apiToken: requestToken,
@@ -889,11 +889,11 @@ function isLoopbackBindHost(host: string): boolean {
 }
 
 function assertSafeBindHost(env: NodeJS.ProcessEnv): void {
-  const host = env.MEMORY_V2_BIND_HOST?.trim() || "127.0.0.1";
+  const host = env.MEMORY_XX_BIND_HOST?.trim() || "127.0.0.1";
   if (isLoopbackBindHost(host)) return;
-  const hasStaticToken = Boolean(env.MEMORY_V2_API_TOKEN?.trim() || env.MEMORY_V2_ADMIN_TOKEN?.trim());
+  const hasStaticToken = Boolean(env.MEMORY_XX_API_TOKEN?.trim() || env.MEMORY_XX_ADMIN_TOKEN?.trim());
   if (!hasStaticToken) {
-    throw new Error("只有配置 MEMORY_V2_API_TOKEN 或 MEMORY_V2_ADMIN_TOKEN 后，MEMORY_V2_BIND_HOST 才允许绑定到非本机回环地址。");
+    throw new Error("只有配置 MEMORY_XX_API_TOKEN 或 MEMORY_XX_ADMIN_TOKEN 后，MEMORY_XX_BIND_HOST 才允许绑定到非本机回环地址。");
   }
 }
 
@@ -927,7 +927,7 @@ export function startHttpServer(): void {
   server.listen(PORT, BIND_HOST, () => {
     log.info("HTTP server listening", { port: PORT, host: BIND_HOST });
     log.info("Endpoints", {
-      recall: `POST http://${BIND_HOST}:${PORT}/api/memory/v2/recall/query`,
+      recall: `POST http://${BIND_HOST}:${PORT}/api/memory/xx/recall/query`,
       health: `GET http://${BIND_HOST}:${PORT}/health`
     });
   });

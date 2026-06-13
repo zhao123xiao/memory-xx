@@ -70,7 +70,7 @@ async function main() {
 
   const cwdEnv = path.join(config.projectRoot, ".env");
   const expectedLocalEnv = fs.existsSync(cwdEnv) ? path.resolve(cwdEnv) : undefined;
-  const envPathOk = !expectedLocalEnv || path.resolve(envPath) === expectedLocalEnv || process.env.MEMORY_V2_ENV_PATH === envPath;
+  const envPathOk = !expectedLocalEnv || path.resolve(envPath) === expectedLocalEnv || process.env.MEMORY_XX_ENV_PATH === envPath;
   check("env-path:local-profile", envPathOk,
     `env_path=${envPath}, project_root=${config.projectRoot}, db_schema=${config.dbSchema}, qdrant_collection=${config.qdrantCollection}`);
 

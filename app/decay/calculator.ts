@@ -22,11 +22,11 @@ function readThreshold(name: string, fallback: number): number {
 }
 
 export function archiveThreshold(): number {
-  return readThreshold("MEMORY_V2_DECAY_ARCHIVE_THRESHOLD", ARCHIVE_THRESHOLD);
+  return readThreshold("MEMORY_XX_DECAY_ARCHIVE_THRESHOLD", ARCHIVE_THRESHOLD);
 }
 
 export function hideThreshold(): number {
-  return readThreshold("MEMORY_V2_DECAY_HIDE_THRESHOLD", HIDE_THRESHOLD);
+  return readThreshold("MEMORY_XX_DECAY_HIDE_THRESHOLD", HIDE_THRESHOLD);
 }
 
 function recencyDecay(daysSinceAccess: number): number {

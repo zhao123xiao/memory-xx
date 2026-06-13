@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 reranker upstream model manager
+Description=memory-xx reranker upstream model manager
 After=network-online.target
 Wants=network-online.target
 

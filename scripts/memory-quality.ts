@@ -193,7 +193,7 @@ function extractMemoryIdsFromTraceResults(results: unknown): string[] {
 
 async function recall(query: string, scopeContext: unknown): Promise<{ status: number; data: any; latency_ms: number }> {
   const started = Date.now();
-  const response = await fetch(`${config.wrapperUrl}/api/memory/v2/recall/query`, {
+  const response = await fetch(`${config.wrapperUrl}/api/memory/xx/recall/query`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -214,7 +214,7 @@ async function recall(query: string, scopeContext: unknown): Promise<{ status: n
 
 async function runTraceReplay(outDir: string): Promise<Record<string, unknown>> {
   const pool = new Pool({ connectionString: config.dbUrl, max: 2 });
-  const limit = Number.parseInt(argValue("--trace-limit") || process.env.MEMORY_V2_TRACE_REPLAY_LIMIT || "50", 10);
+  const limit = Number.parseInt(argValue("--trace-limit") || process.env.MEMORY_XX_TRACE_REPLAY_LIMIT || "50", 10);
   const rows: Array<{
     id: string;
     query_excerpt: string;

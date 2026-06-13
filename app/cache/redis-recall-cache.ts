@@ -75,11 +75,11 @@ export class RedisRecallCache implements RecallCacheRuntime {
     this.config = options.config;
     this.client = options.client ?? this.createDefaultClient(options.config);
     this.circuitBreaker = new SlidingWindowCircuitBreaker({
-      windowMs: readRangedInt("MEMORY_V2_REDIS_CIRCUIT_WINDOW_MS", 60_000, 1_000, 600_000),
-      minCalls: readRangedInt("MEMORY_V2_REDIS_CIRCUIT_MIN_CALLS", 1, 1, 100),
-      failureRate: readRangedFloat("MEMORY_V2_REDIS_CIRCUIT_FAILURE_RATE", 0.5, 0, 1),
+      windowMs: readRangedInt("MEMORY_XX_REDIS_CIRCUIT_WINDOW_MS", 60_000, 1_000, 600_000),
+      minCalls: readRangedInt("MEMORY_XX_REDIS_CIRCUIT_MIN_CALLS", 1, 1, 100),
+      failureRate: readRangedFloat("MEMORY_XX_REDIS_CIRCUIT_FAILURE_RATE", 0.5, 0, 1),
       cooldownMs: readRangedInt(
-        "MEMORY_V2_REDIS_CIRCUIT_COOLDOWN_MS",
+        "MEMORY_XX_REDIS_CIRCUIT_COOLDOWN_MS",
         this.resetTimeoutMs(),
         1,
         600_000
@@ -135,7 +135,7 @@ export class RedisRecallCache implements RecallCacheRuntime {
   }
 
   private resetTimeoutMs(): number {
-    const parsed = Number.parseInt(process.env.MEMORY_V2_REDIS_CACHE_RESET_TIMEOUT_MS ?? "5000", 10);
+    const parsed = Number.parseInt(process.env.MEMORY_XX_REDIS_CACHE_RESET_TIMEOUT_MS ?? "5000", 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 5000;
   }
 

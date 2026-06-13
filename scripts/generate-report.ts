@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 export interface TrendValue {
@@ -53,7 +53,7 @@ const WINDOW_HOURS = 24;
 
 export async function generateReport(options: ReportOptions = {}): Promise<Report> {
   const env = options.env ?? process.env;
-  const config = loadMemoryV2PostgresConfig(env);
+  const config = loadMemoryXXPostgresConfig(env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
 
@@ -183,7 +183,7 @@ async function loadRecall(pool: Pool, schema: string): Promise<Report["recall"]>
 }
 
 async function loadProjector(pool: Pool, schema: string, env: NodeJS.ProcessEnv): Promise<Report["projector"]> {
-  const maxAttempts = Number(env.MEMORY_V2_CAPACITY_OUTBOX_DEAD_LETTER_MAX_ATTEMPTS ?? env.MEMORY_V2_QDRANT_PROJECTOR_MAX_ATTEMPTS ?? 5);
+  const maxAttempts = Number(env.MEMORY_XX_CAPACITY_OUTBOX_DEAD_LETTER_MAX_ATTEMPTS ?? env.MEMORY_XX_QDRANT_PROJECTOR_MAX_ATTEMPTS ?? 5);
   const result = await pool.query(`
     WITH windows AS (
       SELECT 'current' AS bucket, now() - interval '24 hours' AS start_at, now() AS end_at

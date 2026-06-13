@@ -13,7 +13,7 @@ import {
   OutboxEventRepository,
   OutboxEventType,
   TombstoneMemoryService,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   withWriteTransaction,
   type JsonObject
 } from "../app/index.js";
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
   const schema = quoteIdent(config.dbSchema);
   const pool = createPool();
   const client = await pool.connect();
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const governanceRepo = new GovernanceRepository();
   const workerId = createGovernanceWorkerId();
   let governanceRunId: string | null = null;
@@ -724,7 +724,7 @@ async function main(): Promise<void> {
       ok: true,
       checked_at: new Date().toISOString(),
       schema: config.dbSchema,
-      env_path: process.env.MEMORY_V2_ENV_PATH ?? "auto",
+      env_path: process.env.MEMORY_XX_ENV_PATH ?? "auto",
       policy: "Postgres memory_xx is the source of truth; Qdrant is projection only; governance never physically deletes production memory.",
       mode: {
         dry_run: args.dryRun,

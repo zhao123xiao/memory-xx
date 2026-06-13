@@ -7,7 +7,7 @@ import { createLogger } from "../../../app/shared/logger";
 const log = createLogger("L11");
 const runId = generateRunId();
 const report = createEmptyReport("L11", runId);
-const BASE_URL = process.env.MEMORY_V2_TEST_URL || config.wrapperUrl;
+const BASE_URL = process.env.MEMORY_XX_TEST_URL || config.wrapperUrl;
 const headers = { "Content-Type": "application/json", "Authorization": "Bearer " + config.wrapperToken };
 const createdMemoryIds: string[] = [];
 
@@ -26,7 +26,7 @@ async function cleanup() {
   report.cleanup.performed = true;
   for (const memoryId of createdMemoryIds) {
     try {
-      const { status } = await post("/api/memory/v2/unified/forget", { memory_id: memoryId, agent_id: "l11-memory-evaluation", mode: "tombstone" });
+      const { status } = await post("/api/memory/xx/unified/forget", { memory_id: memoryId, agent_id: "l11-memory-evaluation", mode: "tombstone" });
       if (status >= 200 && status < 300) report.cleanup.resources_cleaned.push(memoryId);
       else report.cleanup.failed.push(`${memoryId}: status=${status}`);
     } catch (err) {
@@ -42,23 +42,23 @@ async function main() {
   console.log(`${"=".repeat(50)}\n`);
 
   try {
-    const { status, data } = await post("/api/memory/v2/recall/query", { query: "数据保留策略", limit: 5 });
+    const { status, data } = await post("/api/memory/xx/recall/query", { query: "数据保留策略", limit: 5 });
     const ok = status === 200 && (!data.results || data.results.every((r: any) => typeof r.score === "number" && r.score >= 0));
     check("metrics:scored-results", ok, `status=${status}, results=${data.results?.length ?? "n/a"}`);
   } catch (err) { check("metrics:scored-results", false, (err as Error).message); }
 
   try {
-    const { status, data } = await post("/api/memory/v2/orchestrator/audit-memory-consistency", {});
+    const { status, data } = await post("/api/memory/xx/orchestrator/audit-memory-consistency", {});
     check("audit:consistency", status === 200 && data.ok === true, `status=${status}, ok=${data.ok}`);
   } catch (err) { check("audit:consistency", false, (err as Error).message); }
 
   try {
-    const { status } = await post("/api/memory/v2/unified/remember", { user_id: "test" });
+    const { status } = await post("/api/memory/xx/unified/remember", { user_id: "test" });
     check("unified:remember-required-fields", status === 400, `status=${status}`);
   } catch (err) { check("unified:remember-required-fields", false, (err as Error).message); }
 
   try {
-    const { status, data } = await post("/api/memory/v2/unified/remember", {
+    const { status, data } = await post("/api/memory/xx/unified/remember", {
       user_id: "l11-user",
       agent_id: "l11-agent",
       scope_id: `l11-${runId}`,

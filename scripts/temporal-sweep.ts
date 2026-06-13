@@ -3,7 +3,7 @@ import {
   PostgresWriteDatabase,
   RecallRuntimeCacheInvalidator,
   loadMemoryRedisConfig,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   RedisRecallCache,
   NoopRecallCache,
   LifecycleStatus
@@ -16,7 +16,7 @@ function hasFlag(name: string): boolean {
 async function main(): Promise<void> {
   const apply = hasFlag("--apply");
   const now = new Date();
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig() });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig() });
   const redisConfig = loadMemoryRedisConfig();
   const cache = redisConfig.url ? new RedisRecallCache({ config: redisConfig }) : new NoopRecallCache();
   if (cache instanceof RedisRecallCache) await cache.connect();

@@ -213,32 +213,32 @@ test("redis recall cache stores startup/search/session/recent entries and invali
 
 test("search cache key changes across embedding generations", () => {
   const request = buildRequest("startup context for project p-1");
-  const previousGeneration = process.env.MEMORY_V2_EMBEDDING_GENERATION_ID;
-  const previousVersion = process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION;
+  const previousGeneration = process.env.MEMORY_XX_EMBEDDING_GENERATION_ID;
+  const previousVersion = process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION;
   try {
-    process.env.MEMORY_V2_EMBEDDING_GENERATION_ID = "generation-a";
-    process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION = "cache-a";
+    process.env.MEMORY_XX_EMBEDDING_GENERATION_ID = "generation-a";
+    process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION = "cache-a";
     const keyA = buildSearchCacheKey("memory-xx-test", request);
-    process.env.MEMORY_V2_EMBEDDING_GENERATION_ID = "generation-b";
-    process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION = "cache-b";
+    process.env.MEMORY_XX_EMBEDDING_GENERATION_ID = "generation-b";
+    process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION = "cache-b";
     const keyB = buildSearchCacheKey("memory-xx-test", request);
     assert.notEqual(keyA, keyB);
   } finally {
-    if (previousGeneration === undefined) delete process.env.MEMORY_V2_EMBEDDING_GENERATION_ID;
-    else process.env.MEMORY_V2_EMBEDDING_GENERATION_ID = previousGeneration;
-    if (previousVersion === undefined) delete process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION;
-    else process.env.MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION = previousVersion;
+    if (previousGeneration === undefined) delete process.env.MEMORY_XX_EMBEDDING_GENERATION_ID;
+    else process.env.MEMORY_XX_EMBEDDING_GENERATION_ID = previousGeneration;
+    if (previousVersion === undefined) delete process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION;
+    else process.env.MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION = previousVersion;
   }
 });
 
 test("redis recall cache probes half-open and recovers after transient failures", async () => {
   const client = new FlakyRedisClient();
-  const previous = process.env.MEMORY_V2_REDIS_CACHE_RESET_TIMEOUT_MS;
-  const previousMinCalls = process.env.MEMORY_V2_REDIS_CIRCUIT_MIN_CALLS;
-  const previousFailureRate = process.env.MEMORY_V2_REDIS_CIRCUIT_FAILURE_RATE;
-  process.env.MEMORY_V2_REDIS_CACHE_RESET_TIMEOUT_MS = "50";
-  process.env.MEMORY_V2_REDIS_CIRCUIT_MIN_CALLS = "1";
-  process.env.MEMORY_V2_REDIS_CIRCUIT_FAILURE_RATE = "0.5";
+  const previous = process.env.MEMORY_XX_REDIS_CACHE_RESET_TIMEOUT_MS;
+  const previousMinCalls = process.env.MEMORY_XX_REDIS_CIRCUIT_MIN_CALLS;
+  const previousFailureRate = process.env.MEMORY_XX_REDIS_CIRCUIT_FAILURE_RATE;
+  process.env.MEMORY_XX_REDIS_CACHE_RESET_TIMEOUT_MS = "50";
+  process.env.MEMORY_XX_REDIS_CIRCUIT_MIN_CALLS = "1";
+  process.env.MEMORY_XX_REDIS_CIRCUIT_FAILURE_RATE = "0.5";
   const cache = new RedisRecallCache({
     config: {
       url: "redis://memory-redis:6379/0",
@@ -260,12 +260,12 @@ test("redis recall cache probes half-open and recovers after transient failures"
     health = await cache.getHealthSnapshot();
     assert.equal(health.circuit_state, "closed");
   } finally {
-    if (previous === undefined) delete process.env.MEMORY_V2_REDIS_CACHE_RESET_TIMEOUT_MS;
-    else process.env.MEMORY_V2_REDIS_CACHE_RESET_TIMEOUT_MS = previous;
-    if (previousMinCalls === undefined) delete process.env.MEMORY_V2_REDIS_CIRCUIT_MIN_CALLS;
-    else process.env.MEMORY_V2_REDIS_CIRCUIT_MIN_CALLS = previousMinCalls;
-    if (previousFailureRate === undefined) delete process.env.MEMORY_V2_REDIS_CIRCUIT_FAILURE_RATE;
-    else process.env.MEMORY_V2_REDIS_CIRCUIT_FAILURE_RATE = previousFailureRate;
+    if (previous === undefined) delete process.env.MEMORY_XX_REDIS_CACHE_RESET_TIMEOUT_MS;
+    else process.env.MEMORY_XX_REDIS_CACHE_RESET_TIMEOUT_MS = previous;
+    if (previousMinCalls === undefined) delete process.env.MEMORY_XX_REDIS_CIRCUIT_MIN_CALLS;
+    else process.env.MEMORY_XX_REDIS_CIRCUIT_MIN_CALLS = previousMinCalls;
+    if (previousFailureRate === undefined) delete process.env.MEMORY_XX_REDIS_CIRCUIT_FAILURE_RATE;
+    else process.env.MEMORY_XX_REDIS_CIRCUIT_FAILURE_RATE = previousFailureRate;
     await cache.close();
   }
 });

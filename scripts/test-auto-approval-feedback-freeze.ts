@@ -6,7 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { PostgresWriteDatabase } from "../app/db/adapters/postgres-write-database";
 import { MemoryFeedbackRepository, type MemoryFeedbackType } from "../app/db/repositories/memory-feedback-repository";
 import { applyAutoApprovalFeedbackGovernance } from "../app/governance/auto-approval-feedback";
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
   const agentId = "codex";
   const memoryType = "fact";
   const source = "conversation_ingest";
-  const configPg = loadMemoryV2PostgresConfig(process.env);
+  const configPg = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(configPg.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(configPg));
   const writeDatabase = new PostgresWriteDatabase({ config: configPg, pool });
@@ -32,7 +32,7 @@ async function main(): Promise<void> {
   const createdScopeIds: string[] = [];
   const createdRecallTraceIds: string[] = [];
   try {
-    const sampleSize = Math.max(60, Number.parseInt(process.env.MEMORY_V2_AUTO_APPROVAL_MIN_COHORT_SAMPLE ?? "60", 10) || 60);
+    const sampleSize = Math.max(60, Number.parseInt(process.env.MEMORY_XX_AUTO_APPROVAL_MIN_COHORT_SAMPLE ?? "60", 10) || 60);
     const negativeFeedbackCount = Math.max(3, Math.ceil(sampleSize * 0.05));
 
     const createCohort = async (caseType: string): Promise<{ scopeId: string; selector: JsonObject; memoryIds: string[] }> => {

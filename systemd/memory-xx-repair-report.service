@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 daily repair report
+Description=memory-xx daily repair report
 After=network-online.target memory-xx-wrapper.service
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=%h/services/memory-xx
 EnvironmentFile=%h/services/memory-xx/.env
-Environment=MEMORY_V2_ENV_PATH=%h/services/memory-xx/.env
+Environment=MEMORY_XX_ENV_PATH=%h/services/memory-xx/.env
 Environment=TMPDIR=/tmp
 ExecStart=/bin/bash -lc '/usr/bin/npm run memory:auto-repair -- --json; /usr/bin/npm run memory:doctor -- --target ops-ready --mode full --plan'
 StandardOutput=append:%h/services/memory-xx/repair-report.log

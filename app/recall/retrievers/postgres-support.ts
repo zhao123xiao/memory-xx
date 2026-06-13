@@ -2,7 +2,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 import {
   createPostgresPoolConfig,
-  type MemoryV2PostgresConfig
+  type MemoryXXPostgresConfig
 } from "../../db/adapters/postgres-config";
 import {
   ensureSchema,
@@ -10,10 +10,10 @@ import {
 } from "../../db/adapters/postgres-write-database";
 import { readPgBoolean } from "../../db/row-value-readers";
 import { ScopeType, type JsonObject } from "../../shared";
-import { type QueryConstraints, type RecallRecord } from "../types";
+import { type CognitiveType, type QueryConstraints, type RecallRecord } from "../types";
 
 export interface PostgresRecallOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly pool?: Pool;
 }
 
@@ -285,6 +285,11 @@ export function mapPostgresRecallRecord(row: QueryResultRow): RecallRecord {
       readString(legacyMetadata, "file_path", "filePath"),
     category: readString(metadata, "category"),
     memory_type: readString(metadata, "memory_type", "memoryType"),
+    cognitive_type: readCognitiveType(metadata, "cognitive_type", "cognitiveType") ??
+      readNestedCognitiveType(metadata, "memory_policy", "cognitive_type") ??
+      readNestedCognitiveType(metadata, "auto_approval_policy", "memory_policy", "cognitive_type") ??
+      readNestedCognitiveType(metadata, "memory_policy_backfill", "cognitive_type") ??
+      readNestedCognitiveType(metadata, "memory_auto_approval_sweep", "cognitive_type"),
     memory_layer: typedRow.memory_layer ?? undefined,
     fact_status: typedRow.fact_status ?? undefined,
     valid_at: typedRow.valid_at ? toIsoString(typedRow.valid_at) : undefined,
@@ -338,6 +343,30 @@ function readNestedString(metadata: JsonObject, ...path: readonly string[]): str
     current = (current as Record<string, unknown>)[key];
   }
   return typeof current === "string" && current.trim() !== "" ? current : undefined;
+}
+
+function readCognitiveType(metadata: JsonObject, ...keys: readonly string[]): CognitiveType | undefined {
+  for (const key of keys) {
+    const value = metadata[key];
+    const cognitiveType = parseCognitiveType(value);
+    if (cognitiveType) return cognitiveType;
+  }
+  return undefined;
+}
+
+function readNestedCognitiveType(metadata: JsonObject, ...path: readonly string[]): CognitiveType | undefined {
+  let current: unknown = metadata;
+  for (const key of path) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return parseCognitiveType(current);
+}
+
+function parseCognitiveType(value: unknown): CognitiveType | undefined {
+  return value === "semantic" || value === "episodic" || value === "procedural" || value === "audit"
+    ? value
+    : undefined;
 }
 
 function readStringArray(

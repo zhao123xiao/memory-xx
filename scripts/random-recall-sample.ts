@@ -6,17 +6,17 @@
  * as the query and checks whether the original record can be recalled in top-5.
  *
  * Usage:
- *   MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
- *   MEMORY_V2_DATABASE_SCHEMA=shadow_r3_20260414 \
+ *   MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/memory_xx \
+ *   MEMORY_XX_DATABASE_SCHEMA=shadow_r3_20260414 \
  *   node --import tsx scripts/random-recall-sample.ts
  */
 
 import { Pool } from "pg";
 import {
   createConfiguredRecallRuntime,
-  loadMemoryV2PostgresConfig,
-  loadMemoryV2QdrantConfig,
-  type MemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
+  loadMemoryXXQdrantConfig,
+  type MemoryXXPostgresConfig,
   FilterMode,
   type PostgresRecallRuntime,
   type QueryEmbeddingProvider,
@@ -184,7 +184,7 @@ function buildQuery(record: SampledRecord): string {
   return truncate(record.content.trim(), 24);
 }
 
-async function loadAllProjectScopeIds(config: MemoryV2PostgresConfig): Promise<string[]> {
+async function loadAllProjectScopeIds(config: MemoryXXPostgresConfig): Promise<string[]> {
   const pool = new Pool({ connectionString: config.databaseUrl, max: 2 });
   try {
     await pool.query(`SET search_path TO ${config.schema}`);
@@ -196,7 +196,7 @@ async function loadAllProjectScopeIds(config: MemoryV2PostgresConfig): Promise<s
 }
 
 async function sampleRecords(
-  config: MemoryV2PostgresConfig,
+  config: MemoryXXPostgresConfig,
   sampleSize: number,
   sampleSeed: string
 ): Promise<SampledRecord[]> {
@@ -244,7 +244,7 @@ async function sampleRecords(
 }
 
 async function main() {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const sampleSize = Number.parseInt(process.env.RANDOM_RECALL_SAMPLE_SIZE?.trim() || "100", 10);
   const sampleSeed = process.env.RANDOM_RECALL_SAMPLE_SEED?.trim() || "2026-05-22-random100-v1";
   const reportPath = process.env.RANDOM_RECALL_REPORT_PATH?.trim() || "<project-root>/migration_artifacts/random-recall-sample-report.json";
@@ -276,7 +276,7 @@ async function main() {
       }
     ),
     vector_column_name: "content_embedding",
-    qdrant: loadMemoryV2QdrantConfig()
+    qdrant: loadMemoryXXQdrantConfig()
   });
   const runtime: PostgresRecallRuntime = configuredRuntime.runtime;
 

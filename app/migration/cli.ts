@@ -1,10 +1,10 @@
 import path from "node:path";
 
-import { loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { runPostgresMigrations } from "./runner";
 
 export async function runMigrationCli(env: NodeJS.ProcessEnv = process.env): Promise<void> {
-  const config = loadMemoryV2PostgresConfig(env);
+  const config = loadMemoryXXPostgresConfig(env);
   const result = await runPostgresMigrations({
     config,
     migrationsDirectory: path.resolve(process.cwd(), "migrations"),

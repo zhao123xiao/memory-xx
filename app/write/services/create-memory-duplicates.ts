@@ -43,11 +43,11 @@ function tokenSet(text: string): Set<string> {
 }
 
 export function readDedupeEmbeddingThreshold(): number {
-  const raw = process.env.MEMORY_V2_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD?.trim();
+  const raw = process.env.MEMORY_XX_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD?.trim();
   if (!raw) return 0.92;
   const parsed = Number.parseFloat(raw);
   if (!Number.isFinite(parsed) || parsed < 0.5 || parsed > 1) {
-    throw new Error("MEMORY_V2_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD 必须在 0.5 到 1 之间。");
+    throw new Error("MEMORY_XX_INTELLIGENCE_DEDUPE_EMBEDDING_THRESHOLD 必须在 0.5 到 1 之间。");
   }
   return parsed;
 }

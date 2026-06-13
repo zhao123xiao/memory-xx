@@ -1,7 +1,7 @@
 import "./test-harness/config.js";
 import { config } from "./test-harness/config.js";
 import { closePool, createPool, query } from "./test-harness/lib/db-helpers.js";
-import { GovernanceRepository, PostgresWriteDatabase, loadMemoryV2PostgresConfig, withWriteTransaction, type JsonObject } from "../app";
+import { GovernanceRepository, PostgresWriteDatabase, loadMemoryXXPostgresConfig, withWriteTransaction, type JsonObject } from "../app";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function quoteIdent(value: string): string {
@@ -13,7 +13,7 @@ async function main(): Promise<void> {
   await requireCliPermission("memory:governance_read");
   const schema = quoteIdent(config.dbSchema);
   const pool = createPool();
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const governance = new GovernanceRepository();
   try {
     const run = await withWriteTransaction(database, (tx) => governance.tryBeginRun(tx, {

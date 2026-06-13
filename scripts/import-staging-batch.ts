@@ -6,7 +6,7 @@ import { Pool } from "pg";
 
 import {
   createPostgresPoolConfig,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   quoteIdentifier,
   runPostgresMigrations
 } from "../app";
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
   }
 
   const resolvedBatchDir = path.resolve(process.cwd(), batchDir);
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   await runPostgresMigrations({
     config,
     migrationsDirectory: path.resolve(process.cwd(), "migrations")

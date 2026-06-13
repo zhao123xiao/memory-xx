@@ -76,7 +76,7 @@ async function main() {
   let currentMetrics: BaselineMetrics = {};
 
   try {
-    const useSudo = process.env.MEMORY_V2_EVAL_USE_SUDO === "true";
+    const useSudo = process.env.MEMORY_XX_EVAL_USE_SUDO === "true";
     const command = `${useSudo ? "sudo " : ""}node ${config.evalRunnerPath} 2>&1`;
     stdout = execSync(
       command,

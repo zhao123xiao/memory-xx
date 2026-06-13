@@ -13,7 +13,7 @@ interface Check {
 }
 
 const runId = randomUUID().slice(0, 8);
-const baseUrl = process.env.MEMORY_V2_TEST_URL || config.wrapperUrl;
+const baseUrl = process.env.MEMORY_XX_TEST_URL || config.wrapperUrl;
 const token = config.wrapperToken;
 const scopeId = `real-user-${runId}`;
 const userId = "real-user-local";
@@ -104,7 +104,7 @@ async function cleanup(): Promise<void> {
   for (const memoryId of createdMemoryIds) {
     try {
       const resp = await post(
-        "/api/memory/v2/unified/forget",
+        "/api/memory/xx/unified/forget",
         { memory_id: memoryId, agent_id: agentId, mode: "tombstone" },
         token,
         30_000
@@ -124,7 +124,7 @@ async function waitForCleanupInvisible(timeoutMs = 10_000): Promise<{ status: nu
   while (Date.now() - started <= timeoutMs) {
     attempts += 1;
     const verify = await post(
-      "/api/memory/v2/recall/query",
+      "/api/memory/xx/recall/query",
       { query: runId, scope_context: { project_ids: [scopeId], include_global: false }, limit: 10 },
       token,
       30_000
@@ -150,7 +150,7 @@ async function main(): Promise<void> {
     check("user:authenticated-health", health.status === 200, `status=${health.status}, runtime=${health.data?.runtime_initialised}`);
 
     const noAuthWrite = await post(
-      "/api/memory/v2/unified/remember",
+      "/api/memory/xx/unified/remember",
       { user_id: userId, agent_id: agentId, scope_id: scopeId, content: "no auth should fail" },
       ""
     );
@@ -158,7 +158,7 @@ async function main(): Promise<void> {
 
     const marker = `真实用户视角标记 ${runId}`;
     const conversationMarker = `真实 Codex 对话监听标记 ${runId}`;
-    const conversation = await post("/api/memory/v2/conversation/ingest", {
+    const conversation = await post("/api/memory/xx/conversation/ingest", {
       conversation_id: `user-perspective-codex-${runId}`,
       session_id: `user-perspective-session-${runId}`,
       agent_id: "codex",
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
     );
     if (conversationMemoryId) {
       const approveConversation = await post(
-        `/api/memory/v2/review/memories/${encodeURIComponent(conversationMemoryId)}/approve`,
+        `/api/memory/xx/review/memories/${encodeURIComponent(conversationMemoryId)}/approve`,
         { requestId: `${runId}:conversation-approve`, actorId: agentId },
         token,
         30_000
@@ -189,7 +189,7 @@ async function main(): Promise<void> {
       let conversationIds: string[] = [];
       for (let attempt = 1; attempt <= 8; attempt += 1) {
         const recallConversation = await post(
-          "/api/memory/v2/unified/recall",
+          "/api/memory/xx/unified/recall",
           {
             agent_id: agentId,
             query: `Codex 自动监听 pending 审批 ${conversationMarker}`,
@@ -209,7 +209,7 @@ async function main(): Promise<void> {
       check("user:conversation-recall", conversationFound, `ids=${conversationIds.join(",")}`);
     }
     const preference = `请记住：以后汇报 memory-xx 测试结果时，先给结论，再列证据、报告路径和失败根因；不要只说测试通过。${marker}`;
-    const remember = await post("/api/memory/v2/unified/remember", {
+    const remember = await post("/api/memory/xx/unified/remember", {
       user_id: userId,
       agent_id: agentId,
       scope_id: scopeId,
@@ -226,7 +226,7 @@ async function main(): Promise<void> {
 
     if (memoryId) {
       const approve = await post(
-        `/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/approve`,
+        `/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/approve`,
         { requestId: `${runId}:approve`, actorId: agentId },
         token,
         30_000
@@ -242,7 +242,7 @@ async function main(): Promise<void> {
       let lastIds: string[] = [];
       for (let attempt = 1; attempt <= 8; attempt += 1) {
         const recall = await post(
-          "/api/memory/v2/recall/query",
+          "/api/memory/xx/recall/query",
           {
             query: `memory-xx 测试结果 汇报方式 ${marker}`,
             scope_context: { user_id: userId, workspace_id: scopeId, project_ids: [scopeId], include_global: false },
@@ -264,7 +264,7 @@ async function main(): Promise<void> {
         check("user:recall-preference", false, `attempts=8, ids=${lastIds.join(",")}`);
       }
 
-      const feedback = await post("/api/memory/v2/unified/feedback", {
+      const feedback = await post("/api/memory/xx/unified/feedback", {
         memory_id: memoryId,
         feedback_type: "confirmed",
         agent_id: agentId,
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
       );
     }
 
-    const knowledgeOff = await post("/api/memory/v2/unified/recall", {
+    const knowledgeOff = await post("/api/memory/xx/unified/recall", {
       agent_id: agentId,
       query: "sandbox 文档 memory-xx",
       scope_type: "project",
@@ -289,7 +289,7 @@ async function main(): Promise<void> {
     const offHasKnowledge = Boolean(knowledgeOff.data?.knowledge_results || knowledgeOff.data?.knowledge?.results);
     check("user:knowledge-default-off", knowledgeOff.status === 200 && !offHasKnowledge, `status=${knowledgeOff.status}, knowledge=${offHasKnowledge}`);
 
-    const knowledgeOn = await post("/api/memory/v2/unified/recall", {
+    const knowledgeOn = await post("/api/memory/xx/unified/recall", {
       agent_id: agentId,
       query: "sandbox 文档 memory-xx",
       scope_type: "project",

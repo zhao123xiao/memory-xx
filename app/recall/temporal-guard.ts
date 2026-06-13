@@ -11,7 +11,7 @@ import type {
   TemporalQueryClassification,
   TemporalFilterResult
 } from "./temporal-types";
-import type { QueryType, RetrieverCandidate, RecallRecord } from "./types";
+import type { CognitiveType, QueryType, RetrieverCandidate, RecallRecord } from "./types";
 
 const ALL_FACT_STATUSES: readonly FactStatus[] = ["current", "historical", "deprecated", "resurrected"] as const;
 
@@ -86,6 +86,7 @@ export function applyTemporalFilter(
     override_temporal_scope?: TemporalScope;
     override_layers?: readonly MemoryLayer[];
     as_of?: string;
+    explicit_memory_ids?: readonly string[];
   }
 ): TemporalFilterResult {
   const temporalScope = options?.override_temporal_scope ?? classification.temporal_scope;
@@ -95,7 +96,9 @@ export function applyTemporalFilter(
 
   const layerSet = new Set<string>(allowedLayers);
   const statusSet = new Set<string>(allowedFactStatuses);
+  const explicitMemoryIds = new Set(options?.explicit_memory_ids ?? []);
   const filteredReasons: Record<string, number> = {};
+  let explicitMemoryIdExemptions = 0;
 
   function reject(reason: string): boolean {
     filteredReasons[reason] = (filteredReasons[reason] ?? 0) + 1;
@@ -117,6 +120,26 @@ export function applyTemporalFilter(
     );
   }
 
+  function cognitiveTypeAllowed(cognitiveType: CognitiveType, exactStructuralMatch: boolean): boolean {
+    if (exactStructuralMatch) return true;
+    if (cognitiveType === "audit") {
+      return temporalScope === "all";
+    }
+    if (cognitiveType === "episodic") {
+      return classification.query_type === "timeline_history" ||
+        classification.query_type === "historical_query" ||
+        classification.query_type === "episode_lookup" ||
+        classification.query_type === "project_context" ||
+        classification.query_type === "procedure_query" ||
+        classification.query_type === "debug_recall" ||
+        classification.query_type === "debug_audit_query";
+    }
+    if (cognitiveType === "procedural") {
+      return classification.query_type !== "preference_query";
+    }
+    return true;
+  }
+
   const filtered = candidates.filter((candidate) => {
     const record = candidate.record as RecallRecord & {
       memory_layer?: string;
@@ -124,11 +147,20 @@ export function applyTemporalFilter(
       valid_at?: string;
       invalid_at?: string;
       expires_at?: string;
+      cognitive_type?: CognitiveType;
     };
     const layer = record.memory_layer ?? "recall";
     const status = record.fact_status ?? "current";
     const exactStructuralMatch = hasExactStructuralMatch(candidate);
 
+    if (explicitMemoryIds.has(candidate.memory_id)) {
+      explicitMemoryIdExemptions += 1;
+      return true;
+    }
+
+    if (record.cognitive_type && !cognitiveTypeAllowed(record.cognitive_type, exactStructuralMatch)) {
+      return reject("cognitive_type");
+    }
     if (!layerSet.has(layer) && !exactStructuralMatch) return reject("memory_layer");
     if (!statusSet.has(status)) return reject("fact_status");
 
@@ -155,5 +187,8 @@ export function applyTemporalFilter(
     applied_layers: allowedLayers,
     applied_fact_statuses: allowedFactStatuses,
     filtered_reasons: filteredReasons,
+    ...(explicitMemoryIdExemptions > 0
+      ? { explicit_memory_id_exemptions: explicitMemoryIdExemptions }
+      : {}),
   };
 }

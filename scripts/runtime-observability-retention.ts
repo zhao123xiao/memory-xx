@@ -2,7 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions";
 import {
   buildRuntimeObservabilityRetentionPlan,
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   const apply = hasArg("--apply");
   await requireCliPermission(apply ? "memory:governance_apply" : "memory:governance_read");
 
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const plan = buildRuntimeObservabilityRetentionPlan({
     componentSnapshotDays: intArg("--component-days"),
     agentConnectionDays: intArg("--agent-days"),

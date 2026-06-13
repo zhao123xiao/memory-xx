@@ -44,7 +44,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/knowledge/ingest"), {}, { token: config.wrapperToken, timeout: 10000 });
+    const resp = await httpPost(apiUrl("/api/memory/xx/knowledge/ingest"), {}, { token: config.wrapperToken, timeout: 10000 });
     const body = resp.body as any;
     check("knowledge:status-api", resp.status === 200 && body?.ok === true,
       `status=${resp.status}, collections=${Array.isArray(body?.collections) ? body.collections.length : "n/a"}`);
@@ -53,7 +53,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
       query: "memory-xx",
       scope_type: "project",
       scope_id: "memory-xx",
@@ -68,7 +68,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
       query: "OpenAI Codex",
       scope_type: "project",
       scope_id: "memory-xx",

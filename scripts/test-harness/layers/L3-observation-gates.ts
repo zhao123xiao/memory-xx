@@ -368,7 +368,7 @@ async function main() {
 
   // 9. Real recall routing: wrapper must use Go fastpath + Rust lexical/Qdrant + model reranker
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: "memory-xx Reranker集成完成",
       scopeType: "project",
       scopeId: "local-default",

@@ -419,10 +419,10 @@ export interface WriteDatabaseState {
   readonly cacheInvalidationRequests: CacheInvalidationRequestRow[];
   readonly knowledgeScopeGrants: KnowledgeScopeGrantRow[];
   readonly intelligenceCompareObservations: IntelligenceCompareObservationRow[];
-  readonly memoryGovernanceRuns?: MemoryGovernanceRunRow[];
-  readonly memoryGovernanceActions?: MemoryGovernanceActionRow[];
-  readonly memoryGovernanceFreezes?: MemoryGovernanceFreezeRow[];
-  readonly governancePolicyOverrides?: GovernancePolicyOverrideRow[];
+  readonly memoryGovernanceRuns: MemoryGovernanceRunRow[];
+  readonly memoryGovernanceActions: MemoryGovernanceActionRow[];
+  readonly memoryGovernanceFreezes: MemoryGovernanceFreezeRow[];
+  readonly governancePolicyOverrides: GovernancePolicyOverrideRow[];
   readonly trustedAgents: TrustedAgentRow[];
   readonly scopeGenerations: ScopeGenerationStateRow[];
   readonly sequences: Record<SequenceName, number>;

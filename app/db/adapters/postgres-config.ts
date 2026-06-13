@@ -2,7 +2,7 @@ import type { PoolConfig } from "pg";
 
 import { InvalidInputError } from "../../shared/errors/write-errors";
 
-export interface MemoryV2PostgresConfig {
+export interface MemoryXXPostgresConfig {
   readonly databaseUrl: string;
   readonly schema: string;
   readonly applicationName: string;
@@ -18,39 +18,39 @@ const DEFAULT_MAX_CONNECTIONS = 10;
 const DEFAULT_IDLE_TIMEOUT_MS = 30_000;
 const DEFAULT_CONNECTION_TIMEOUT_MS = 10_000;
 
-export function loadMemoryV2PostgresConfig(
+export function loadMemoryXXPostgresConfig(
   env: NodeJS.ProcessEnv = process.env
-): MemoryV2PostgresConfig {
-  const databaseUrl = env.MEMORY_V2_DATABASE_URL?.trim();
+): MemoryXXPostgresConfig {
+  const databaseUrl = env.MEMORY_XX_DATABASE_URL?.trim();
   if (!databaseUrl) {
-    throw new InvalidInputError("MEMORY_V2_DATABASE_URL is required for PostgreSQL execution.");
+    throw new InvalidInputError("MEMORY_XX_DATABASE_URL is required for PostgreSQL execution.");
   }
 
   return {
     databaseUrl,
-    schema: env.MEMORY_V2_DATABASE_SCHEMA?.trim() || DEFAULT_SCHEMA,
-    applicationName: env.MEMORY_V2_DATABASE_APPLICATION_NAME?.trim() || DEFAULT_APPLICATION_NAME,
+    schema: env.MEMORY_XX_DATABASE_SCHEMA?.trim() || DEFAULT_SCHEMA,
+    applicationName: env.MEMORY_XX_DATABASE_APPLICATION_NAME?.trim() || DEFAULT_APPLICATION_NAME,
     maxConnections: parsePositiveInteger(
-      env.MEMORY_V2_DATABASE_MAX_CONNECTIONS,
-      "MEMORY_V2_DATABASE_MAX_CONNECTIONS",
+      env.MEMORY_XX_DATABASE_MAX_CONNECTIONS,
+      "MEMORY_XX_DATABASE_MAX_CONNECTIONS",
       DEFAULT_MAX_CONNECTIONS
     ),
     idleTimeoutMs: parsePositiveInteger(
-      env.MEMORY_V2_DATABASE_IDLE_TIMEOUT_MS,
-      "MEMORY_V2_DATABASE_IDLE_TIMEOUT_MS",
+      env.MEMORY_XX_DATABASE_IDLE_TIMEOUT_MS,
+      "MEMORY_XX_DATABASE_IDLE_TIMEOUT_MS",
       DEFAULT_IDLE_TIMEOUT_MS
     ),
     connectionTimeoutMs: parsePositiveInteger(
-      env.MEMORY_V2_DATABASE_CONNECTION_TIMEOUT_MS,
-      "MEMORY_V2_DATABASE_CONNECTION_TIMEOUT_MS",
+      env.MEMORY_XX_DATABASE_CONNECTION_TIMEOUT_MS,
+      "MEMORY_XX_DATABASE_CONNECTION_TIMEOUT_MS",
       DEFAULT_CONNECTION_TIMEOUT_MS
     ),
-    ssl: parseSslMode(env.MEMORY_V2_DATABASE_SSLMODE)
+    ssl: parseSslMode(env.MEMORY_XX_DATABASE_SSLMODE)
   };
 }
 
 export function createPostgresPoolConfig(
-  config: MemoryV2PostgresConfig
+  config: MemoryXXPostgresConfig
 ): PoolConfig {
   return {
     connectionString: config.databaseUrl,
@@ -101,7 +101,7 @@ function parseSslMode(value: string | undefined): PoolConfig["ssl"] {
   }
 
   throw new InvalidInputError(
-    "MEMORY_V2_DATABASE_SSLMODE must be one of disable, require, verify-ca, or verify-full.",
+    "MEMORY_XX_DATABASE_SSLMODE must be one of disable, require, verify-ca, or verify-full.",
     {
       value
     }

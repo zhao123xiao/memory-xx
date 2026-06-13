@@ -81,7 +81,7 @@ function phase3Fixture(): PendingAutonomousClosureRow[] {
       id: `canary-${index + 1}`,
       scope_id: `memory-xx-auto-approval-e2e-aac-${index}`,
       title: "Auto approval canary rollback evidence requirement",
-      content: `Memory-v2 automatic approval canary requires rollback evidence. Auto approval canary marker aac-${index}.`,
+      content: `memory-xx automatic approval canary requires rollback evidence. Auto approval canary marker aac-${index}.`,
       memory_type: "constraint",
       agent_id: "codex",
     })),
@@ -369,7 +369,7 @@ test("current residual canary pending samples close into memory, issue, or event
     row({
       id: "malformed-endpoints",
       title: "malformed JSON 测试覆盖端点清单",
-      content: "malformed JSON 测试需覆盖 /api/memory/v2/skills/execute、/api/memory/v2/intelligence/extract、/api/memory/v2/intelligence/smart-write、/api/memory/v2/mcp/smart-write。",
+      content: "malformed JSON 测试需覆盖 /api/memory/xx/skills/execute、/api/memory/xx/intelligence/extract、/api/memory/xx/intelligence/smart-write、/api/memory/xx/mcp/smart-write。",
       memory_type: "constraint",
       agent_id: "codex",
     }),

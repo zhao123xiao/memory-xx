@@ -1,9 +1,9 @@
-export interface MemoryV2HttpRequest<TBody = unknown> {
+export interface MemoryXXHttpRequest<TBody = unknown> {
   readonly method: string;
   readonly body: TBody;
 }
 
-export interface MemoryV2HttpResponse<TBody = unknown> {
+export interface MemoryXXHttpResponse<TBody = unknown> {
   readonly status: number;
   readonly body: TBody;
 }

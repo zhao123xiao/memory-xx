@@ -149,7 +149,7 @@ export function projectionLifecycleOperation(
   if (memory.lifecycleStatus === LifecycleStatus.Tombstone || memory.lifecycleStatus === LifecycleStatus.Superseded) {
     return "delete_point";
   }
-  if (process.env.MEMORY_V2_PROJECTION_PENDING_SKIP === "false") {
+  if (process.env.MEMORY_XX_PROJECTION_PENDING_SKIP === "false") {
     return "delete_point";
   }
   return "skip";

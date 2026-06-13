@@ -28,7 +28,7 @@ export function createMemoryCleanupExecutor(deps: {
     const dryRun = params.apply_repairs !== true;
 
     // Step 1: Audit
-    const auditResp = await fetch(`${base}/api/memory/v2/orchestrator/audit-memory-consistency`, {
+    const auditResp = await fetch(`${base}/api/memory/xx/orchestrator/audit-memory-consistency`, {
       method: "POST",
       headers,
       body: JSON.stringify({ include_records: params.include_records === true }),
@@ -47,7 +47,7 @@ export function createMemoryCleanupExecutor(deps: {
     // Step 2: Repair if issues found
     let repair: unknown = null;
     if (!audit.ok) {
-      const repairResp = await fetch(`${base}/api/memory/v2/orchestrator/repair-memory-consistency`, {
+      const repairResp = await fetch(`${base}/api/memory/xx/orchestrator/repair-memory-consistency`, {
         method: "POST",
         headers,
         body: JSON.stringify({ dry_run: dryRun }),

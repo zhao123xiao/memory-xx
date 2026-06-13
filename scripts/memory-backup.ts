@@ -29,11 +29,11 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
 }
 
 async function qdrantSnapshot(): Promise<Record<string, unknown>> {
-  const base = process.env.MEMORY_V2_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
+  const base = process.env.MEMORY_XX_QDRANT_BASE_URL?.replace(/\/+$/, "") || "http://127.0.0.1:6333";
   const headers: Record<string, string> = {};
-  if (process.env.MEMORY_V2_QDRANT_API_KEY?.trim()) headers["api-key"] = process.env.MEMORY_V2_QDRANT_API_KEY.trim();
+  if (process.env.MEMORY_XX_QDRANT_API_KEY?.trim()) headers["api-key"] = process.env.MEMORY_XX_QDRANT_API_KEY.trim();
   const aliases = await fetchJson(`${base}/aliases`, { headers }) as any;
-  const activeAlias = process.env.MEMORY_V2_QDRANT_ALIAS || "memory-xx-active";
+  const activeAlias = process.env.MEMORY_XX_QDRANT_ALIAS || "memory-xx-active";
   const aliasRow = aliases?.result?.aliases?.find?.((item: any) => item.alias_name === activeAlias);
   const target = aliasRow?.collection_name;
   const collection = target ? await fetchJson(`${base}/collections/${encodeURIComponent(target)}`, { headers }) : null;
@@ -66,10 +66,10 @@ async function main(): Promise<void> {
   await requireCliPermission("memory:admin");
   const apply = hasFlag("--apply");
   const root = argValue("--dir") || path.join(process.cwd(), "backups", "memory-xx", timestamp());
-  const envPath = process.env.MEMORY_V2_ENV_PATH || path.join(process.cwd(), ".env");
-  const dbUrl = process.env.MEMORY_V2_DATABASE_URL;
-  const schema = process.env.MEMORY_V2_DATABASE_SCHEMA || "memory_xx";
-  if (!dbUrl) throw new Error("MEMORY_V2_DATABASE_URL is required");
+  const envPath = process.env.MEMORY_XX_ENV_PATH || path.join(process.cwd(), ".env");
+  const dbUrl = process.env.MEMORY_XX_DATABASE_URL;
+  const schema = process.env.MEMORY_XX_DATABASE_SCHEMA || "memory_xx";
+  if (!dbUrl) throw new Error("MEMORY_XX_DATABASE_URL is required");
 
   const plan = {
     ok: true,

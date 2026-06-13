@@ -5,6 +5,7 @@ import {
 } from "../tx/write-transaction";
 import { mapKnowledgeScopeGrantRow } from "./support-row-mappers";
 import type { JsonObject } from "../../shared";
+import { readOptionalPgBoolean } from "../row-value-readers";
 
 export interface CreateKnowledgeScopeGrantInput {
   readonly agentId: string;
@@ -116,6 +117,43 @@ export class KnowledgeScopeGrantRepository {
       `,
       [input.agentId, input.resourceType, input.resourceId, now]
     );
-    return Boolean(row?.ok);
+    return readOptionalPgBoolean(row?.ok, "knowledge_scope_grants.ok");
+  }
+
+  async hasWriteGrant(
+    tx: WriteTransactionContext,
+    input: {
+      readonly agentId: string;
+      readonly resourceType: KnowledgeGrantResourceType;
+      readonly resourceId: string;
+    }
+  ): Promise<boolean> {
+    const now = tx.now();
+    if (isInMemoryTransactionContext(tx)) {
+      return tx.state.knowledgeScopeGrants.some((grant) =>
+        grant.agentId === input.agentId &&
+        grant.resourceType === input.resourceType &&
+        (grant.resourceId === input.resourceId || grant.resourceId === "*") &&
+        grant.revokedAt === null &&
+        (grant.expiresAt === null || grant.expiresAt > now) &&
+        (grant.permissions.includes("memory:write") || grant.permissions.includes("memory:admin"))
+      );
+    }
+
+    const [row] = await tx.query<{ ok: boolean }>(
+      `
+        SELECT true AS ok
+        FROM knowledge_scope_grants
+        WHERE agent_id = $1
+          AND resource_type = $2
+          AND (resource_id = $3 OR resource_id = '*')
+          AND revoked_at IS NULL
+          AND (expires_at IS NULL OR expires_at > $4::timestamptz)
+          AND ('memory:write' = ANY(permissions) OR 'memory:admin' = ANY(permissions))
+        LIMIT 1
+      `,
+      [input.agentId, input.resourceType, input.resourceId, now]
+    );
+    return readOptionalPgBoolean(row?.ok, "knowledge_scope_grants.ok");
   }
 }

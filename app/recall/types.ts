@@ -1,5 +1,8 @@
 import { FilterMode, ScopeType, type MemoryGovernanceFields } from "../shared";
 import type { RecallCacheAudit } from "../cache/types";
+import type { CognitiveType } from "../shared/cognitive-type";
+import type { TemporalFilterResult } from "./temporal-types";
+import type { RecallContextPagingContractAudit } from "./context-bundle";
 
 export enum QueryType {
   ExactLookup = "exact_lookup",
@@ -70,6 +73,12 @@ export interface RecallRequest {
   task_id?: string;
   scope_conflict_policy?: "more_specific_wins" | "higher_scope_wins" | "latest_wins";
   hybrid_mode?: "separate" | "rrf" | "model_rerank";
+  include_knowledge?: boolean;
+  knowledge_collections?: readonly string[];
+  knowledge_repos?: readonly string[];
+  knowledge_budget?: number;
+  context_bundle?: false | "summary" | "full";
+  context_bundle_budget?: RecallContextBundleBudget;
 }
 
 export interface RecallScopeRef {
@@ -180,6 +189,7 @@ export interface RecallRecord extends MemoryGovernanceFields {
   canonical_source_path?: string;
   category?: string;
   memory_type?: string;
+  cognitive_type?: CognitiveType;
   memory_layer?: string;
   fact_status?: string;
   valid_at?: string;
@@ -198,6 +208,8 @@ export interface RecallRecord extends MemoryGovernanceFields {
   lexical_terms?: string[];
   semantic_terms?: string[];
 }
+
+export type { CognitiveType };
 
 export interface GraphEntityEvidence {
   id: string;
@@ -322,6 +334,7 @@ export interface RecallExplainPayload {
     lexical_hits: number;
     vector_hits: number;
     graph_hits?: number;
+    knowledge_hits?: number;
     recent_approved_pg_fallback?: {
       readonly enabled: boolean;
       readonly window_ms: number;
@@ -361,6 +374,11 @@ export interface RecallConfidenceGatePayload {
   reason: string;
   top_model_score?: number;
   threshold?: number;
+  adaptive_override?: {
+    readonly applied: boolean;
+    readonly source: "governance_policy_override";
+    readonly override_id?: string;
+  };
   candidate_count?: number;
   absolute_filtered?: number;
   margin_cutoff_rank?: number;
@@ -421,11 +439,18 @@ export interface RecallAuditPayload {
   fusion?: RecallFusionAudit;
   null_guard?: RecallConfidenceGatePayload;
   query_context?: RecallQueryContext;
+  temporal?: TemporalFilterResult;
   lexical_status: BackendStatus;
   vector_status: BackendStatus;
   lexical_hits: number;
   vector_hits: number;
   graph_hits?: number;
+  knowledge?: {
+    readonly included: boolean;
+    readonly hits: number;
+    readonly degraded?: boolean;
+    readonly failure_reason?: string;
+  };
   recent_approved_pg_fallback?: {
     readonly enabled: boolean;
     readonly window_ms: number;
@@ -445,6 +470,45 @@ export interface RecallAuditPayload {
   scope_precedence?: Record<string, number>;
   scope_context_source?: "caller_explicit" | "defaulted";
   default_scope_injected?: boolean;
+  adaptive_retrieval?: {
+    readonly applied: false;
+    readonly source: "runtime_observation_only";
+    readonly query_type: QueryType;
+    readonly scope_keys: readonly string[];
+    readonly observed_returned_hits: number;
+    readonly threshold_decision: {
+      readonly action: "hold";
+      readonly proposed_threshold_delta: "none";
+      readonly sample_size_ok: false;
+      readonly false_positive_guard_ok: true;
+      readonly eligible_for_apply: false;
+      readonly reason: "runtime_observation_not_calibration_cohort";
+      readonly audit: {
+        readonly sample_size: {
+          readonly observed_traces: 1;
+          readonly minimum_traces: number;
+          readonly ok: false;
+        };
+        readonly feedback: {
+          readonly feedback_count: 0;
+          readonly negative_feedback_rate: 0;
+          readonly false_positive_rate: 0;
+          readonly guard_rate: number;
+          readonly guard_ok: true;
+        };
+        readonly recall_pressure: {
+          readonly empty_recall_rate: 0 | 1;
+          readonly pressure_rate: number;
+          readonly pressure_detected: boolean;
+        };
+        readonly guardrails: {
+          readonly report_only: true;
+        };
+        readonly blockers: readonly ["report_only", "sample_size_below_minimum", "runtime_observation_only"];
+      };
+    };
+  };
+  context_bundle?: RecallContextBundleAudit;
   cache?: RecallCacheAudit;
 }
 
@@ -453,6 +517,10 @@ export interface RecallResultItem {
   title?: string;
   content: string;
   scope: RecallScopeRef;
+  memory_type?: string;
+  memory_layer?: string;
+  recall_policy?: string | null;
+  cognitive_type?: CognitiveType;
   score: number;
   rerank_score?: number;
   local_score?: number;
@@ -476,6 +544,102 @@ export interface RecallResultItem {
   matched_terms: string[];
 }
 
+export type RecallContextLayerId =
+  | "l0_always_resident"
+  | "l1_pinned_scope_facts"
+  | "l2_query_working_set"
+  | "l3_expandable_deep_memory";
+
+export interface RecallContextBundleBudget {
+  readonly l0AlwaysResident?: number;
+  readonly l1PinnedScopeFacts?: number;
+  readonly l2QueryWorkingSet?: number;
+  readonly l3ExpandableDeepMemory?: number;
+}
+
+export interface RecallContextBundleTokenBudget {
+  readonly total: number;
+  readonly l0_always_resident: number;
+  readonly l1_pinned_scope_facts: number;
+  readonly l2_query_working_set: number;
+  readonly l3_expandable_deep_memory: number;
+}
+
+export interface RecallContextBundleAudit {
+  readonly requested_mode: false | "summary" | "full" | undefined;
+  readonly mode: "disabled" | "summary" | "full";
+  readonly requested_budgets: RecallContextBundleBudget;
+  readonly applied_budgets: RecallContextBundleTokenBudget;
+  readonly total_input_items: number;
+  readonly resident_items: number;
+  readonly expandable_items: number;
+  readonly truncated_items: number;
+  readonly redacted_items: number;
+}
+
+export interface RecallContextBundleItem {
+  readonly memory_id: string;
+  readonly title?: string;
+  readonly content: string;
+  readonly scope: RecallScopeRef;
+  readonly score: number;
+  readonly cognitive_type: CognitiveType;
+  readonly memory_type?: string;
+  readonly memory_layer?: string;
+  readonly recall_policy?: string | null;
+  readonly source_retrievers: readonly string[];
+  readonly estimated_tokens: number;
+  readonly resident: boolean;
+  readonly inclusion_policy: "always" | "pinned" | "query_working_set" | "tool_expand_only";
+  readonly temporal_chain?: {
+    readonly relations: readonly GraphRelationEvidence[];
+    readonly paths: readonly GraphPathSegment[];
+    readonly relation_types: readonly string[];
+  };
+}
+
+export interface RecallContextBundleLayer {
+  readonly id: RecallContextLayerId;
+  readonly label: string;
+  readonly token_budget: number;
+  readonly used_tokens: number;
+  readonly resident: boolean;
+  readonly invalidation_rules: readonly string[];
+  readonly items: readonly RecallContextBundleItem[];
+}
+
+export interface RecallContextBundle {
+  readonly version: "context-bundle-v1";
+  readonly token_budget: RecallContextBundleTokenBudget;
+  readonly layers: {
+    readonly l0_always_resident: RecallContextBundleLayer;
+    readonly l1_pinned_scope_facts: RecallContextBundleLayer;
+    readonly l2_query_working_set: RecallContextBundleLayer;
+    readonly l3_expandable_deep_memory: RecallContextBundleLayer;
+  };
+  readonly audit: {
+    readonly total_input_items: number;
+    readonly resident_items: number;
+    readonly expandable_items: number;
+    readonly truncated_items: number;
+    readonly redacted_items?: number;
+    readonly paging_contract?: RecallContextPagingContractAudit;
+  };
+}
+
+export interface RecallContextPromptRender {
+  readonly prompt: string;
+  readonly expandable_references: string;
+  readonly resident_memory_ids: readonly string[];
+  readonly expandable_memory_ids: readonly string[];
+  readonly audit: {
+    readonly resident_items: number;
+    readonly expandable_items: number;
+    readonly prompt_chars: number;
+    readonly expandable_reference_chars: number;
+  };
+}
+
 export interface GateInfo {
   status: "accepted" | "empty" | "uncertain" | "degraded" | "scope_blocked" | "lifecycle_blocked";
   reason: string;
@@ -487,6 +651,7 @@ export interface GateInfo {
 
 export interface RecallResponse {
   results: RecallResultItem[];
+  context_bundle?: RecallContextBundle;
   filter_mode_applied: FilterMode;
   allowed_scope_set: RecallScopeRef[];
   degraded: boolean;

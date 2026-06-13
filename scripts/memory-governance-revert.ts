@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import "./test-harness/config.js";
-import { MemoryEventRepository, OutboxEventRepository, OutboxEventType, PostgresWriteDatabase, loadMemoryV2PostgresConfig, withWriteTransaction, type JsonObject } from "../app";
+import { MemoryEventRepository, OutboxEventRepository, OutboxEventType, PostgresWriteDatabase, loadMemoryXXPostgresConfig, withWriteTransaction, type JsonObject } from "../app";
 import { requireCliPermission } from "../app/server/permissions.js";
 
 function readArg(name: string): string {
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
   const actionId = readArg("action-id");
   const token = readArg("token");
   if (!actionId || !token) throw new Error("--action-id and --token are required");
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   try {
     const result = await withWriteTransaction(database, async (tx) => {
       const [action] = await tx.query<{

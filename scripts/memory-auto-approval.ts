@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import {
   buildProductionCanaryRuntimeControls,
   evaluateProductionCanaryGuard,
@@ -51,7 +51,7 @@ function numberArg(name: string, fallback: number): number {
 }
 
 function runtimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
 }
 
 function parseScope(raw: string): { scopeType: string; scopeId: string; key: string } {
@@ -74,7 +74,7 @@ function readNumber(value: unknown, fallback = 0): number {
 }
 
 async function loadCandidateOnlyFlag(): Promise<{ enabled: boolean; reasons: string[] }> {
-  if (process.env.MEMORY_V2_INTELLIGENCE_CANDIDATE_ONLY === "true") {
+  if (process.env.MEMORY_XX_INTELLIGENCE_CANDIDATE_ONLY === "true") {
     return { enabled: true, reasons: ["env_candidate_only"] };
   }
   try {
@@ -865,9 +865,9 @@ async function dryRun(client: import("pg").PoolClient, schema: string, scopeKey:
 }
 
 async function postReview(memoryId: string, action: "archive" | "tombstone", reason: string): Promise<Record<string, unknown>> {
-  const base = (process.env.MEMORY_V2_WRAPPER_URL?.replace(/\/+$/, "")) || `http://127.0.0.1:${process.env.MEMORY_V2_WRAPPER_PORT || "5100"}`;
-  const token = process.env.MEMORY_V2_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_CLI_TOKEN?.trim() || "";
-  const response = await fetch(`${base}/api/memory/v2/review/memories/${encodeURIComponent(memoryId)}/${action}`, {
+  const base = (process.env.MEMORY_XX_WRAPPER_URL?.replace(/\/+$/, "")) || `http://127.0.0.1:${process.env.MEMORY_XX_WRAPPER_PORT || "5100"}`;
+  const token = process.env.MEMORY_XX_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_CLI_TOKEN?.trim() || "";
+  const response = await fetch(`${base}/api/memory/xx/review/memories/${encodeURIComponent(memoryId)}/${action}`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
     body: JSON.stringify({ requestId: randomUUID(), actorId: "memory:auto-approval", reason }),
@@ -886,7 +886,7 @@ async function main(): Promise<void> {
       ? "memory:governance_apply"
       : "memory:governance_read"
   );
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

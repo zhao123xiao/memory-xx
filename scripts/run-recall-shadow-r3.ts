@@ -3,11 +3,12 @@ import path from "node:path";
 
 import {
   createPostgresRecallRuntime,
+  DEFAULT_AGENT_ID,
   FilterMode,
   InMemoryMigrationAuditRepository,
   RecallShadowCompareHarness,
   ScopeType,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   type RecallResponse,
   type RecallResultItem,
   type RecallScopeRef,
@@ -89,7 +90,7 @@ async function main(): Promise<void> {
   await fs.mkdir(outputDir, { recursive: true });
 
   const records = await loadRecords(batchDir);
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const runtime = createPostgresRecallRuntime({
     config,
     query_embedding_provider: {
@@ -222,7 +223,7 @@ async function main(): Promise<void> {
         }
       },
       auditRepository,
-      operator: "klee",
+      operator: DEFAULT_AGENT_ID,
       workerId: "recall-shadow-r3"
     });
 

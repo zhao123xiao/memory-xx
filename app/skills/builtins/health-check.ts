@@ -27,7 +27,7 @@ export function createHealthCheckExecutor(deps: {
   return async (params) => {
     const [healthResp, auditResp, metricsResp] = await Promise.all([
       fetch(`${base}/health`, { headers }),
-      fetch(`${base}/api/memory/v2/orchestrator/audit-memory-consistency`, {
+      fetch(`${base}/api/memory/xx/orchestrator/audit-memory-consistency`, {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ include_records: params.include_records === true }),
@@ -42,7 +42,7 @@ export function createHealthCheckExecutor(deps: {
     const issues = (audit as { findings?: unknown[] }).findings?.length ?? 0;
     let repair: unknown = null;
     if (issues > 0 && params.dry_run_repair !== false) {
-      const repairResp = await fetch(`${base}/api/memory/v2/orchestrator/repair-memory-consistency`, {
+      const repairResp = await fetch(`${base}/api/memory/xx/orchestrator/repair-memory-consistency`, {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ dry_run: true }),

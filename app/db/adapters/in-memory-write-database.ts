@@ -85,6 +85,10 @@ export class InMemoryWriteDatabase implements WriteTransactionRunner {
       cacheInvalidationRequests: [],
       knowledgeScopeGrants: [],
       intelligenceCompareObservations: [],
+      memoryGovernanceRuns: [],
+      memoryGovernanceActions: [],
+      memoryGovernanceFreezes: [],
+      governancePolicyOverrides: [],
       scopeGenerations: full.scopeGenerations.map((row) => ({ ...row })),
       trustedAgents: [],
       sequences: { ...full.sequences }

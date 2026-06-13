@@ -5,7 +5,7 @@ through the real PostgreSQL adapter configuration.
 
 `run-qdrant-projector-worker.ts` is the minimal runner/daemon entrypoint for the
 Qdrant projector worker loop. It now performs a startup self-check and writes a
-JSON health/status snapshot to `MEMORY_V2_QDRANT_PROJECTOR_STATUS_FILE`
+JSON health/status snapshot to `MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE`
 (default: `services/memory-xx/qdrant-projector-worker.status.json`).
 
 `check-qdrant-projector-worker-health.ts` is the read-only health probe for the

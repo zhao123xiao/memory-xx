@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import {
   autoApprovalRuntimeControlsPath,
   readAutoApprovalRuntimeControlsSync,
@@ -78,7 +78,7 @@ async function waitForVisibility(memoryId: string, visible: boolean): Promise<bo
 }
 
 async function recallContains(memoryId: string, query: string): Promise<{ unified: boolean; mcp: boolean }> {
-  const unified = await httpPost(apiUrl("/api/memory/v2/unified/recall"), {
+  const unified = await httpPost(apiUrl("/api/memory/xx/unified/recall"), {
     query,
     scope_type: "project",
     scope_id: "memory-xx",
@@ -225,7 +225,7 @@ function enableGuardedProjectApply(): { restore: () => void } {
 
 async function main(): Promise<void> {
   const runId = `real-project-update-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
-  const pgConfig = loadMemoryV2PostgresConfig(process.env);
+  const pgConfig = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(pgConfig.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(pgConfig));
   const client = await pool.connect();

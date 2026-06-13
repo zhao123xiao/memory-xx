@@ -1,10 +1,10 @@
 import "./test-harness/config.js";
 import { execFileSync } from "node:child_process";
 import { Pool } from "pg";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 
 async function main(): Promise<void> {
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const pool = new Pool(createPostgresPoolConfig(config));
   try {
     const schema = quoteIdent(config.schema);

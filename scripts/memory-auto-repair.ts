@@ -12,7 +12,7 @@ import {
   PostgresWriteDatabase,
   QdrantProjectionReconcileService,
   QdrantProjectionSyncService,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
 } from "../app";
 import { ProjectorEmbeddingResolver } from "../app/qdrant-sync/projector-embedding-resolver.js";
 import { QwenEmbeddingProviderWrapper } from "../app/server/embedding-provider.js";
@@ -32,7 +32,7 @@ function readPositiveArg(name: string, fallback: number): number {
 }
 
 function runtimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || path.join(process.cwd(), ".runtime");
 }
 
 function repairRunId(): string {
@@ -74,7 +74,7 @@ function validateActiveManifest(generationId: string | null): Record<string, unk
       env: { ...process.env, TMPDIR: "/tmp" },
       encoding: "utf8",
       maxBuffer: 20 * 1024 * 1024,
-      timeout: Number.parseInt(process.env.MEMORY_V2_AUTO_REPAIR_VALIDATE_TIMEOUT_MS || "300000", 10),
+      timeout: Number.parseInt(process.env.MEMORY_XX_AUTO_REPAIR_VALIDATE_TIMEOUT_MS || "300000", 10),
     });
     const start = stdout.indexOf("{");
     const end = stdout.lastIndexOf("}");
@@ -102,7 +102,7 @@ async function main(): Promise<void> {
     maxUpsert: readPositiveArg("max-upsert", 100),
   });
 
-  const database = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const database = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const pointWriter = new HttpQdrantPointWriter();
   const projectionSyncService = new QdrantProjectionSyncService({
     database,

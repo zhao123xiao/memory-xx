@@ -15,6 +15,10 @@ import { isPostgresTransactionContext, withWriteTransaction } from "../../db/tx/
 import * as runtime from "../../server/runtime";
 import type { ConversationMessageInput } from "../../intelligence/types";
 import { graphHintsMetadata } from "../../intelligence/graph-extraction";
+import {
+  planConversationMemoryRoute,
+  shouldSkipLongTermExtractionForObservation,
+} from "../../governance/observer-reflector-governor";
 
 type ConversationRole = ConversationMessageInput["role"];
 
@@ -53,6 +57,19 @@ interface BatchProcessInput {
   readonly metadata?: JsonObject;
 }
 
+export interface ConversationObservationSkipMetadataInput {
+  readonly source: string;
+  readonly scopeType: string;
+  readonly scopeId: string;
+  readonly messages: readonly ConversationMessageInput[];
+  readonly noOpReasons: readonly string[];
+}
+
+export interface ConversationObservationSkipMetadata {
+  readonly noOpReasons: readonly string[];
+  readonly metadata: JsonObject;
+}
+
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
@@ -88,6 +105,12 @@ function readPositiveInt(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function envEnabled(name: string, fallback = false): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -105,10 +128,10 @@ function normalizeScopeContext(raw: unknown): NormalizedScope {
   const workspaceId = readString(input.workspace_id ?? input.workspaceId);
   const memoryIds = readStringArray(input.memory_ids ?? input.memoryIds);
   const hasLongTermScope = projectIds.length > 0 || Boolean(userId) || Boolean(workspaceId) || memoryIds.length > 0;
-  if (!hasLongTermScope && process.env.MEMORY_V2_CONVERSATION_STRICT_SCOPE === "1") {
+  if (!hasLongTermScope && process.env.MEMORY_XX_CONVERSATION_STRICT_SCOPE === "1") {
     throw Object.assign(new Error("scope_context_required"), { status: 400 });
   }
-  const defaultProjectId = process.env.MEMORY_V2_CONVERSATION_DEFAULT_PROJECT_ID?.trim() || "memory-xx";
+  const defaultProjectId = process.env.MEMORY_XX_CONVERSATION_DEFAULT_PROJECT_ID?.trim() || "memory-xx";
   const effectiveProjectIds = projectIds.length > 0 ? projectIds : hasLongTermScope ? [] : [defaultProjectId];
   const effectiveUserId = userId || (!hasLongTermScope ? "current-instance-owner" : "");
   const effectiveWorkspaceId = workspaceId || (!hasLongTermScope ? "current-instance" : "");
@@ -206,6 +229,23 @@ function normalizeMessages(value: unknown): ConversationMessageInput[] {
 
 function messagesText(messages: readonly ConversationMessageInput[]): string {
   return messages.map((message) => `${message.role}: ${message.content}`).join("\n");
+}
+
+export function buildConversationObservationSkipMetadata(
+  input: ConversationObservationSkipMetadataInput,
+): ConversationObservationSkipMetadata {
+  const conversationMemoryRoute = planConversationMemoryRoute({
+    source: input.source,
+    scopeType: input.scopeType,
+    scopeId: input.scopeId,
+    messages: input.messages,
+  });
+  return {
+    noOpReasons: input.noOpReasons,
+    metadata: {
+      conversation_memory_route: conversationMemoryRoute as unknown as JsonObject,
+    },
+  };
 }
 
 function hasExplicitMemoryIntent(events: readonly { content: string; metadata?: JsonObject }[]): boolean {
@@ -387,13 +427,26 @@ async function processConversationBatch(input: BatchProcessInput): Promise<Recor
     return { ok: true, reused: true, batch: started.row };
   }
 
-  const requireUser = process.env.MEMORY_V2_CONVERSATION_REQUIRE_USER_MESSAGE !== "0";
+  const requireUser = process.env.MEMORY_XX_CONVERSATION_REQUIRE_USER_MESSAGE !== "0";
   if (requireUser && !input.messages.some((message) => message.role === "user")) {
-    await completeBatch(batchId, "skipped", { noOpReasons: ["assistant_only_ignored"] }, input.eventIds);
-    return { ok: true, batch_id: batchId, status: "skipped", no_op_reasons: ["assistant_only_ignored"] };
+    const observationSkip = buildConversationObservationSkipMetadata({
+      source: "conversation_ingest",
+      scopeType: input.scope.scopeHint.scope_type,
+      scopeId: input.scope.scopeHint.scope_id,
+      messages: input.messages,
+      noOpReasons: ["assistant_only_ignored"],
+    });
+    await completeBatch(batchId, "skipped", observationSkip, input.eventIds);
+    return {
+      ok: true,
+      batch_id: batchId,
+      status: "skipped",
+      no_op_reasons: observationSkip.noOpReasons,
+      conversation_memory_route: observationSkip.metadata.conversation_memory_route,
+    };
   }
 
-  const maxCandidates = readPositiveInt("MEMORY_V2_CONVERSATION_MAX_CANDIDATES_PER_HOUR", 5);
+  const maxCandidates = readPositiveInt("MEMORY_XX_CONVERSATION_MAX_CANDIDATES_PER_HOUR", 5);
   const recentCandidates = await countRecentCandidates(input.sessionId);
   if (recentCandidates >= maxCandidates) {
     await completeBatch(batchId, "skipped", {
@@ -404,6 +457,12 @@ async function processConversationBatch(input: BatchProcessInput): Promise<Recor
   }
 
   const graphHints = graphHintsMetadata(messagesText(input.messages));
+  const conversationMemoryRoute = planConversationMemoryRoute({
+    source: "conversation_ingest",
+    scopeType: input.scope.scopeHint.scope_type,
+    scopeId: input.scope.scopeHint.scope_id,
+    messages: input.messages,
+  });
   const metadata: JsonObject = {
     source: "conversation_ingest",
     conversation_id: input.conversationId,
@@ -416,8 +475,29 @@ async function processConversationBatch(input: BatchProcessInput): Promise<Recor
     temporal_hint: { observed_at: new Date().toISOString(), source: "conversation_ingest" },
     entity_hint: graphHints.entity_names ?? [],
     relation_hint: (graphHints.graph_extraction as JsonObject | undefined)?.relations ?? [],
+    conversation_memory_route: conversationMemoryRoute as unknown as JsonObject,
     ...(input.metadata ?? {}),
   };
+  if (shouldSkipLongTermExtractionForObservation(conversationMemoryRoute, {
+    observerFirstEnabled: envEnabled("MEMORY_XX_CONVERSATION_OBSERVER_FIRST", false),
+  })) {
+    await completeBatch(batchId, "skipped", {
+      noOpReasons: ["observation_only", "observer_first_long_term_extraction_skipped"],
+      metadata: {
+        conversation_memory_route: conversationMemoryRoute as unknown as JsonObject,
+        observation_first_enabled: true,
+      },
+    }, input.eventIds);
+    return {
+      ok: true,
+      batch_id: batchId,
+      batch_hash: batchHash,
+      status: "skipped",
+      candidate_memory_ids: [],
+      no_op_reasons: ["observation_only", "observer_first_long_term_extraction_skipped"],
+      conversation_memory_route: conversationMemoryRoute,
+    };
+  }
 
   try {
     const result = await processSmartWrite({
@@ -466,6 +546,7 @@ async function processConversationBatch(input: BatchProcessInput): Promise<Recor
         ...(fallbackReason ? { fallback_reason: fallbackReason } : {}),
         candidate_count: candidateMemoryIds.length,
         smart_write_status: result.status,
+        conversation_memory_route: conversationMemoryRoute as unknown as JsonObject,
       },
     }, input.eventIds);
     return {
@@ -591,7 +672,7 @@ export async function handleConversationFlush(req: IncomingMessage, res: ServerR
       return;
     }
     const sessionId = readString(body.session_id ?? body.sessionId) || null;
-    const maxBatch = readPositiveInt("MEMORY_V2_CONVERSATION_MAX_BATCH_MESSAGES", 10);
+    const maxBatch = readPositiveInt("MEMORY_XX_CONVERSATION_MAX_BATCH_MESSAGES", 10);
     const events = await selectFlushEvents(conversationId, sessionId, maxBatch);
     if (events.length === 0) {
       sendJson(res, 200, { ok: true, flushed: false, reason: "no_unprocessed_events" });
@@ -602,7 +683,7 @@ export async function handleConversationFlush(req: IncomingMessage, res: ServerR
     const force = body.force !== false;
     if (!force) {
       const latest = Math.max(...events.map((event) => new Date(event.observed_at).getTime()).filter(Number.isFinite));
-      const debounceMs = readPositiveInt("MEMORY_V2_CONVERSATION_DEBOUNCE_MS", 60_000);
+      const debounceMs = readPositiveInt("MEMORY_XX_CONVERSATION_DEBOUNCE_MS", 60_000);
       const ready = hasExplicitMemoryIntent(events) ||
         hasSessionEnd(events) ||
         events.length >= maxBatch ||

@@ -34,7 +34,7 @@ function sendJson(res: ServerResponse, status: number, data: unknown): void { re
 function readStr(value: unknown, fallback = ""): string { return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback; }
 function isPlainObject(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function readJsonObject(value: unknown): JsonObject | null { return isPlainObject(value) ? value as JsonObject : null; }
-function internalApiToken(): string { return process.env.MEMORY_V2_ADMIN_TOKEN ?? process.env.MEMORY_V2_API_TOKEN ?? ""; }
+function internalApiToken(): string { return process.env.MEMORY_XX_ADMIN_TOKEN ?? process.env.MEMORY_XX_API_TOKEN ?? ""; }
 function readStringArray(value: unknown): string[] | undefined {
   return Array.isArray(value) ? value.map(String).map((item) => item.trim()).filter(Boolean) : undefined;
 }
@@ -197,20 +197,31 @@ function readTemporalScope(value: unknown): "current" | "all" | "historical" | u
   return ts === "current" || ts === "all" || ts === "historical" ? ts : undefined;
 }
 
-function buildHybridResults(
+export function buildHybridResults(
   memoryResults: Awaited<ReturnType<typeof executeRecallRequest>>["response"]["results"],
   knowledgeResults: readonly KnowledgeSearchResult[],
   memoryBudget: number,
   knowledgeBudget: number,
   hybridMode: "separate" | "rrf" | "model_rerank" = "rrf",
 ) {
-  const memoryItems = memoryResults.slice(0, memoryBudget).map((item) => ({
+  const memoryItems = memoryResults
+    .filter((item) =>
+      item.memory_type !== "knowledge" &&
+      item.source_type !== "knowledge" &&
+      !item.source_retrievers.includes("knowledge")
+    )
+    .slice(0, memoryBudget)
+    .map((item) => ({
     kind: "memory" as const,
     id: item.memory_id,
+    memory_id: item.memory_id,
     title: item.title,
     content: item.content,
     score: item.rerank_score ?? item.score,
-    source: item.scope,
+    source: {
+      type: "memory" as const,
+      scope: item.scope,
+    },
   }));
   const knowledgeItems = knowledgeResults.slice(0, knowledgeBudget).map((item) => ({
     kind: "knowledge" as const,
@@ -253,8 +264,8 @@ export async function handleRemember(req: IncomingMessage, res: ServerResponse, 
     const body = await parseJsonBody(req); const p = (isPlainObject(body) ? body : {}) as Record<string, unknown>;
     for (const f of ["user_id", "agent_id", "scope_id", "content"]) { if (!readStr(p[f])) { sendJson(res, 400, { error: `缺少必填字段：${f}` }); return; } }
     const agentId = readStr(p.agent_id);
-    const autoApprove = process.env.MEMORY_V2_TRUSTED_AGENT_AUTO_APPROVE === "true";
-    const trusted = (process.env.MEMORY_V2_TRUSTED_AGENTS ?? "").split(",").map(s => s.trim()).filter(Boolean);
+    const autoApprove = process.env.MEMORY_XX_TRUSTED_AGENT_AUTO_APPROVE === "true";
+    const trusted = (process.env.MEMORY_XX_TRUSTED_AGENTS ?? "").split(",").map(s => s.trim()).filter(Boolean);
     const isAuto = autoApprove && trusted.includes(agentId);
     const rawScopeType = readStr(p.scope_type, "project").toLowerCase();
     if (isRuntimeScopeName(rawScopeType)) {
@@ -311,6 +322,10 @@ export async function handleRecall(req: IncomingMessage, res: ServerResponse, au
       current_goal: readStr(p.current_goal) || undefined,
       task_id: readStr(p.task_id) || undefined,
       hybrid_mode: hybridMode,
+      include_knowledge: p.include_knowledge === true,
+      knowledge_collections: knowledgeCollections,
+      knowledge_repos: knowledgeRepos,
+      knowledge_budget: typeof p.knowledge_budget === "number" ? p.knowledge_budget : undefined,
     });
     if (p.include_knowledge === true) {
       const memoryBudget = typeof p.memory_budget === "number" ? Math.max(1, Math.trunc(p.memory_budget)) : response.results.length;
@@ -364,8 +379,8 @@ export async function handleReflect(req: IncomingMessage, res: ServerResponse, a
       if (!(await enforceScopePermission(req, res, authContext, "memory:read", globalScope()))) {
         return;
       }
-      const port = process.env.MEMORY_V2_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
-      const auditResp = await fetch("http://127.0.0.1:" + port + "/api/memory/v2/orchestrator/audit-memory-consistency", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ include_records: false }) });
+      const port = process.env.MEMORY_XX_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
+      const auditResp = await fetch("http://127.0.0.1:" + port + "/api/memory/xx/orchestrator/audit-memory-consistency", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ include_records: false }) });
       auditRespOk = auditResp.ok;
       audit = await auditResp.json().catch(() => ({ ok: false, error: "audit_invalid_json" })) as Record<string, unknown>;
     }
@@ -404,8 +419,8 @@ export async function handleForget(req: IncomingMessage, res: ServerResponse, au
     if (!(await enforceMemoryIdPermission(req, res, authContext, "memory:governance_revert", [memoryId]))) {
       return;
     }
-    const port = process.env.MEMORY_V2_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
-    const resp = await fetch("http://127.0.0.1:" + port + "/api/memory/v2/orchestrator/forget-memory", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ requestId: randomUUID(), actorId: readStr(p.agent_id, "unified-api"), memoryId, mode: readStr(p.mode) === "archive" ? "archive" : "tombstone" }) });
+    const port = process.env.MEMORY_XX_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
+    const resp = await fetch("http://127.0.0.1:" + port + "/api/memory/xx/orchestrator/forget-memory", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ requestId: randomUUID(), actorId: readStr(p.agent_id, "unified-api"), memoryId, mode: readStr(p.mode) === "archive" ? "archive" : "tombstone" }) });
     sendJson(res, resp.status, await resp.json());
   } catch (err) { sendJson(res, errorStatus(err), { error: (err as Error).message }); }
 }
@@ -417,8 +432,8 @@ export async function handleAudit(req: IncomingMessage, res: ServerResponse, aut
     if (!(await enforceScopePermission(req, res, authContext, "memory:read", globalScope()))) {
       return;
     }
-    const port = process.env.MEMORY_V2_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
-    const resp = await fetch("http://127.0.0.1:" + port + "/api/memory/v2/orchestrator/audit-memory-consistency", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ include_records: p.include_records === true }) });
+    const port = process.env.MEMORY_XX_WRAPPER_PORT ?? "5100"; const token = internalApiToken();
+    const resp = await fetch("http://127.0.0.1:" + port + "/api/memory/xx/orchestrator/audit-memory-consistency", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ include_records: p.include_records === true }) });
     sendJson(res, resp.status, await resp.json());
   } catch (err) { sendJson(res, errorStatus(err), { error: (err as Error).message }); }
 }
@@ -667,7 +682,7 @@ export async function handleFeedbackAlias(
       feedback_type: feedbackType,
       metadata: {
         ...(isPlainObject((body as Record<string, unknown> | null)?.metadata) ? (body as Record<string, unknown>).metadata as JsonObject : {}),
-        deprecated_alias: "/api/memory/v2/feedback/memories/:memory_id/:action",
+        deprecated_alias: "/api/memory/xx/feedback/memories/:memory_id/:action",
         alias_action: action,
       }
     } as Record<string, unknown>;

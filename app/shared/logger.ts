@@ -3,7 +3,7 @@ type LogLevel = keyof typeof LOG_LEVELS;
 
 const configuredLevel: LogLevel =
   (Object.keys(LOG_LEVELS) as LogLevel[]).find(
-    (l) => l === (process.env.MEMORY_V2_LOG_LEVEL ?? "").toLowerCase().trim()
+    (l) => l === (process.env.MEMORY_XX_LOG_LEVEL ?? "").toLowerCase().trim()
   ) ?? "info";
 
 export interface Logger {
@@ -26,7 +26,7 @@ export function createLogger(service: string, boundFields?: Record<string, unkno
     if (boundFields) Object.assign(entry, boundFields);
     if (fields) Object.assign(entry, fields);
     const line = JSON.stringify(entry) + "\n";
-    if ((process.env.MEMORY_V2_LOG_TARGET ?? "").toLowerCase().trim() === "stderr" || level === "error" || level === "warn") {
+    if ((process.env.MEMORY_XX_LOG_TARGET ?? "").toLowerCase().trim() === "stderr" || level === "error" || level === "warn") {
       process.stderr.write(line);
     } else {
       process.stdout.write(line);

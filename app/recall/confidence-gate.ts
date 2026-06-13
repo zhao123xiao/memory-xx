@@ -14,6 +14,12 @@ export interface RecallConfidenceGateResult {
   readonly audit: RecallConfidenceGatePayload;
 }
 
+export interface AdaptiveRetrievalConfidenceOverride {
+  readonly threshold: number;
+  readonly source: "governance_policy_override";
+  readonly override_id?: string;
+}
+
 const DEFAULT_GUARDED_QUERY_TYPES = new Set<QueryType>([
   QueryType.ExploratorySemantic,
   QueryType.TimelineHistory,
@@ -75,7 +81,8 @@ function hasProtectiveExactSignal(candidate: RetrieverCandidate): boolean {
   return candidate.why_matched.some((reason) =>
     reason.includes("exact_") ||
     reason.includes("source_path_match_bonus") ||
-    reason.includes("query_alias_bonus")
+    reason.includes("query_alias_bonus") ||
+    reason.startsWith("temporal_soft_penalty:")
   );
 }
 
@@ -88,6 +95,30 @@ function findMarginCutoff(candidates: readonly RetrieverCandidate[], minResults:
     }
   }
   return undefined;
+}
+
+function logicalConflictKey(candidate: RetrieverCandidate): string {
+  const title = candidate.record.title?.replace(/\s+/g, " ").trim().toLowerCase();
+  if (title) {
+    return `title:${title}`;
+  }
+  return `content:${candidate.record.content.replace(/\s+/g, " ").trim().toLowerCase().slice(0, 160)}`;
+}
+
+function preserveConflictSiblings(
+  candidates: readonly RetrieverCandidate[],
+  cutoff: number | undefined
+): RetrieverCandidate[] {
+  if (cutoff === undefined) {
+    return [...candidates];
+  }
+  const kept = candidates.slice(0, cutoff);
+  const keptKeys = new Set(kept.map(logicalConflictKey));
+  return candidates.filter((candidate, index) =>
+    index < cutoff ||
+    keptKeys.has(logicalConflictKey(candidate)) ||
+    candidate.why_matched.some((reason) => reason.startsWith("temporal_soft_penalty:"))
+  );
 }
 
 function asksForSensitiveValue(query: string): boolean {
@@ -113,12 +144,20 @@ export function applyRecallConfidenceGate(
   candidates: readonly RetrieverCandidate[],
   constraints: QueryConstraints,
   rerankOutcome: RerankOutcomeLike,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  adaptiveOverride?: AdaptiveRetrievalConfidenceOverride
 ): RecallConfidenceGateResult {
-  if (envFlagDisabled(env, "MEMORY_V2_RECALL_LOW_CONFIDENCE_GUARD")) {
+  if (envFlagDisabled(env, "MEMORY_XX_RECALL_LOW_CONFIDENCE_GUARD")) {
     return {
       candidates: [...candidates],
       audit: { applied: false, reason: "disabled" }
+    };
+  }
+
+  if ((constraints.memory_ids?.length ?? 0) > 0 && candidates.some(hasProtectiveExactSignal)) {
+    return {
+      candidates: [...candidates],
+      audit: { applied: false, reason: "explicit_memory_id_lookup" }
     };
   }
 
@@ -141,11 +180,21 @@ export function applyRecallConfidenceGate(
   }
 
   const topScore = topModelScore(candidates);
-  const threshold = readFraction(
+  const configuredThreshold = readFraction(
     env,
-    "MEMORY_V2_RECALL_ABSOLUTE_MIN_SCORE",
+    "MEMORY_XX_RECALL_ABSOLUTE_MIN_SCORE",
     0.20
   );
+  const threshold = adaptiveOverride
+    ? Math.max(0, Math.min(1, adaptiveOverride.threshold))
+    : configuredThreshold;
+  const adaptiveOverrideAudit = adaptiveOverride
+    ? {
+        applied: true,
+        source: adaptiveOverride.source,
+        override_id: adaptiveOverride.override_id,
+      } as const
+    : undefined;
 
   const filtered = candidates.filter((candidate) =>
     candidate.score >= threshold || hasProtectiveExactSignal(candidate)
@@ -164,6 +213,7 @@ export function applyRecallConfidenceGate(
           reason: "low_confidence_singleton",
           top_model_score: topScore,
           threshold,
+          ...(adaptiveOverrideAudit ? { adaptive_override: adaptiveOverrideAudit } : {}),
           candidate_count: candidates.length,
           absolute_filtered: absoluteFiltered,
           min_result_policy: minResultPolicy,
@@ -179,6 +229,7 @@ export function applyRecallConfidenceGate(
         reason: "absolute_low_score",
         top_model_score: topScore,
         threshold,
+        ...(adaptiveOverrideAudit ? { adaptive_override: adaptiveOverrideAudit } : {}),
         candidate_count: candidates.length,
         absolute_filtered: absoluteFiltered,
         min_result_policy: minResultPolicy,
@@ -189,7 +240,7 @@ export function applyRecallConfidenceGate(
 
   const minResults = strictNull ? 0 : 1;
   const cutoff = findMarginCutoff(filtered, minResults);
-  const marginFiltered = cutoff === undefined ? filtered : filtered.slice(0, cutoff);
+  const marginFiltered = preserveConflictSiblings(filtered, cutoff);
 
   return {
     candidates: marginFiltered,
@@ -198,6 +249,7 @@ export function applyRecallConfidenceGate(
       reason: absoluteFiltered > 0 || cutoff !== undefined ? "confidence_filtered" : "confidence_passed",
       top_model_score: topScore,
       threshold,
+      ...(adaptiveOverrideAudit ? { adaptive_override: adaptiveOverrideAudit } : {}),
       candidate_count: candidates.length,
       absolute_filtered: absoluteFiltered,
       margin_cutoff_rank: cutoff,

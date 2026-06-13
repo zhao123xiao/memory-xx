@@ -29,7 +29,7 @@ export interface McpToolInvocationStore {
 }
 
 function runtimeDir(): string {
-  return process.env.MEMORY_V2_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
+  return process.env.MEMORY_XX_RUNTIME_DIR?.trim() || join(process.cwd(), ".runtime");
 }
 
 export function mcpToolInvocationsPath(): string {

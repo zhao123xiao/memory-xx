@@ -58,7 +58,7 @@ function loadEnvFile(filePath: string): Record<string, string> {
 }
 
 function mergedEnv(overrides: Record<string, string>): NodeJS.ProcessEnv {
-  const fileEnv = loadEnvFile(process.env.MEMORY_V2_ENV_PATH || "<project-root>/.env");
+  const fileEnv = loadEnvFile(process.env.MEMORY_XX_ENV_PATH || "<project-root>/.env");
   return { ...process.env, ...fileEnv, ...overrides };
 }
 

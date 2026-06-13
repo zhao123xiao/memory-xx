@@ -10,8 +10,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      MEMORY_V2_REDIS_URL: redis://localhost:6379/0
-      MEMORY_V2_API_TOKEN: test-token
+      MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+      MEMORY_XX_API_TOKEN: test-token
       OPENAI_API_KEY: test-key
     services:
       postgres:
@@ -36,6 +36,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      qdrant:
+        image: qdrant/qdrant:v1.12.6
+        ports:
+          - 6333:6333
 
     steps:
       - uses: actions/checkout@v4
@@ -47,30 +51,86 @@ jobs:
 
       - run: npm ci
 
+      - name: Check memory-v2 parity when source checkout is present
+        run: |
+          if [ -d ../memory-v2 ]; then
+            npm run memory:parity-audit -- --fail-on-missing --source-root ../memory-v2
+          else
+            echo "Skipping memory-v2 parity audit; ../memory-v2 is not available in this open-source CI workspace."
+          fi
+
       - run: npm run typecheck
 
       - run: npm run build
 
+      - run: npm run migrate
+        env:
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: test-key
+          MEMORY_XX_LOG_LEVEL: error
+
       - run: npm test
-
-      - run: npm run test:gates
         env:
-          MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-          MEMORY_V2_LOG_LEVEL: error
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: test-key
+          MEMORY_XX_LOG_LEVEL: error
 
-      - run: npm run test:integration
+      - name: Start L5 production E2E runtime
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS "http://localhost:6333/healthz" > /tmp/qdrant-health.json; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS -X PUT "http://localhost:6333/collections/memory-xx-ci" \
+            -H "content-type: application/json" \
+            -d '{"vectors":{"size":8,"distance":"Cosine"}}'
+          nohup npm run start > /tmp/memory-xx-wrapper.log 2>&1 &
+          nohup npm run run:qdrant-projector-worker > /tmp/memory-xx-projector.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS -H "Authorization: Bearer ci-test-token" http://localhost:5100/health > /tmp/memory-xx-health.json; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/memory-xx-wrapper.log
+          cat /tmp/memory-xx-projector.log
+          exit 1
         env:
-          MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-          MEMORY_V2_LOG_LEVEL: error
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+          MEMORY_XX_API_TOKEN: ci-test-token
+          MEMORY_XX_ADMIN_TOKEN: ci-test-token
+          MEMORY_XX_QDRANT_BASE_URL: http://localhost:6333
+          MEMORY_XX_QDRANT_COLLECTION: memory-xx-ci
+          EMBEDDING_DIMS: "8"
+          OPENAI_API_KEY: test-key
+          MEMORY_XX_LOG_LEVEL: error
+          MEMORY_XX_QDRANT_PROJECTOR_INTERVAL_MS: "1000"
+
+      - run: npm run test:layers -- --layer L0,L1,L2,L4,L5
+        env:
+          MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+          MEMORY_XX_REDIS_URL: redis://localhost:6379/0
+          MEMORY_XX_API_TOKEN: ci-test-token
+          MEMORY_XX_ADMIN_TOKEN: ci-test-token
+          MEMORY_XX_QDRANT_BASE_URL: http://localhost:6333
+          MEMORY_XX_QDRANT_COLLECTION: memory-xx-ci
+          EMBEDDING_DIMS: "8"
+          OPENAI_API_KEY: test-key
+          MEMORY_XX_LOG_LEVEL: error
 
   test-postgres:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     env:
-      MEMORY_V2_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
-      MEMORY_V2_API_TOKEN: test-token
+      MEMORY_XX_DATABASE_URL: postgres://postgres:postgres@localhost:5432/memory_xx_test
+      MEMORY_XX_API_TOKEN: test-token
       OPENAI_API_KEY: test-key
-      MEMORY_V2_LOG_LEVEL: error
+      MEMORY_XX_LOG_LEVEL: error
     services:
       postgres:
         image: pgvector/pgvector:pg16

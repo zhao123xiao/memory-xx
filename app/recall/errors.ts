@@ -3,6 +3,7 @@ export enum RecallErrorCode {
   ScopeForbidden = "scope_forbidden",
   InvalidFilterMode = "invalid_filter_mode",
   QueryEmpty = "query_empty",
+  QueryTooLong = "query_too_long",
   BackendTimeout = "backend_timeout",
   BackendUnavailable = "backend_unavailable"
 }
@@ -12,6 +13,7 @@ const STATUS_BY_CODE: Record<RecallErrorCode, number> = {
   [RecallErrorCode.ScopeForbidden]: 403,
   [RecallErrorCode.InvalidFilterMode]: 400,
   [RecallErrorCode.QueryEmpty]: 400,
+  [RecallErrorCode.QueryTooLong]: 400,
   [RecallErrorCode.BackendTimeout]: 504,
   [RecallErrorCode.BackendUnavailable]: 503
 };

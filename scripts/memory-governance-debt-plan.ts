@@ -1,7 +1,8 @@
 import { Pool } from "pg";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
+import { buildGraphDebtBackfillScopePredicate } from "../app/governance/graph-debt-backfill-policy";
 
 function readEnvFile(filePath: string): Record<string, string> {
   if (!existsSync(filePath)) return {};
@@ -17,7 +18,7 @@ function readEnvFile(filePath: string): Record<string, string> {
 }
 
 function loadScriptEnv(): NodeJS.ProcessEnv {
-  const fileEnv = readEnvFile(process.env.MEMORY_V2_ENV_PATH || join(process.cwd(), ".env"));
+  const fileEnv = readEnvFile(process.env.MEMORY_XX_ENV_PATH || join(process.cwd(), ".env"));
   return { ...fileEnv, ...process.env };
 }
 
@@ -303,25 +304,40 @@ async function applyBackfill(pool: Pool, schema: string): Promise<Record<string,
   }
 }
 
-async function applyConservativeBackfill(pool: Pool, schema: string, limit: number): Promise<Record<string, number>> {
+async function applyConservativeBackfill(
+  pool: Pool,
+  schema: string,
+  limit: number,
+  options: { readonly productionOnly: boolean },
+): Promise<Record<string, number>> {
   const client = await pool.connect();
+  const requiredProvenancePredicate = buildGraphDebtBackfillScopePredicate("mr", {
+    productionOnly: options.productionOnly,
+    relationTable: `${schema}.memory_relations`,
+    excludeRelationDebt: false,
+  });
+  const graphStructurePredicate = buildGraphDebtBackfillScopePredicate("mr", {
+    productionOnly: options.productionOnly,
+    relationTable: `${schema}.memory_relations`,
+  });
   try {
     await client.query("BEGIN");
 
     const requiredProvenance = await client.query(`
       WITH eligible AS (
-        SELECT id
-        FROM ${schema}.memory_records
-        WHERE is_current IS TRUE
-          AND lifecycle_status = 'approved'
-          AND review_state IN ('approved', 'not_required')
+        SELECT mr.id
+        FROM ${schema}.memory_records mr
+        WHERE mr.is_current IS TRUE
+          AND mr.lifecycle_status = 'approved'
+          AND mr.review_state IN ('approved', 'not_required')
+          AND ${requiredProvenancePredicate}
           AND (
-            source_kind IS NULL OR source_kind = ''
-            OR source_ref IS NULL OR source_ref = ''
-            OR dedupe_key IS NULL OR dedupe_key = ''
-            OR signature_hash IS NULL OR signature_hash = ''
+            mr.source_kind IS NULL OR mr.source_kind = ''
+            OR mr.source_ref IS NULL OR mr.source_ref = ''
+            OR mr.dedupe_key IS NULL OR mr.dedupe_key = ''
+            OR mr.signature_hash IS NULL OR mr.signature_hash = ''
           )
-        ORDER BY updated_at DESC
+        ORDER BY mr.updated_at DESC
         LIMIT $1
       )
       UPDATE ${schema}.memory_records mr
@@ -376,33 +392,34 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
     const metadataSource = await client.query(`
       WITH eligible AS (
         SELECT
-          id,
+          mr.id,
           CASE
-            WHEN COALESCE(NULLIF(source_kind, ''), '') <> '' AND COALESCE(NULLIF(source_ref, ''), '') <> ''
-              THEN source_kind || ':' || source_ref
-            WHEN COALESCE(NULLIF(source_ref, ''), '') <> ''
-              THEN source_ref
-            WHEN COALESCE(NULLIF(source_kind, ''), '') <> ''
-              THEN source_kind
-            WHEN COALESCE(NULLIF(metadata->>'canonical_source_path', ''), '') <> ''
-              THEN metadata->>'canonical_source_path'
-            WHEN COALESCE(NULLIF(metadata->>'source_path', ''), '') <> ''
-              THEN metadata->>'source_path'
-            WHEN COALESCE(NULLIF(metadata->>'source_ref', ''), '') <> ''
-              THEN metadata->>'source_ref'
-            WHEN COALESCE(NULLIF(metadata->>'uri', ''), '') <> ''
-              THEN metadata->>'uri'
-            WHEN COALESCE(NULLIF(metadata->>'source_type', ''), '') <> ''
-              THEN metadata->>'source_type'
-            WHEN COALESCE(NULLIF(created_by, ''), '') <> ''
-              THEN 'created_by:' || created_by
+            WHEN COALESCE(NULLIF(mr.source_kind, ''), '') <> '' AND COALESCE(NULLIF(mr.source_ref, ''), '') <> ''
+              THEN mr.source_kind || ':' || mr.source_ref
+            WHEN COALESCE(NULLIF(mr.source_ref, ''), '') <> ''
+              THEN mr.source_ref
+            WHEN COALESCE(NULLIF(mr.source_kind, ''), '') <> ''
+              THEN mr.source_kind
+            WHEN COALESCE(NULLIF(mr.metadata->>'canonical_source_path', ''), '') <> ''
+              THEN mr.metadata->>'canonical_source_path'
+            WHEN COALESCE(NULLIF(mr.metadata->>'source_path', ''), '') <> ''
+              THEN mr.metadata->>'source_path'
+            WHEN COALESCE(NULLIF(mr.metadata->>'source_ref', ''), '') <> ''
+              THEN mr.metadata->>'source_ref'
+            WHEN COALESCE(NULLIF(mr.metadata->>'uri', ''), '') <> ''
+              THEN mr.metadata->>'uri'
+            WHEN COALESCE(NULLIF(mr.metadata->>'source_type', ''), '') <> ''
+              THEN mr.metadata->>'source_type'
+            WHEN COALESCE(NULLIF(mr.created_by, ''), '') <> ''
+              THEN 'created_by:' || mr.created_by
             ELSE NULL
           END AS source_value
-        FROM ${schema}.memory_records
-        WHERE is_current IS TRUE
-          AND lifecycle_status = 'approved'
-          AND (metadata->>'source' IS NULL OR metadata->>'source' = '')
-        ORDER BY updated_at DESC
+        FROM ${schema}.memory_records mr
+        WHERE mr.is_current IS TRUE
+          AND mr.lifecycle_status = 'approved'
+          AND ${requiredProvenancePredicate}
+          AND (mr.metadata->>'source' IS NULL OR mr.metadata->>'source' = '')
+        ORDER BY mr.updated_at DESC
         LIMIT $1
       )
       UPDATE ${schema}.memory_records mr
@@ -430,6 +447,7 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
         FROM ${schema}.memory_records mr
         WHERE mr.is_current IS TRUE
           AND mr.lifecycle_status = 'approved'
+          AND ${graphStructurePredicate}
           AND COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM ${schema}.memory_entity_links mel WHERE mel.memory_id = mr.id
@@ -463,6 +481,7 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
         FROM ${schema}.memory_records mr
         WHERE mr.is_current IS TRUE
           AND mr.lifecycle_status = 'approved'
+          AND ${graphStructurePredicate}
           AND COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM ${schema}.memory_entity_links mel WHERE mel.memory_id = mr.id
@@ -489,19 +508,20 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
     const episodeInsert = await client.query(`
       WITH eligible AS (
         SELECT
-          id,
-          scope_type,
-          scope_id,
-          COALESCE(NULLIF(metadata->>'source', ''), NULLIF(source_ref, ''), NULLIF(source_kind, '')) AS source_key,
-          date_trunc('day', COALESCE(observed_at, created_at)) AS day_bucket,
-          created_at,
-          updated_at
-        FROM ${schema}.memory_records
-        WHERE episode_id IS NULL
-          AND is_current IS TRUE
-          AND lifecycle_status = 'approved'
-          AND COALESCE(NULLIF(metadata->>'source', ''), NULLIF(source_ref, ''), NULLIF(source_kind, '')) IS NOT NULL
-        ORDER BY updated_at DESC
+          mr.id,
+          mr.scope_type,
+          mr.scope_id,
+          COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) AS source_key,
+          date_trunc('day', COALESCE(mr.observed_at, mr.created_at)) AS day_bucket,
+          mr.created_at,
+          mr.updated_at
+        FROM ${schema}.memory_records mr
+        WHERE mr.episode_id IS NULL
+              AND ${graphStructurePredicate}
+          AND mr.is_current IS TRUE
+          AND mr.lifecycle_status = 'approved'
+          AND COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) IS NOT NULL
+        ORDER BY mr.updated_at DESC
         LIMIT $1
       ),
       grouped AS (
@@ -542,17 +562,18 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
     const episodeLink = await client.query(`
       WITH eligible AS (
         SELECT
-          id,
-          scope_type,
-          scope_id,
-          COALESCE(NULLIF(metadata->>'source', ''), NULLIF(source_ref, ''), NULLIF(source_kind, '')) AS source_key,
-          date_trunc('day', COALESCE(observed_at, created_at)) AS day_bucket
-        FROM ${schema}.memory_records
-        WHERE episode_id IS NULL
-          AND is_current IS TRUE
-          AND lifecycle_status = 'approved'
-          AND COALESCE(NULLIF(metadata->>'source', ''), NULLIF(source_ref, ''), NULLIF(source_kind, '')) IS NOT NULL
-        ORDER BY updated_at DESC
+          mr.id,
+          mr.scope_type,
+          mr.scope_id,
+          COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) AS source_key,
+          date_trunc('day', COALESCE(mr.observed_at, mr.created_at)) AS day_bucket
+        FROM ${schema}.memory_records mr
+        WHERE mr.episode_id IS NULL
+              AND ${graphStructurePredicate}
+          AND mr.is_current IS TRUE
+          AND mr.lifecycle_status = 'approved'
+          AND COALESCE(NULLIF(mr.metadata->>'source', ''), NULLIF(mr.source_ref, ''), NULLIF(mr.source_kind, '')) IS NOT NULL
+        ORDER BY mr.updated_at DESC
         LIMIT $1
       ),
       keyed AS (
@@ -589,26 +610,168 @@ async function applyConservativeBackfill(pool: Pool, schema: string, limit: numb
   }
 }
 
+async function applyRequiredProvenanceBackfill(
+  pool: Pool,
+  schema: string,
+  limit: number,
+  options: { readonly productionOnly: boolean },
+): Promise<Record<string, number>> {
+  const client = await pool.connect();
+  const productionPredicate = buildGraphDebtBackfillScopePredicate("mr", {
+    productionOnly: options.productionOnly,
+    relationTable: `${schema}.memory_relations`,
+    excludeRelationDebt: false,
+  });
+  try {
+    await client.query("BEGIN");
+    const requiredProvenance = await client.query(`
+      WITH eligible AS (
+        SELECT mr.id
+        FROM ${schema}.memory_records mr
+        WHERE mr.is_current IS TRUE
+          AND mr.lifecycle_status = 'approved'
+          AND mr.review_state IN ('approved', 'not_required')
+          AND ${productionPredicate}
+          AND (
+            mr.source_kind IS NULL OR mr.source_kind = ''
+            OR mr.source_ref IS NULL OR mr.source_ref = ''
+            OR mr.dedupe_key IS NULL OR mr.dedupe_key = ''
+            OR mr.signature_hash IS NULL OR mr.signature_hash = ''
+          )
+        ORDER BY mr.updated_at DESC
+        LIMIT $1
+      )
+      UPDATE ${schema}.memory_records mr
+      SET source_kind = COALESCE(
+            NULLIF(mr.source_kind, ''),
+            left(COALESCE(
+              NULLIF(mr.metadata->>'source_type', ''),
+              NULLIF(mr.metadata->>'source', ''),
+              NULLIF(mr.created_by, ''),
+              'required_provenance_backfill'
+            ), 120)
+          ),
+          source_ref = COALESCE(
+            NULLIF(mr.source_ref, ''),
+            CASE
+              WHEN COALESCE(NULLIF(mr.request_id, ''), '') <> '' THEN 'request:' || mr.request_id
+              ELSE 'memory:' || mr.id
+            END
+          ),
+          dedupe_key = COALESCE(
+            NULLIF(mr.dedupe_key, ''),
+            md5(concat_ws('||',
+              COALESCE(mr.scope_type, ''),
+              COALESCE(mr.scope_id, ''),
+              COALESCE(mr.memory_type, ''),
+              regexp_replace(lower(trim(COALESCE(mr.title, ''))), '\\s+', ' ', 'g'),
+              regexp_replace(lower(trim(COALESCE(mr.content, ''))), '\\s+', ' ', 'g')
+            ))
+          ),
+          signature_hash = COALESCE(
+            NULLIF(mr.signature_hash, ''),
+            md5(concat_ws('||',
+              COALESCE(mr.scope_type, ''),
+              COALESCE(mr.scope_id, ''),
+              COALESCE(mr.memory_type, ''),
+              regexp_replace(lower(trim(COALESCE(mr.title, ''))), '\\s+', ' ', 'g'),
+              regexp_replace(lower(trim(COALESCE(mr.content, ''))), '\\s+', ' ', 'g'),
+              COALESCE(NULLIF(mr.dedupe_key, ''), '')
+            ))
+          ),
+          metadata = COALESCE(mr.metadata, '{}'::jsonb) || jsonb_build_object(
+            'provenance_backfilled_at', now(),
+            'provenance_backfilled_by', 'memory:debt-plan:required-provenance',
+            'provenance_backfill_reason', 'l14_required_fields_missing'
+          ),
+          updated_at = now(),
+          updated_by = 'memory:debt-plan:required-provenance'
+      FROM eligible
+      WHERE mr.id = eligible.id
+    `, [limit]);
+    await client.query("COMMIT");
+    return {
+      required_provenance_backfilled: requiredProvenance.rowCount ?? 0,
+      metadata_source_backfilled: 0,
+      entities_created: 0,
+      entity_links_created: 0,
+      episodes_created: 0,
+      episode_links_created: 0,
+      support_relations_created: 0,
+      self_relations_created: 0,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function main(): Promise<void> {
-  const config = loadMemoryV2PostgresConfig(loadScriptEnv());
+  const config = loadMemoryXXPostgresConfig(loadScriptEnv());
   const schema = quoteIdent(config.schema);
   const apply = parseFlag("--apply");
   const applyConservative = parseFlag("--apply-conservative");
+  const applyRequiredProvenance = parseFlag("--apply-required-provenance");
+  const includeTestOnly = parseFlag("--include-test-only");
   const limit = parseIntArg("--limit", 50);
   const pool = new Pool(createPostgresPoolConfig(config));
-  try {
-    const applyMetrics = applyConservative
-      ? await applyConservativeBackfill(pool, schema, limit)
-      : apply
-        ? await applyBackfill(pool, schema)
-        : undefined;
+  const provenanceReportPredicate = buildGraphDebtBackfillScopePredicate("mr", {
+    productionOnly: !includeTestOnly,
+    relationTable: `${schema}.memory_relations`,
+    excludeRelationDebt: false,
+  });
+  const graphReportPredicate = buildGraphDebtBackfillScopePredicate("mr", {
+    productionOnly: !includeTestOnly,
+    relationTable: `${schema}.memory_relations`,
+      });
+      try {
+        const applyMetrics = applyRequiredProvenance
+      ? await applyRequiredProvenanceBackfill(pool, schema, limit, { productionOnly: !includeTestOnly })
+      : applyConservative
+          ? await applyConservativeBackfill(pool, schema, limit, { productionOnly: !includeTestOnly })
+          : apply
+            ? await applyBackfill(pool, schema)
+            : undefined;
+    const requiredProvenance = await pool.query(`
+      SELECT
+        mr.id,
+        mr.scope_type,
+        mr.scope_id,
+        mr.title,
+        mr.source_kind,
+        mr.source_ref,
+        (mr.dedupe_key IS NULL OR mr.dedupe_key = '') AS missing_dedupe_key,
+        (mr.signature_hash IS NULL OR mr.signature_hash = '') AS missing_signature_hash,
+        mr.created_by,
+        mr.agent_id,
+        mr.request_id,
+        mr.metadata->>'source' AS metadata_source,
+        mr.metadata->>'source_type' AS metadata_source_type
+      FROM ${schema}.memory_records mr
+      WHERE mr.is_current IS TRUE
+        AND mr.lifecycle_status = 'approved'
+        AND mr.review_state IN ('approved', 'not_required')
+        AND ${provenanceReportPredicate}
+        AND (
+          mr.source_kind IS NULL OR mr.source_kind = ''
+          OR mr.source_ref IS NULL OR mr.source_ref = ''
+          OR mr.dedupe_key IS NULL OR mr.dedupe_key = ''
+          OR mr.signature_hash IS NULL OR mr.signature_hash = ''
+        )
+      ORDER BY mr.updated_at DESC
+      LIMIT $1
+    `, [limit]);
+
     const missingMetadata = await pool.query(`
-      SELECT id, scope_type, scope_id, title, source_kind, source_ref, metadata->>'source' AS metadata_source
-      FROM ${schema}.memory_records
-      WHERE is_current IS TRUE
-        AND lifecycle_status = 'approved'
-        AND (metadata->>'source' IS NULL OR metadata->>'source' = '')
-      ORDER BY updated_at DESC
+      SELECT mr.id, mr.scope_type, mr.scope_id, mr.title, mr.source_kind, mr.source_ref, mr.metadata->>'source' AS metadata_source
+      FROM ${schema}.memory_records mr
+      WHERE mr.is_current IS TRUE
+        AND mr.lifecycle_status = 'approved'
+        AND ${provenanceReportPredicate}
+        AND (mr.metadata->>'source' IS NULL OR mr.metadata->>'source' = '')
+      ORDER BY mr.updated_at DESC
       LIMIT $1
     `, [limit]);
 
@@ -624,6 +787,7 @@ async function main(): Promise<void> {
       FROM ${schema}.memory_records mr
       WHERE mr.is_current IS TRUE
         AND mr.lifecycle_status = 'approved'
+        AND ${graphReportPredicate}
         AND (
           mr.episode_id IS NULL
           OR NOT EXISTS (SELECT 1 FROM ${schema}.memory_entity_links mel WHERE mel.memory_id = mr.id)
@@ -635,21 +799,28 @@ async function main(): Promise<void> {
 
     process.stdout.write(JSON.stringify({
       ok: true,
-      mode: applyConservative ? "applied_conservative" : apply ? "applied" : "report_only",
+      mode: applyRequiredProvenance ? "applied_required_provenance" : applyConservative ? "applied_conservative" : apply ? "applied" : "report_only",
       checked_at: new Date().toISOString(),
       schema: config.schema,
       limit,
       apply_metrics: applyMetrics,
       actions: [
-        applyConservative
-          ? "Conservative backfill applied from clear provenance only; no relation was auto-created."
+        applyRequiredProvenance
+          ? includeTestOnly
+            ? "Required provenance backfill applied, including test-only lanes by explicit request; no content, relation, episode, or entity mutation was performed."
+            : "Required provenance backfill applied for production lanes only; no content, relation, episode, or entity mutation was performed."
+          : applyConservative
+          ? includeTestOnly
+            ? "Conservative backfill applied from clear provenance, including test-only lanes by explicit request; no relation was auto-created."
+            : "Conservative backfill applied from clear provenance for production lanes only; no relation was auto-created."
           : apply
             ? "Legacy broad backfill applied; rerun memory:doctor and graph recall gates."
             : "Review missing_metadata_source candidates and backfill metadata.source from source_kind/source_ref only when provenance is clear.",
-        applyConservative || apply
+        applyRequiredProvenance || applyConservative || apply
           ? "Backfill did not delete, archive, tombstone, or rewrite memory content."
           : "Use --apply-conservative for source/episode/entity-link backfill only; relation debt remains review-only.",
-      ],
+          ],
+      required_provenance: requiredProvenance.rows,
       missing_metadata_source: missingMetadata.rows,
       graph_orphans: graphOrphans.rows,
     }, null, 2) + "\n");

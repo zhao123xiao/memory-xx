@@ -114,13 +114,13 @@ test("qdrant projector daemon throttles repeated idle logs", async () => {
 
 test("qdrant projector daemon runtime config reads env overrides", () => {
   const config = loadQdrantProjectorWorkerRuntimeConfig({
-    MEMORY_V2_QDRANT_PROJECTOR_EXPORTER_NAME: "custom-exporter",
-    MEMORY_V2_QDRANT_PROJECTOR_BATCH_SIZE: "8",
-    MEMORY_V2_QDRANT_PROJECTOR_MAX_ATTEMPTS: "9",
-    MEMORY_V2_QDRANT_PROJECTOR_RETRY_DELAY_MS: "7000",
-    MEMORY_V2_QDRANT_PROJECTOR_INTERVAL_MS: "1500",
-    MEMORY_V2_QDRANT_PROJECTOR_IDLE_LOG_EVERY: "4",
-    MEMORY_V2_QDRANT_PROJECTOR_ONCE: "true"
+    MEMORY_XX_QDRANT_PROJECTOR_EXPORTER_NAME: "custom-exporter",
+    MEMORY_XX_QDRANT_PROJECTOR_BATCH_SIZE: "8",
+    MEMORY_XX_QDRANT_PROJECTOR_MAX_ATTEMPTS: "9",
+    MEMORY_XX_QDRANT_PROJECTOR_RETRY_DELAY_MS: "7000",
+    MEMORY_XX_QDRANT_PROJECTOR_INTERVAL_MS: "1500",
+    MEMORY_XX_QDRANT_PROJECTOR_IDLE_LOG_EVERY: "4",
+    MEMORY_XX_QDRANT_PROJECTOR_ONCE: "true"
   });
 
   assert.deepEqual(config, {

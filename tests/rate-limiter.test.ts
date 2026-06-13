@@ -84,8 +84,8 @@ describe("RateLimiter", () => {
 
   it("loadRateLimiterConfig parses env vars", () => {
     const config = loadRateLimiterConfig({
-      MEMORY_V2_RATE_LIMIT_MAX: "100",
-      MEMORY_V2_RATE_LIMIT_WINDOW_MS: "120000",
+      MEMORY_XX_RATE_LIMIT_MAX: "100",
+      MEMORY_XX_RATE_LIMIT_WINDOW_MS: "120000",
     });
     assert.strictEqual(config.maxRequests, 100);
     assert.strictEqual(config.windowMs, 120_000);

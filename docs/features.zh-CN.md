@@ -19,26 +19,41 @@
 
 ## 成熟度
 
-| 功能 | 状态 | 说明 |
+> 详细说明见 [功能成熟度](feature-maturity.zh-CN.md)
+
+本项目采用四级成熟度体系：
+
+| 等级 | 标识 | 说明 |
 | --- | --- | --- |
-| PostgreSQL 写入账本 | Stable | 核心事实源，配套 migration 和测试。 |
-| Embedding generation | Stable | 最小可用链路的必需项。 |
-| Review lifecycle | Stable | approve / reject / archive / supersede / tombstone 已实现。 |
-| Qdrant projection | Stable | 通过 outbox worker 和 reconcile 保持投影一致。 |
-| Recall API | Stable | 支持 Qdrant primary 与 PostgreSQL fallback。 |
-| Scope / trusted agent | Stable | 支持 agent token、scope grant 和 strict mode。 |
-| MCP / Agent tools | Beta | 支持 scoped recall/write/review/feedback。 |
-| Policy engine | Beta | 支持 reject/quarantine/pending/approve。 |
-| Auto approval | Beta | 支持 production guard、candidate-only、scope bypass 和 runtime controls。 |
-| Memory knowledge graph | Beta | 支持 episodes、entities、relations、graph report、graph health 和控制面板图谱视图。 |
-| Code Graph | Beta | 支持扫描代码仓库并生成项目级代码图谱。 |
-| Conversation ingest | Beta | Codex / Claude Code / OpenClaw session tail 已实现，外部环境需要自行配置路径。 |
-| Knowledge ingest | Beta | 支持知识库导入和检索，文档整理策略仍在完善。 |
-| Control panel | Beta | 支持运行态总览、服务开关、热更新设置、审批控制、图谱、平台预检和安全审计。 |
-| Temporal governance | Beta | 支持 memory layer、fact status、memory strength、episodes、entities、relations、decay 和 consolidation。 |
-| 7d canary / production gate | Experimental | 适合受控试运行，不应作为默认生产开关。 |
-| Auto update / supersede apply | Experimental | 真实生产 apply 默认不建议开启。 |
-| Graph recall / memory dreaming | Experimental | 已有代码和脚本，但公开用户应谨慎启用。 |
+| **Stable** | 🟢 稳定 | 默认可用，可直接在生产使用 |
+| **Beta** | 🟡 测试 | 可用但需人工复核，用于团队内部试运行 |
+| **Experimental** | 🟠 实验 | 报告/候选为主，不建议生产自动化依赖 |
+| **Dangerous** | 🔴 高风险 | 会批量修改数据，必须先 dry-run 再 apply |
+
+| 功能 | 成熟度 | 说明 |
+| --- | --- | --- |
+| PostgreSQL 写入账本 | 🟢 Stable | 核心事实源，配套 migration 和测试 |
+| Embedding generation | 🟢 Stable | 最小可用链路的必需项 |
+| Review lifecycle | 🟢 Stable | approve / reject / archive / supersede / tombstone |
+| Qdrant projection | 🟢 Stable | 通过 outbox worker 保持投影一致 |
+| Recall API | 🟢 Stable | 支持 Qdrant primary 与 PostgreSQL fallback |
+| Scope / trusted agent | 🟢 Stable | 支持 agent token、scope grant 和 strict mode |
+| MCP / Agent tools | 🟢 Stable | 支持 scoped recall/write/review/feedback |
+| Qdrant audit/reconcile (只读) | 🟢 Stable | collection audit、alias 管理 |
+| Policy engine | 🟡 Beta | 支持 reject/quarantine/pending/approve |
+| Auto approval (scoped) | 🟡 Beta | 支持 production guard、scope enablement |
+| Auto update (dry-run) | 🟡 Beta | 仅 dry-run 模式，apply 为 Dangerous |
+| Memory knowledge graph | 🟡 Beta | episodes、entities、relations、graph health |
+| Code Graph | 🟠 Experimental | 项目隔离测试，项目级代码图谱 |
+| Conversation ingest | 🟡 Beta | Codex / Claude Code / OpenClaw session tail |
+| Knowledge ingest | 🟡 Beta | 知识库导入和检索 |
+| Control panel | 🟡 Beta | 本地运维工具，建议仅本地访问 |
+| Temporal governance | 🟠 Experimental | 时间策略、衰减、整合候选 |
+| Graph recall / dreaming | 🟠 Experimental | 图谱召回、记忆梦境 |
+| 7d canary / production gate | 🟠 Experimental | 适合受控试运行 |
+| Auto update apply | 🔴 Dangerous | 真实 apply 修改记忆状态，需先 dry-run |
+| Qdrant reconcile apply | 🔴 Dangerous | 向量对账 apply，需先 dry-run |
+| Bulk tombstone | 🔴 Dangerous | 批量墓碑删除，不可恢复 |
 
 ## 默认安全边界
 

@@ -1,9 +1,9 @@
 import "./test-harness/config.js";
-import { loadMemoryV2PostgresConfig, PostgresWriteDatabase } from "../app";
+import { loadMemoryXXPostgresConfig, PostgresWriteDatabase } from "../app";
 import { withWriteTransaction, isPostgresTransactionContext } from "../app/db/tx/write-transaction";
 
 async function main(): Promise<void> {
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   try {
     const archived = await withWriteTransaction(db, async (tx) => {
       if (!isPostgresTransactionContext(tx)) return 0;

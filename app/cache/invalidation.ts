@@ -78,17 +78,17 @@ export class RecallRuntimeCacheInvalidator implements MemoryCacheInvalidator {
     if (this.options.fastpathEnabled !== undefined) {
       return this.options.fastpathEnabled;
     }
-    if (process.env.MEMORY_V2_FASTPATH_CACHE_INVALIDATE_ENABLED === "false") {
+    if (process.env.MEMORY_XX_FASTPATH_CACHE_INVALIDATE_ENABLED === "false") {
       return false;
     }
-    if (process.env.MEMORY_V2_FASTPATH_CACHE_INVALIDATE_ENABLED === "true") {
+    if (process.env.MEMORY_XX_FASTPATH_CACHE_INVALIDATE_ENABLED === "true") {
       return true;
     }
-    return (process.env.MEMORY_V2_RECALL_PRIMARY ?? "").toLowerCase() === "fastpath";
+    return (process.env.MEMORY_XX_RECALL_PRIMARY ?? "").toLowerCase() === "fastpath";
   }
 
   private fastpathBaseUrl(): string {
-    return (this.options.fastpathBaseUrl ?? process.env.MEMORY_V2_FASTPATH_URL ?? "http://127.0.0.1:5200").replace(/\/+$/, "");
+    return (this.options.fastpathBaseUrl ?? process.env.MEMORY_XX_FASTPATH_URL ?? "http://127.0.0.1:5200").replace(/\/+$/, "");
   }
 
   private async invalidateFastpath(scopes: readonly MemoryCacheInvalidationScope[]): Promise<string[]> {
@@ -98,12 +98,12 @@ export class RecallRuntimeCacheInvalidator implements MemoryCacheInvalidator {
     }
 
     const fetcher = this.options.fetcher ?? fetch;
-    const timeoutMs = this.options.fastpathTimeoutMs ?? Number.parseInt(process.env.MEMORY_V2_FASTPATH_CACHE_INVALIDATE_TIMEOUT_MS ?? "500", 10);
+    const timeoutMs = this.options.fastpathTimeoutMs ?? Number.parseInt(process.env.MEMORY_XX_FASTPATH_CACHE_INVALIDATE_TIMEOUT_MS ?? "500", 10);
     for (const scope of scopes) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 500);
       try {
-        const token = process.env.MEMORY_V2_FASTPATH_ADMIN_TOKEN?.trim() || process.env.MEMORY_V2_ADMIN_TOKEN?.trim();
+        const token = process.env.MEMORY_XX_FASTPATH_ADMIN_TOKEN?.trim() || process.env.MEMORY_XX_ADMIN_TOKEN?.trim();
         const response = await fetcher(`${this.fastpathBaseUrl()}/admin/cache/invalidate`, {
           method: "POST",
           headers: {

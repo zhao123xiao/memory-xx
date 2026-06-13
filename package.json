@@ -21,7 +21,7 @@
     "check:secrets": "node --import tsx scripts/secret-scan.ts",
     "secret-scan": "npm run check:secrets",
     "audit:prod": "npm audit --omit=dev --registry=https://registry.npmjs.org",
-    "verify:open-source": "npm run check:secrets && npm run open-source:preaudit && node --import tsx --test tests/open-source-readiness.test.ts && npm run audit:prod",
+    "verify:open-source": "npm run check:secrets && npm run open-source:preaudit -- --fail-on-blockers && node --import tsx scripts/verify-open-source-parity.ts && node --import tsx --test tests/open-source-readiness.test.ts tests/open-source-release-readiness-doc.test.ts && npm run audit:prod",
     "open-source:preaudit": "node --import tsx scripts/open-source-preaudit.ts",
     "open-source:export": "node --import tsx scripts/open-source-export.ts",
     "check:db-invariants": "node --import tsx scripts/check-db-invariants.ts",
@@ -170,7 +170,21 @@
     "memory:report": "node --import tsx scripts/generate-report.ts",
     "memory:dashboard": "node --import tsx scripts/memory-dashboard.ts",
     "test:user-perspective": "node --import tsx scripts/test-harness/user-perspective-smoke.ts",
-    "test:auto-approval-llm-conversation-simulation": "node --import tsx scripts/test-auto-approval-llm-conversation-simulation.ts"
+    "test:auto-approval-llm-conversation-simulation": "node --import tsx scripts/test-auto-approval-llm-conversation-simulation.ts",
+    "memory:evolve": "node --import tsx scripts/memory-evolve.ts",
+    "memory:adaptive-retrieval-apply": "node --import tsx scripts/memory-adaptive-retrieval-apply.ts",
+    "memory:adaptive-retrieval-calibration": "node --import tsx scripts/memory-adaptive-retrieval-calibration.ts",
+    "memory:consolidation-candidates": "node --import tsx scripts/memory-consolidation-candidates.ts",
+    "memory:extraction-recall-eval": "node --import tsx scripts/memory-extraction-recall-eval.ts",
+    "memory:graph-relation-repair-apply": "node --import tsx scripts/memory-graph-relation-repair-apply.ts",
+    "memory:human-review-apply": "node --import tsx scripts/memory-human-review-apply.ts",
+    "memory:observation-reflection": "node --import tsx scripts/memory-observation-reflection.ts",
+    "memory:procedural-promotion-candidates": "node --import tsx scripts/memory-procedural-promotion-candidates.ts",
+    "memory:recall-quality-feedback": "node --import tsx scripts/memory-recall-quality-feedback.ts",
+    "memory:stale-fact-report": "node --import tsx scripts/memory-stale-fact-report.ts",
+    "test:layers": "node --import tsx scripts/test-harness/reports/aggregator.ts",
+    "test:unit-contract": "node --import tsx scripts/test-harness/layers/L1-unit-contract.ts",
+    "memory:parity-audit": "node --import tsx scripts/memory-parity-audit.ts"
   },
   "engines": {
     "node": ">=20"
@@ -178,7 +192,7 @@
   "dependencies": {
     "pg": "^8.16.3",
     "redis": "^4.7.1",
-    "tsx": "^4.19.0"
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

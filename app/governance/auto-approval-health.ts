@@ -8,8 +8,9 @@ import {
   withWriteTransaction,
   type WriteTransactionRunner,
 } from "../db/tx/write-transaction";
-import { loadMemoryV2QdrantConfig } from "../recall/qdrant-config";
+import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
 import { readRuntimeControlNumberSync } from "../runtime-control-settings";
+import { EFFECTIVE_RECALLABLE_SQL_WHERE_CLAUSE, isEffectiveRecallable } from "../shared/predicates";
 import type { JsonObject, JsonValue } from "../shared/types";
 
 export interface AutoApprovalHealthSnapshot {
@@ -32,14 +33,14 @@ function readRuntimeInt(runtimeKey: string, envName: string, fallback: number): 
 }
 
 function forcedBlockers(): string[] {
-  return (process.env.MEMORY_V2_AUTO_APPROVAL_FORCE_OPERATIONAL_BLOCKER ?? "")
+  return (process.env.MEMORY_XX_AUTO_APPROVAL_FORCE_OPERATIONAL_BLOCKER ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
 async function fetchQdrantPointCount(timeoutMs: number): Promise<number | null> {
-  const config = loadMemoryV2QdrantConfig();
+  const config = loadMemoryXXQdrantConfig();
   if (!config.enabled || !config.base_url || !config.collection_name) return null;
   const response = await fetch(
     `${config.base_url.replace(/\/$/, "")}/collections/${encodeURIComponent(config.collection_name)}/points/count`,
@@ -59,7 +60,7 @@ async function fetchQdrantPointCount(timeoutMs: number): Promise<number | null> 
 }
 
 async function readProjectorStatus(maxAgeMs: number): Promise<{ age_seconds: number | null; stale: boolean; error?: string }> {
-  const statusPath = process.env.MEMORY_V2_QDRANT_PROJECTOR_STATUS_FILE?.trim() ||
+  const statusPath = process.env.MEMORY_XX_QDRANT_PROJECTOR_STATUS_FILE?.trim() ||
     path.join(process.cwd(), "qdrant-projector-worker.status.json");
   try {
     const raw = await readFile(statusPath, "utf8");
@@ -146,8 +147,7 @@ export async function collectAutoApprovalOperationalHealth(input: {
               ) AS approved_without_projection_recent,
               (
                 SELECT count(*) FROM memory_records
-                WHERE lifecycle_status = 'approved'
-                  AND is_current IS TRUE
+                WHERE ${EFFECTIVE_RECALLABLE_SQL_WHERE_CLAUSE}
               ) AS postgres_effective_recallable_count,
               (SELECT count(*) FROM memory_embedding_generations WHERE status = 'active') AS active_manifest_count,
               (SELECT generation_id FROM memory_embedding_generations WHERE status = 'active' ORDER BY activated_at DESC NULLS LAST, updated_at DESC LIMIT 1) AS active_manifest_generation_id,
@@ -207,7 +207,14 @@ export async function collectAutoApprovalOperationalHealth(input: {
         metrics.cache_invalidation_failed = 0;
         metrics.mem0_official_fallback_recent = 0;
         metrics.approved_without_projection_recent = 0;
-        metrics.postgres_effective_recallable_count = tx.state.memoryRecords.filter((row) => row.lifecycleStatus === "approved" && row.isCurrent).length;
+        metrics.postgres_effective_recallable_count = tx.state.memoryRecords.filter((row) =>
+          isEffectiveRecallable({
+            lifecycleStatus: row.lifecycleStatus,
+            reviewState: row.reviewState,
+            isCurrent: row.isCurrent,
+            recallPolicy: memoryRecallPolicy(row.metadata),
+          })
+        ).length;
         metrics.active_manifest_count = 1;
         metrics.active_manifest_payload_sample_verified = true;
         metrics.policy_reject_by_policy_recent = 0;
@@ -221,14 +228,14 @@ export async function collectAutoApprovalOperationalHealth(input: {
     warnings.push(`health_snapshot_error:${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const qdrantTimeoutMs = readIntEnv("MEMORY_V2_AUTO_APPROVAL_QDRANT_COUNT_TIMEOUT_MS", 300);
+  const qdrantTimeoutMs = readIntEnv("MEMORY_XX_AUTO_APPROVAL_QDRANT_COUNT_TIMEOUT_MS", 300);
   const qdrantPointCount = await fetchQdrantPointCount(qdrantTimeoutMs).catch((error) => {
     warnings.push(`qdrant_count_unavailable:${error instanceof Error ? error.message : String(error)}`);
     return null;
   });
   if (qdrantPointCount !== null) metrics.qdrant_point_count = qdrantPointCount;
 
-  const projectorStaleAfterMs = readRuntimeInt("health.projector_stale_after_ms", "MEMORY_V2_AUTO_APPROVAL_PROJECTOR_STALE_AFTER_MS", 3 * 60 * 1000);
+  const projectorStaleAfterMs = readRuntimeInt("health.projector_stale_after_ms", "MEMORY_XX_AUTO_APPROVAL_PROJECTOR_STALE_AFTER_MS", 3 * 60 * 1000);
   const projectorStatus = await readProjectorStatus(projectorStaleAfterMs);
   metrics.projector_heartbeat_age_seconds = projectorStatus.age_seconds;
   if (projectorStatus.error) warnings.push(`projector_heartbeat_unavailable:${projectorStatus.error}`);
@@ -257,11 +264,11 @@ export async function collectAutoApprovalOperationalHealth(input: {
     metrics.embedding_manifest_count_stale = true;
     warnings.push("embedding_manifest_count_stale");
   }
-  const outboxBlockerThreshold = readRuntimeInt("health.outbox_blocker_threshold", "MEMORY_V2_AUTO_APPROVAL_OUTBOX_BLOCKER_THRESHOLD", 100);
-  const cacheBlockerThreshold = readRuntimeInt("health.cache_invalidation_blocker_threshold", "MEMORY_V2_AUTO_APPROVAL_CACHE_INVALIDATION_BLOCKER_THRESHOLD", 100);
-  const mem0FallbackBlockerThreshold = readIntEnv("MEMORY_V2_AUTO_APPROVAL_MEM0_FALLBACK_BLOCKER_THRESHOLD", 5);
-  const projectionBlockerThreshold = readIntEnv("MEMORY_V2_AUTO_APPROVAL_PROJECTION_BLOCKER_THRESHOLD", 10);
-  const projectionDiffBlockerThreshold = readRuntimeInt("health.qdrant_pg_diff_blocker_threshold", "MEMORY_V2_AUTO_APPROVAL_QDRANT_PG_DIFF_BLOCKER_THRESHOLD", 0);
+  const outboxBlockerThreshold = readRuntimeInt("health.outbox_blocker_threshold", "MEMORY_XX_AUTO_APPROVAL_OUTBOX_BLOCKER_THRESHOLD", 100);
+  const cacheBlockerThreshold = readRuntimeInt("health.cache_invalidation_blocker_threshold", "MEMORY_XX_AUTO_APPROVAL_CACHE_INVALIDATION_BLOCKER_THRESHOLD", 100);
+  const mem0FallbackBlockerThreshold = readIntEnv("MEMORY_XX_AUTO_APPROVAL_MEM0_FALLBACK_BLOCKER_THRESHOLD", 5);
+  const projectionBlockerThreshold = readIntEnv("MEMORY_XX_AUTO_APPROVAL_PROJECTION_BLOCKER_THRESHOLD", 10);
+  const projectionDiffBlockerThreshold = readRuntimeInt("health.qdrant_pg_diff_blocker_threshold", "MEMORY_XX_AUTO_APPROVAL_QDRANT_PG_DIFF_BLOCKER_THRESHOLD", 0);
 
   if (outboxFailed > 0) blockers.push("outbox_failed_events");
   if (cacheFailed > 0) blockers.push("cache_invalidation_failed_requests");
@@ -287,4 +294,18 @@ export async function collectAutoApprovalOperationalHealth(input: {
     warnings: [...new Set(warnings)],
     metrics,
   };
+}
+
+function memoryRecallPolicy(metadata: JsonObject): string | null {
+  const direct = metadata.recall_policy;
+  if (typeof direct === "string") return direct;
+  const policy = metadata.auto_approval_policy;
+  if (policy && typeof policy === "object" && !Array.isArray(policy)) {
+    const memoryPolicy = (policy as JsonObject).memory_policy;
+    if (memoryPolicy && typeof memoryPolicy === "object" && !Array.isArray(memoryPolicy)) {
+      const nested = (memoryPolicy as JsonObject).recall_policy;
+      if (typeof nested === "string") return nested;
+    }
+  }
+  return null;
 }

@@ -126,7 +126,7 @@ async function main() {
   const { runAll, layers } = parseArgs();
 
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`  Memory-v2 Test Framework — run_id: ${runId}`);
+  console.log(`  memory-xx Test Framework — run_id: ${runId}`);
   console.log(`  Report dir: ${reportDir}`);
   console.log(`${"=".repeat(60)}\n`);
 
@@ -240,7 +240,7 @@ async function main() {
 
   // Write Markdown report
   const md: string[] = [
-    `# Memory-v2 Test Report`,
+    `# memory-xx Test Report`,
     ``,
     `- **Run ID**: ${runId}`,
     `- **Time**: ${summary.started_at}`,

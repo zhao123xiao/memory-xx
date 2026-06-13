@@ -3,7 +3,7 @@ import "./test-harness/config.js";
 
 import { Pool } from "pg";
 
-import { createPostgresPoolConfig, loadMemoryV2PostgresConfig } from "../app/db/adapters/postgres-config";
+import { createPostgresPoolConfig, loadMemoryXXPostgresConfig } from "../app/db/adapters/postgres-config";
 import { requireCliPermission } from "../app/server/permissions.js";
 import { loadDotenvIfPresent, quoteIdent } from "./lib/runtime-env";
 
@@ -21,7 +21,7 @@ function arg(name: string): string {
 async function main(): Promise<void> {
   if (command() !== "dry-run") throw new Error("usage: memory:temporal-policy -- dry-run");
   await requireCliPermission("memory:governance_read");
-  const config = loadMemoryV2PostgresConfig(process.env);
+  const config = loadMemoryXXPostgresConfig(process.env);
   const schema = quoteIdent(config.schema ?? "memory_xx");
   const pool = new Pool(createPostgresPoolConfig(config));
   const client = await pool.connect();

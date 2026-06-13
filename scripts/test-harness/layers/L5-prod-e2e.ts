@@ -13,6 +13,12 @@ const report = createEmptyReport("L5", runId);
 const testScopeId = `prod-test-${runId}`;
 const recallNeedle = `Production E2E test record ${runId}`;
 
+function makeTestEmbedding(): number[] {
+  const dims = Number.parseInt(process.env.EMBEDDING_DIMS?.trim() || "8", 10);
+  const safeDims = Number.isFinite(dims) && dims > 0 ? dims : 8;
+  return Array.from({ length: safeDims }, (_, index) => Number(((index + 1) / safeDims).toFixed(6)));
+}
+
 function check(name: string, passed: boolean, detail: string, severity: CheckResult["severity"] = "critical") {
   report.checks.push({ name, passed, detail, severity });
   const icon = passed ? "PASS" : (severity === "warning" ? "WARN" : "FAIL");
@@ -37,11 +43,11 @@ async function main() {
     content: `${recallNeedle}. This verifies the full write→approve→project→recall→forget lifecycle.`,
     title: `E2E Test ${runId}`,
     memoryType: "fact",
-    metadata: { source: "memory-xx-prod-test", run_id: runId },
+    metadata: { source: "memory-xx-prod-test", run_id: runId, embedding: makeTestEmbedding() },
   };
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/write"), writeBody, { token });
+    const resp = await httpPost(apiUrl("/api/memory/xx/write"), writeBody, { token });
     const body = resp.body as any;
     memoryId = body?.memoryId || body?.memory_id || "";
     check("write", !!memoryId,
@@ -59,7 +65,7 @@ async function main() {
   // 2. Approve
   try {
     const resp = await httpPost(
-      apiUrl(`/api/memory/v2/review/memories/${memoryId}/approve`),
+      apiUrl(`/api/memory/xx/review/memories/${memoryId}/approve`),
       { requestId: randomUUID(), actorId: "l5-prod-e2e" },
       { token },
     );
@@ -84,7 +90,7 @@ async function main() {
 
   // 4. Recall
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: recallNeedle,
       scope_context: {
         user_id: "l5-e2e",
@@ -108,7 +114,7 @@ async function main() {
 
   // 5. Forget/Tombstone
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/orchestrator/forget-memory"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/orchestrator/forget-memory"), {
       memoryId,
       mode: "tombstone",
       actorId: "l5-prod-e2e",
@@ -156,7 +162,7 @@ async function main() {
 
   // 8. Verify primed recall cache no longer returns the tombstoned memory.
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
       query: recallNeedle,
       scope_context: {
         user_id: "l5-e2e",

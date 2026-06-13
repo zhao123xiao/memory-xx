@@ -2,9 +2,9 @@
 
 `memory-xx` 是一套面向本地 AI Agent 的长期记忆框架：PostgreSQL 负责事实账本，Qdrant 负责向量召回投影，Policy Engine 负责写入治理，Control Panel 负责运行控制，HTTP / MCP 接口负责给 Codex、Claude Code、OpenClaw 或其他 Agent 使用。
 
-当前版本来自一套已长期运行的私有记忆系统的 clean export。核心能力已经导出到 `memory-xx`，但公开文档和通用部署体验仍在整理中，因此建议按 **public preview / alpha** 使用。
+当前版本来自一套已长期运行的私有记忆系统的 clean export。核心能力已经导出到 `memory-xx`，源码 parity、开源验证和运行时发布门禁已经通过，因此当前定位为 **public preview release candidate**。
 
-> 兼容说明：项目名称是 `memory-xx`，但环境变量前缀 `MEMORY_V2_*` 和 API 路径 `/api/memory/v2` 仍作为兼容接口保留。
+公开版统一使用 `MEMORY_XX_*` 环境变量前缀和 `/api/memory/xx` API 路径。
 
 ## 它解决什么问题
 
@@ -82,15 +82,41 @@ cp configs/memory-xx.env.example .env.local
 至少配置：
 
 ```bash
-MEMORY_V2_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
-MEMORY_V2_DATABASE_SCHEMA=memory_xx
-MEMORY_V2_REDIS_URL=redis://127.0.0.1:6379/0
-MEMORY_V2_QDRANT_BASE_URL=http://127.0.0.1:6333
-MEMORY_V2_QDRANT_COLLECTION=memory-xx-active
+MEMORY_XX_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/memory_xx
+MEMORY_XX_DATABASE_SCHEMA=memory_xx
+MEMORY_XX_REDIS_URL=redis://127.0.0.1:6379/0
+MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
+MEMORY_XX_QDRANT_COLLECTION=memory-xx-active
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
 EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
-MEMORY_V2_API_TOKEN=<set-private-token>
+MEMORY_XX_API_TOKEN=<set-private-token>
+```
+
+Embedding 可以使用本地模型，也可以使用 OpenAI-compatible API：
+
+```bash
+# 方案 A：本地 embedding 服务
+EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
+EMBEDDING_MODEL=Qwen3-Embedding-8B
+EMBEDDING_DIMS=4096
+
+# 方案 B：远程 API。推荐关注超算互联网：https://www.scnet.cn
+# 当前可参考价格约 0.1 / 百万 token，最终价格和模型名称以官网控制台为准。
+OPENAI_API_KEY=<set-private-key>
+EMBEDDING_API_BASE=https://api.scnet.cn/api/llm/v1
+EMBEDDING_MODEL=<embedding-model-name>
+EMBEDDING_DIMS=<embedding-dimensions>
+```
+
+主服务读取 `OPENAI_API_KEY` 作为 OpenAI-compatible embedding API token；如果运行离线 embedding 生成或校准脚本，也可以同步设置 `EMBEDDING_API_KEY`，脚本会按各自说明读取。
+
+如果要自动读取 Codex、Claude Code 或 OpenClaw 的历史会话，需要显式配置会话目录。开源模板里的 `<linux-user-home>` / `<windows-user-home>` 只是占位符，不能直接作为真实路径使用：
+
+```bash
+MEMORY_XX_CODEX_SESSION_ROOTS=/home/<user>/.codex/sessions
+MEMORY_XX_CLAUDE_SESSION_ROOTS=/home/<user>/.claude/projects
+MEMORY_XX_OPENCLAW_SESSION_ROOTS=/home/<user>/.openclaw/agents/main/sessions
 ```
 
 迁移并启动：
@@ -106,9 +132,9 @@ TMPDIR=/tmp npm start
 检查服务：
 
 ```bash
-curl http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/live
-curl -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
-  http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/health
+curl http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/live
+curl -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
+  http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/health
 ```
 
 WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
@@ -120,8 +146,8 @@ WSL 用户建议运行 npm/tsx 命令时加 `TMPDIR=/tmp`。
 写入一条记忆：
 
 ```bash
-curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/write" \
-  -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
+curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/write" \
+  -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "用户偏好：默认使用中文回复技术问题。",
@@ -136,8 +162,8 @@ curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/wri
 召回记忆：
 
 ```bash
-curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/recall/query" \
-  -H "Authorization: Bearer $MEMORY_V2_API_TOKEN" \
+curl -X POST "http://127.0.0.1:${MEMORY_XX_WRAPPER_PORT:-5100}/api/memory/xx/recall/query" \
+  -H "Authorization: Bearer $MEMORY_XX_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "用户希望用什么语言回复？",
@@ -153,6 +179,7 @@ curl -X POST "http://127.0.0.1:${MEMORY_V2_WRAPPER_PORT:-5100}/api/memory/v2/rec
 ```bash
 TMPDIR=/tmp npm run typecheck
 TMPDIR=/tmp npm test
+TMPDIR=/tmp npm run memory:parity-audit -- --json --fail-on-missing
 TMPDIR=/tmp npm run verify:open-source
 TMPDIR=/tmp npm run check:secrets
 TMPDIR=/tmp npm run audit:prod
@@ -168,6 +195,9 @@ TMPDIR=/tmp npm run memory:control-panel
 | --- | --- |
 | 快速启动 | [docs/quickstart.zh-CN.md](docs/quickstart.zh-CN.md) |
 | 完整功能清单 | [docs/features.zh-CN.md](docs/features.zh-CN.md) |
+| 功能成熟度 | [docs/feature-maturity.zh-CN.md](docs/feature-maturity.zh-CN.md) |
+| memory-v2 镜像 parity 审计 | [docs/memory-v2-full-feature-parity-audit-2026-06-11.md](docs/memory-v2-full-feature-parity-audit-2026-06-11.md) |
+| 开源发布就绪证据 | [docs/open-source-release-readiness-2026-06-13.md](docs/open-source-release-readiness-2026-06-13.md) |
 | 架构和数据流 | [docs/architecture.zh-CN.md](docs/architecture.zh-CN.md) |
 | Agent / MCP 接入 | [docs/agent-integration.zh-CN.md](docs/agent-integration.zh-CN.md) |
 | Policy Engine、自动审批、Supersede | [docs/policy-governance.zh-CN.md](docs/policy-governance.zh-CN.md) |
@@ -181,39 +211,12 @@ TMPDIR=/tmp npm run memory:control-panel
 
 ## 当前状态与边界
 
-- 本仓库是 public preview / alpha。
+- 本仓库是 public preview release candidate；当前发布证据见 [docs/open-source-release-readiness-2026-06-13.md](docs/open-source-release-readiness-2026-06-13.md)。
 - Embedding 是必需组件；reranker 是增强组件。
 - Docker Compose 当前仍建议作为模板使用，发布生产镜像前需要按实际端口和依赖校准。
 - global 自动写入默认不建议开启。
-- real update/supersede/apply 默认不建议开启，应先 dry-run 或 canary。
+- real update/supersede/dangerous apply 默认不建议开启；所有真实写数据的 apply/repair/rollback 能力必须 dry-run first，再用显式 `--apply` 和可审计计划执行。
 - 控制面板是本地运维工具，建议只绑定 `127.0.0.1`，不要直接暴露公网。
-
-## 开源安全说明
-
-不要提交以下内容：
-
-- `.env`、真实 token、真实 provider key
-- `.runtime/`
-- `reports/`
-- `logs/`
-- `data/`
-- 数据库 dump
-- 真实会话 JSONL
-- 真实用户记忆
-- benchmark 原始数据
-
-发布前建议运行：
-
-```bash
-TMPDIR=/tmp npm run verify:open-source
-TMPDIR=/tmp npm run check:secrets
-TMPDIR=/tmp npm run audit:prod
-rg -n "<linux-user-home>|<windows-user-home>|<api-key>|Bearer " .
-```
-
-`test:gates` / `test:all-gates` 是 runtime gate，需要真实
-`MEMORY_V2_DATABASE_URL`、`MEMORY_V2_API_TOKEN` 等运行环境变量；普通开源检查请使用
-`verify:open-source`。
 
 ## 许可证
 

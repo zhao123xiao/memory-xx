@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { config } from "../config.js";
 import { generateRunId } from "../lib/run-id.js";
 import { scrubSecrets } from "../lib/secret-scrubber.js";
-import { httpPost, apiUrl } from "../lib/http-client.js";
+import { httpPost, apiUrl, type HttpResponse } from "../lib/http-client.js";
 import { createPool, query, closePool } from "../lib/db-helpers.js";
 import { getCollectionInfo } from "../lib/qdrant-helpers.js";
 import type { LayerReport, CheckResult } from "../report-model.js";
@@ -10,6 +10,9 @@ import { createEmptyReport, finalizeReport } from "../report-model.js";
 
 const runId = generateRunId();
 const report = createEmptyReport("L6", runId);
+const MAX_CLEANUP_TOMBSTONE_ATTEMPTS = 3;
+const DEFAULT_CLEANUP_RETRY_AFTER_MS = 1_000;
+const MAX_CLEANUP_RETRY_AFTER_MS = 65_000;
 
 // Tier configuration
 const TIERS = {
@@ -42,10 +45,53 @@ function percentile(sorted: number[], p: number): number {
   return sorted[Math.max(0, idx)];
 }
 
+function readPositiveFloatEnv(name: string): number | undefined {
+  const raw = process.env[name]?.trim();
+  if (!raw) return undefined;
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readCleanupRetryAfterMs(resp: HttpResponse): number {
+  const body = resp.body && typeof resp.body === "object" ? resp.body as Record<string, unknown> : {};
+  const bodySeconds = Number(body["retry_after_seconds"]);
+  const headerSeconds = Number(resp.headers["retry-after"] ?? resp.headers["Retry-After"]);
+  const seconds = Number.isFinite(bodySeconds) && bodySeconds > 0
+    ? bodySeconds
+    : Number.isFinite(headerSeconds) && headerSeconds > 0
+      ? headerSeconds
+      : undefined;
+  if (seconds === undefined) return DEFAULT_CLEANUP_RETRY_AFTER_MS;
+  return Math.min(Math.ceil(seconds * 1000), MAX_CLEANUP_RETRY_AFTER_MS);
+}
+
+async function tombstoneLoadTestRecord(memoryId: string): Promise<HttpResponse> {
+  let lastResp: HttpResponse | undefined;
+  for (let attempt = 1; attempt <= MAX_CLEANUP_TOMBSTONE_ATTEMPTS; attempt++) {
+    const resp = await httpPost(apiUrl("/api/memory/xx/orchestrator/forget-memory"), {
+      memoryId,
+      mode: "tombstone",
+      actorId: `load-test-cleanup-${runId}`,
+      requestId: randomUUID(),
+    }, { token: config.wrapperToken, timeout: 10000 });
+    if (resp.status === 429 && attempt < MAX_CLEANUP_TOMBSTONE_ATTEMPTS) {
+      lastResp = resp;
+      await sleep(readCleanupRetryAfterMs(resp));
+      continue;
+    }
+    return resp;
+  }
+  return lastResp!;
+}
+
 async function sendWrite(): Promise<LoadResult> {
   const start = Date.now();
   try {
-    const resp = await fetch(apiUrl("/api/memory/v2/write"), {
+    const resp = await fetch(apiUrl("/api/memory/xx/write"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +118,7 @@ async function sendWrite(): Promise<LoadResult> {
 async function sendRecall(): Promise<LoadResult> {
   const start = Date.now();
   try {
-    const resp = await fetch(apiUrl("/api/memory/v2/recall/query"), {
+    const resp = await fetch(apiUrl("/api/memory/xx/recall/query"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -153,8 +199,10 @@ async function main() {
   }
 
   console.log(`  Running...`);
+  const loadStartedAt = Date.now();
   const workers = Array.from({ length: cfg.concurrency }, () => worker());
   await Promise.all(workers);
+  const loadElapsedMs = Math.max(1, Date.now() - loadStartedAt);
 
   // Analysis
   const durations = results.map(r => r.durationMs).sort((a, b) => a - b);
@@ -163,21 +211,28 @@ async function main() {
   const errors5xx = results.filter(r => r.status >= 500 || r.status === 0);
   const errors429 = results.filter(r => r.status === 429);
   const errors4xx = results.filter(r => r.status >= 400 && r.status < 500 && r.status !== 429);
-  const totalTime = durations.reduce((a, b) => a + b, 0);
-  const qps = results.length > 0 ? (results.length / totalTime * 1000) : 0;
+  const qps = results.length > 0 ? (results.length / loadElapsedMs * 1000) : 0;
 
   const errorRate5xx = results.length > 0 ? (errors5xx.length / results.length * 100) : 0;
   const p50 = durations.length > 0 ? percentile(durations, 50) : 0;
   const p95 = durations.length > 0 ? percentile(durations, 95) : 0;
   const p99 = durations.length > 0 ? percentile(durations, 99) : 0;
+  const baselineP99Ms = readPositiveFloatEnv("MEMORY_XX_LOAD_BASELINE_P99_MS");
+  const p99ImprovementPct = baselineP99Ms && p99 > 0
+    ? ((baselineP99Ms - p99) / baselineP99Ms) * 100
+    : undefined;
 
   console.log(`\n  === Results ===`);
   console.log(`  Total: ${results.length} (writes=${writes.length}, recalls=${recalls.length})`);
   console.log(`  5xx: ${errors5xx.length} (${errorRate5xx.toFixed(1)}%) | 429: ${errors429.length} | 4xx: ${errors4xx.length}`);
   console.log(`  QPS: ${qps.toFixed(1)}`);
   console.log(`  P50: ${p50}ms | P95: ${p95}ms | P99: ${p99}ms`);
+  if (baselineP99Ms !== undefined && p99ImprovementPct !== undefined) {
+    console.log(`  P99 baseline: ${baselineP99Ms}ms | improvement: ${p99ImprovementPct.toFixed(1)}%`);
+  }
 
   report.metrics["total_requests"] = results.length;
+  report.metrics["load_elapsed_ms"] = loadElapsedMs;
   report.metrics["writes"] = writes.length;
   report.metrics["recalls"] = recalls.length;
   report.metrics["errors_5xx"] = errors5xx.length;
@@ -186,6 +241,8 @@ async function main() {
   report.metrics["p50_ms"] = p50;
   report.metrics["p95_ms"] = p95;
   report.metrics["p99_ms"] = p99;
+  if (baselineP99Ms !== undefined) report.metrics["baseline_p99_ms"] = baselineP99Ms;
+  if (p99ImprovementPct !== undefined) report.metrics["p99_improvement_pct"] = parseFloat(p99ImprovementPct.toFixed(1));
   report.metrics["aborted"] = aborted ? 1 : 0;
 
   // Gates
@@ -200,6 +257,11 @@ async function main() {
     check("load:p99", p99 < 8000,
       `P99: ${p99}ms (threshold: 8000ms)`,
       p99 < 8000 ? "critical" : "warning");
+    if (baselineP99Ms !== undefined && p99ImprovementPct !== undefined) {
+      check("load:p99-improvement", p99ImprovementPct >= 30,
+        `P99 improvement: ${p99ImprovementPct.toFixed(1)}% (baseline=${baselineP99Ms}ms, current=${p99}ms, target>=30%)`,
+        p99ImprovementPct >= 30 ? "critical" : "warning");
+    }
   }
 
   check("load:abort", !aborted,
@@ -231,9 +293,7 @@ async function main() {
       let cleaned = 0, failed = 0;
       for (const memId of ids) {
         try {
-          const resp = await httpPost(apiUrl("/api/memory/v2/orchestrator/forget-memory"), {
-            memoryId: memId, mode: "tombstone", actorId: `load-test-cleanup-${runId}`, requestId: randomUUID(),
-          }, { token: config.wrapperToken, timeout: 10000 });
+          const resp = await tombstoneLoadTestRecord(memId);
           if (resp.status === 200) cleaned++;
           else failed++;
         } catch { failed++; }

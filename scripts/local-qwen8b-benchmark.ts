@@ -35,12 +35,12 @@ interface KnowledgeSample {
 }
 
 const runId = `local-qwen8b-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-const reportRoot = process.env.MEMORY_V2_REPORT_DIR || path.join(config.projectRoot, "reports/memory-xx-tests");
+const reportRoot = process.env.MEMORY_XX_REPORT_DIR || path.join(config.projectRoot, "reports/memory-xx-tests");
 const outputDir = path.join(reportRoot, "local-qwen8b", runId);
 const scopeId = `local-qwen8b-bench-${runId}`;
-const memorySampleSize = Math.max(2, Number.parseInt(process.env.MEMORY_V2_LOCAL_QWEN8B_MEMORY_CASES || "8", 10));
-const knowledgeSampleSize = Math.max(8, Number.parseInt(process.env.MEMORY_V2_LOCAL_QWEN8B_KNOWLEDGE_CASES || "48", 10));
-const qdrantKnowledgeCollection = process.env.MEMORY_V2_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
+const memorySampleSize = Math.max(2, Number.parseInt(process.env.MEMORY_XX_LOCAL_QWEN8B_MEMORY_CASES || "8", 10));
+const knowledgeSampleSize = Math.max(8, Number.parseInt(process.env.MEMORY_XX_LOCAL_QWEN8B_KNOWLEDGE_CASES || "48", 10));
+const qdrantKnowledgeCollection = process.env.MEMORY_XX_KNOWLEDGE_QDRANT_COLLECTION?.trim() || "knowledge-v1";
 
 function percentile(values: readonly number[], p: number): number {
   if (values.length === 0) return 0;
@@ -166,7 +166,7 @@ function buildMemoryFixtures(): MemoryFixture[] {
       profile: "structured",
       title: `[LOCAL-QWEN8B] Cache strategy ${runId}`,
       content: [
-        `Decision: after changing embedding provider, bump MEMORY_V2_QUERY_EMBEDDING_CACHE_VERSION before benchmarking recall.`,
+        `Decision: after changing embedding provider, bump MEMORY_XX_QUERY_EMBEDDING_CACHE_VERSION before benchmarking recall.`,
         `Context: old cloud query vectors must not mix with local OVMS query vectors.`,
         `中文摘要：切换本地 embedding 后必须隔离 Redis query embedding cache 版本，避免向量空间混用。`,
         `Operational token: ${delta}.`,
@@ -223,14 +223,14 @@ async function writeAndProjectMemory(fixture: MemoryFixture): Promise<WrittenMem
     }
   };
 
-  const write = await httpPost(apiUrl("/api/memory/v2/write"), writeBody, { token: config.wrapperToken, timeout: 30_000 });
+  const write = await httpPost(apiUrl("/api/memory/xx/write"), writeBody, { token: config.wrapperToken, timeout: 30_000 });
   const memoryId = (write.body as any)?.memoryId || (write.body as any)?.memory_id;
   if (!memoryId) {
     throw new Error(`write_failed:${write.status}:${JSON.stringify(write.body).slice(0, 300)}`);
   }
 
   const approve = await httpPost(
-    apiUrl(`/api/memory/v2/review/memories/${memoryId}/approve`),
+    apiUrl(`/api/memory/xx/review/memories/${memoryId}/approve`),
     { requestId: randomUUID(), actorId: "local-qwen8b-benchmark" },
     { token: config.wrapperToken, timeout: 30_000 }
   );
@@ -257,7 +257,7 @@ async function writeAndProjectMemory(fixture: MemoryFixture): Promise<WrittenMem
 }
 
 async function tombstoneMemory(memoryId: string): Promise<void> {
-  await httpPost(apiUrl("/api/memory/v2/orchestrator/forget-memory"), {
+  await httpPost(apiUrl("/api/memory/xx/orchestrator/forget-memory"), {
     memoryId,
     mode: "tombstone",
     actorId: "local-qwen8b-benchmark",
@@ -276,7 +276,7 @@ async function recallMemoryCase(memory: WrittenMemory, queryKind: "exact" | "sem
           ? { rerank: false, hybrid_mode: "separate" }
           : {};
 
-  const response = await httpPost(apiUrl("/api/memory/v2/recall/query"), {
+  const response = await httpPost(apiUrl("/api/memory/xx/recall/query"), {
     query: queryText,
     scopeType: "project",
     scopeId,

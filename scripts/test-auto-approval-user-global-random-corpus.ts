@@ -111,14 +111,14 @@ function buildCase(index: number, seed: string): TestCase {
     case 0:
       return {
         name: "user-test-scope-stable-preference-approve",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}`, MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: undefined, MEMORY_V2_AUTO_APPROVAL_USER_IDS: undefined },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}`, MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: undefined, MEMORY_XX_AUTO_APPROVAL_USER_IDS: undefined },
         expected: "approve",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", content: `User prefers concise engineering answers with concrete file references marker ${token}.` }),
       };
     case 1:
       return {
         name: "user-real-scope-default-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: undefined, MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: undefined, MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: undefined, MEMORY_V2_AUTO_APPROVAL_USER_IDS: undefined },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: undefined, MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: undefined, MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: undefined, MEMORY_XX_AUTO_APPROVAL_USER_IDS: undefined },
         expected: "pending",
         expectedReason: "scope_not_enabled",
         input: base({ index, seed, scopeType: "user", scopeId: "current-user", memoryType: "preference", content: `User prefers compact status reports after long runs marker ${token}.` }),
@@ -126,14 +126,14 @@ function buildCase(index: number, seed: string): TestCase {
     case 2:
       return {
         name: "user-test-scope-candidate-only-bypass-approve",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}`, MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: undefined },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}`, MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: undefined },
         expected: "approve",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "constraint", candidateOnly: true, content: `User wants destructive commands to require explicit confirmation marker ${token}.` }),
       };
     case 3:
       return {
         name: "user-low-confidence-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
         expected: "pending",
         expectedReason: "confidence_below_threshold",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", confidence: 0.72, content: `Maybe the user likes terse outputs marker ${token}.` }),
@@ -141,7 +141,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 4:
       return {
         name: "user-question-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
         expected: "pending",
         expectedReason: "question_only",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", content: `Should the user prefer structured summaries for marker ${token}?` }),
@@ -149,7 +149,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 5:
       return {
         name: "user-secret-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
         expected: "pending",
         expectedReason: "sensitive_content_detected",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", content: `User credential token=sk_${token}${token}${token} should never be stored.` }),
@@ -157,7 +157,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 6:
       return {
         name: "user-pii-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
         expected: "pending",
         expectedReason: "pii_requires_human_review",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", content: `User contact email person-${token}@example.com belongs in review.` }),
@@ -165,7 +165,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 7:
       return {
         name: "user-update-signal-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: `user:${userScope}` },
         expected: "pending",
         expectedReason: "explicit_update_requires_human_review",
         input: base({ index, seed, scopeType: "user", scopeId: userScope, memoryType: "preference", content: `之前用户喜欢 A-${token}，现在改成 B-${token}。` }),
@@ -173,7 +173,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 8:
       return {
         name: "global-default-manual-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: undefined, MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: undefined, MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: undefined },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: undefined, MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: undefined, MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: undefined },
         expected: "pending",
         expectedReason: "global_scope_default_manual",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "fact", content: `Global rule candidates remain manual unless explicitly enabled marker ${token}.` }),
@@ -181,14 +181,14 @@ function buildCase(index: number, seed: string): TestCase {
     case 9:
       return {
         name: "global-enabled-simulation-approve",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
         expected: "approve",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "constraint", content: `Global automation constraint requires audit metadata marker ${token}.` }),
       };
     case 10:
       return {
         name: "global-enabled-secret-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
         expected: "pending",
         expectedReason: "sensitive_content_detected",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "constraint", content: `Global token=ghp_${token}${token}${token} must be blocked.` }),
@@ -196,7 +196,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 11:
       return {
         name: "global-enabled-low-confidence-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
         expected: "pending",
         expectedReason: "confidence_below_threshold",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "fact", confidence: 0.80, qualityScore: 0.99, content: `Global fact uncertain marker ${token}.` }),
@@ -204,7 +204,7 @@ function buildCase(index: number, seed: string): TestCase {
     case 12:
       return {
         name: "global-enabled-update-pending",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
         expected: "pending",
         expectedReason: "explicit_update_requires_human_review",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "fact", content: `Previously global value was A-${token}; now replace with B-${token}.` }),
@@ -212,7 +212,7 @@ function buildCase(index: number, seed: string): TestCase {
     default:
       return {
         name: "global-enabled-candidate-only-bypass-approve",
-        env: { MEMORY_V2_AUTO_APPROVAL_CANARY: "1", MEMORY_V2_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_V2_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
+        env: { MEMORY_XX_AUTO_APPROVAL_CANARY: "1", MEMORY_XX_AUTO_APPROVAL_CANDIDATE_ONLY_BYPASS_SCOPES: "global:global", MEMORY_XX_AUTO_APPROVAL_GLOBAL_ENABLED: "1" },
         expected: "approve",
         input: base({ index, seed, scopeType: "global", scopeId: globalScope, memoryType: "procedure", candidateOnly: true, content: `Global procedure requires scoped bypass and grant marker ${token}.` }),
       };
@@ -226,7 +226,7 @@ async function main(): Promise<void> {
   const cases = Array.from({ length: casesCount() }, (_, index) => buildCase(index, seed));
   const failures: Array<Record<string, unknown>> = [];
   try {
-    const results = cases.map((item, index) => withEnv({ MEMORY_V2_RUNTIME_DIR: runtimeDir, ...item.env }, () => {
+    const results = cases.map((item, index) => withEnv({ MEMORY_XX_RUNTIME_DIR: runtimeDir, ...item.env }, () => {
       const actual = evaluateAutoApprovalPolicy(item.input);
       if (actual.decision !== item.expected) {
         failures.push({ index, name: item.name, expected: item.expected, actual: actual.decision, blocked_reasons: actual.blocked_reasons });

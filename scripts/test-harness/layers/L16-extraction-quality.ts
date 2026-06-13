@@ -44,7 +44,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(`${config.wrapperUrl}/api/memory/v2/intelligence/extract`, {
+    const resp = await httpPost(`${config.wrapperUrl}/api/memory/xx/intelligence/extract`, {
       text: "这是临时测试，请不要把 schema example 写入记忆",
       agent_id: "l16-extraction-quality",
       scope_hint: { scope_type: "project", scope_id: `l16-${runId}` }

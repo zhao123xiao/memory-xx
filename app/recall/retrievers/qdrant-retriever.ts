@@ -2,6 +2,7 @@ import { RecallError, RecallErrorCode } from "../errors";
 import { LifecycleStatus, ReviewState } from "../../shared";
 import {
   type BackendStatus,
+  type CognitiveType,
   type QueryConstraints,
   type RecallRecord,
   type RetrieverCandidate
@@ -84,6 +85,12 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, reason: st
   }
 }
 
+function readCognitiveType(value: unknown): CognitiveType | undefined {
+  return value === "semantic" || value === "episodic" || value === "procedural" || value === "audit"
+    ? value
+    : undefined;
+}
+
 function defaultRecordMapper(point: QdrantSearchPoint): RecallRecord | null {
   const payload = point.payload ?? {};
   const memoryId = payload.memory_id;
@@ -131,6 +138,7 @@ function defaultRecordMapper(point: QdrantSearchPoint): RecallRecord | null {
     category: typeof payload.category === "string" ? payload.category : undefined,
     memory_type:
       typeof payload.memory_type === "string" ? payload.memory_type : undefined,
+    cognitive_type: readCognitiveType(payload.cognitive_type),
     memory_layer:
       typeof payload.memory_layer === "string" ? payload.memory_layer : undefined,
     fact_status:
@@ -255,11 +263,11 @@ export class QdrantVectorRetriever implements VectorRetriever {
     this.collectionName = options.collection_name?.trim() || undefined;
     this.queryEmbeddingProvider = options.query_embedding_provider;
     this.fallbackRetriever = options.fallback_retriever;
-    this.minimumScore = options.minimum_score ?? 0;
+    this.minimumScore = options.minimum_score ?? 0.2;
     this.searchExecutor = options.search_executor ?? defaultSearchExecutor;
     this.recordMapper = options.record_mapper ?? defaultRecordMapper;
     this.circuitBreaker = options.circuit_breaker ?? new CircuitBreaker();
-    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_V2_QDRANT_QUERY_TIMEOUT_MS", 1200);
+    this.timeoutMs = options.timeout_ms ?? readPositiveInt("MEMORY_XX_QDRANT_QUERY_TIMEOUT_MS", 1200);
   }
 
   async get_backend_status(): Promise<BackendStatus> {

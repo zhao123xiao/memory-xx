@@ -26,7 +26,7 @@ import {
   mapWriteTicketRow
 } from "./postgres-row-mappers";
 import {
-  type MemoryV2PostgresConfig,
+  type MemoryXXPostgresConfig,
   createPostgresPoolConfig
 } from "./postgres-config";
 import {
@@ -38,7 +38,7 @@ import {
 } from "../tx/write-transaction";
 
 export interface PostgresWriteDatabaseOptions {
-  readonly config: MemoryV2PostgresConfig;
+  readonly config: MemoryXXPostgresConfig;
   readonly pool?: Pool;
   readonly clock?: () => string;
   readonly idFactory?: (sequenceName: SequenceName) => string;
@@ -158,6 +158,10 @@ export class PostgresWriteDatabase implements WriteTransactionRunner {
         cacheInvalidationRequests: (await client.query("SELECT * FROM cache_invalidation_requests ORDER BY created_at ASC")).rows.map(mapCacheInvalidationRequestRow),
         knowledgeScopeGrants: (await client.query("SELECT * FROM knowledge_scope_grants ORDER BY created_at ASC")).rows.map(mapKnowledgeScopeGrantRow),
         intelligenceCompareObservations: (await client.query("SELECT * FROM intelligence_compare_observations ORDER BY observed_at ASC")).rows.map(mapIntelligenceCompareObservationRow),
+        memoryGovernanceRuns: [],
+        memoryGovernanceActions: [],
+        memoryGovernanceFreezes: [],
+        governancePolicyOverrides: [],
         scopeGenerations: (await client.query("SELECT * FROM scope_generations ORDER BY bumped_at ASC")).rows.map(mapScopeGenerationStateRow),
         trustedAgents: (await client.query("SELECT * FROM trusted_agents ORDER BY created_at ASC")).rows.map(mapTrustedAgentRow),
         sequences: {
@@ -227,6 +231,10 @@ export class PostgresWriteDatabase implements WriteTransactionRunner {
         cacheInvalidationRequests: [],
         knowledgeScopeGrants: [],
         intelligenceCompareObservations: [],
+        memoryGovernanceRuns: [],
+        memoryGovernanceActions: [],
+        memoryGovernanceFreezes: [],
+        governancePolicyOverrides: [],
         scopeGenerations: [],
         trustedAgents: [],
         sequences: {

@@ -19,6 +19,7 @@ export interface RecallHttpResponse {
 }
 
 const FILTER_MODES = new Set<string>(Object.values(FilterMode));
+export const MAX_RECALL_QUERY_LENGTH = 4096;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -39,6 +40,20 @@ function asStringArray(value: unknown): string[] | undefined {
   return value;
 }
 
+function asContextBundleMode(value: unknown): RecallRequest["context_bundle"] | undefined {
+  return value === false || value === "summary" || value === "full" ? value : undefined;
+}
+
+function asContextBundleBudget(value: unknown): RecallRequest["context_bundle_budget"] | undefined {
+  if (!isPlainObject(value)) return undefined;
+  return {
+    l0AlwaysResident: typeof value.l0AlwaysResident === "number" ? value.l0AlwaysResident : undefined,
+    l1PinnedScopeFacts: typeof value.l1PinnedScopeFacts === "number" ? value.l1PinnedScopeFacts : undefined,
+    l2QueryWorkingSet: typeof value.l2QueryWorkingSet === "number" ? value.l2QueryWorkingSet : undefined,
+    l3ExpandableDeepMemory: typeof value.l3ExpandableDeepMemory === "number" ? value.l3ExpandableDeepMemory : undefined,
+  };
+}
+
 export function parseRecallRequest(input: unknown): RecallRequest {
   if (!isPlainObject(input)) {
     throw new RecallError(
@@ -52,6 +67,13 @@ export function parseRecallRequest(input: unknown): RecallRequest {
     throw new RecallError(
       RecallErrorCode.QueryEmpty,
       "query must be a non-empty string"
+    );
+  }
+  if (query.length > MAX_RECALL_QUERY_LENGTH) {
+    throw new RecallError(
+      RecallErrorCode.QueryTooLong,
+      `query must be at most ${MAX_RECALL_QUERY_LENGTH} characters`,
+      { max_length: MAX_RECALL_QUERY_LENGTH }
     );
   }
 
@@ -143,6 +165,12 @@ export function parseRecallRequest(input: unknown): RecallRequest {
       : undefined,
     explain: typeof input.explain === "boolean" ? input.explain : undefined,
     limit,
-    offset
+    offset,
+    include_knowledge: input.include_knowledge === true,
+    knowledge_collections: asStringArray(input.knowledge_collections),
+    knowledge_repos: asStringArray(input.knowledge_repos ?? input.repos),
+    knowledge_budget: typeof input.knowledge_budget === "number" ? Math.max(1, Math.min(50, Math.floor(input.knowledge_budget))) : undefined,
+    context_bundle: asContextBundleMode(input.context_bundle),
+    context_bundle_budget: asContextBundleBudget(input.context_bundle_budget)
   };
 }

@@ -87,15 +87,15 @@ function runtimePositiveInt(key: string, envName: string, fallback: number): num
 }
 
 function writeTicketTtlSeconds(): number {
-  return runtimePositiveInt("write.ticket.ttl_seconds", "MEMORY_V2_WRITE_TICKET_TTL_SECONDS", 120);
+  return runtimePositiveInt("write.ticket.ttl_seconds", "MEMORY_XX_WRITE_TICKET_TTL_SECONDS", 120);
 }
 
 function semanticLockTtlMs(): number {
-  return runtimePositiveInt("write.semantic_lock.ttl_ms", "MEMORY_V2_SEMANTIC_LOCK_TTL_MS", 30_000);
+  return runtimePositiveInt("write.semantic_lock.ttl_ms", "MEMORY_XX_SEMANTIC_LOCK_TTL_MS", 30_000);
 }
 
 function semanticLockWaitTimeoutMs(): number {
-  return runtimePositiveInt("write.semantic_lock.wait_timeout_ms", "MEMORY_V2_SEMANTIC_LOCK_WAIT_TIMEOUT_MS", 5_000);
+  return runtimePositiveInt("write.semantic_lock.wait_timeout_ms", "MEMORY_XX_SEMANTIC_LOCK_WAIT_TIMEOUT_MS", 5_000);
 }
 
 interface SmartWriteScopeAuthorizer {
@@ -200,7 +200,7 @@ async function executeSmartWrite(
         body: { error: "idempotency_payload_conflict", ticket_id: ticket.id },
       };
     }
-    if (process.env.MEMORY_V2_FAST_ACK_INLINE_FALLBACK === "true") {
+    if (process.env.MEMORY_XX_FAST_ACK_INLINE_FALLBACK === "true") {
       void processSmartWrite(payload, mcpDefaults, ticket.id, "fast_ack", scopeAuthorizer).catch(async (error) => {
         await withWriteTransaction(db, (tx) => ticketRepo.complete(tx, {
           ticketId: ticket.id,
@@ -347,7 +347,7 @@ export async function processSmartWrite(
   }
   const created: Array<Record<string, unknown>> = [];
   if (isConversationIngest) {
-    const maxConversationCandidates = Math.max(1, Number.parseInt(process.env.MEMORY_V2_CONVERSATION_MAX_CANDIDATES_PER_BATCH ?? "3", 10) || 3);
+    const maxConversationCandidates = Math.max(1, Number.parseInt(process.env.MEMORY_XX_CONVERSATION_MAX_CANDIDATES_PER_BATCH ?? "3", 10) || 3);
     const overflow = memories.slice(maxConversationCandidates);
     memories = memories.slice(0, maxConversationCandidates);
     for (const memory of overflow) {
@@ -827,7 +827,7 @@ export async function processPendingWriteTickets(options: {
   const db = runtime.writeDatabase;
   if (!db) return { claimed: 0, completed: 0, failed: 0 };
   const repo = new WriteTicketRepository();
-  const workerId = options.workerId ?? process.env.MEMORY_V2_WORKER_ID?.trim() ?? `write-ticket-${process.pid}`;
+  const workerId = options.workerId ?? process.env.MEMORY_XX_WORKER_ID?.trim() ?? `write-ticket-${process.pid}`;
   const tickets = await withWriteTransaction(db, (tx) => repo.claimNext(tx, {
     workerId,
     limit: options.limit ?? 10,

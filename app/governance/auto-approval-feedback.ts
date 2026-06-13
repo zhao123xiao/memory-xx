@@ -167,14 +167,14 @@ export async function applyAutoApprovalFeedbackGovernance(
     source: decision.source ?? "",
   } satisfies JsonObject;
   const selectorHash = stableGovernanceSelectorHash(selector);
-  const minSample = readIntEnv("MEMORY_V2_AUTO_APPROVAL_MIN_COHORT_SAMPLE", 20);
+  const minSample = readIntEnv("MEMORY_XX_AUTO_APPROVAL_MIN_COHORT_SAMPLE", 20);
   const freezeRate = readNumberEnv(
-    "MEMORY_V2_AUTO_APPROVAL_NEGATIVE_FREEZE_THRESHOLD",
-    readNumberEnv("MEMORY_V2_AUTO_APPROVAL_FALSE_POSITIVE_FREEZE_RATE", 0.05)
+    "MEMORY_XX_AUTO_APPROVAL_NEGATIVE_FREEZE_THRESHOLD",
+    readNumberEnv("MEMORY_XX_AUTO_APPROVAL_FALSE_POSITIVE_FREEZE_RATE", 0.05)
   );
-  const rollbackFreezeRate = readNumberEnv("MEMORY_V2_AUTO_APPROVAL_ROLLBACK_FREEZE_THRESHOLD", 0.03);
-  const manualArchiveDeleteFreezeRate = readNumberEnv("MEMORY_V2_AUTO_APPROVAL_MANUAL_DELETE_FREEZE_THRESHOLD", 0.05);
-  const recallNegativeFreezeRate = readNumberEnv("MEMORY_V2_AUTO_APPROVAL_RECALL_NEGATIVE_FREEZE_THRESHOLD", 0.05);
+  const rollbackFreezeRate = readNumberEnv("MEMORY_XX_AUTO_APPROVAL_ROLLBACK_FREEZE_THRESHOLD", 0.03);
+  const manualArchiveDeleteFreezeRate = readNumberEnv("MEMORY_XX_AUTO_APPROVAL_MANUAL_DELETE_FREEZE_THRESHOLD", 0.05);
+  const recallNegativeFreezeRate = readNumberEnv("MEMORY_XX_AUTO_APPROVAL_RECALL_NEGATIVE_FREEZE_THRESHOLD", 0.05);
 
   const [stats] = await tx.query<{
     sample_size: string;

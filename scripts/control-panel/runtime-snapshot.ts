@@ -98,8 +98,8 @@ async function embeddingUpstreamProbe(health: Record<string, unknown>): Promise<
 }
 
 async function rerankerUpstreamProbe(): Promise<ComponentStatus> {
-  const url = process.env.MEMORY_V2_RERANKER_UPSTREAM_MODELS_URL?.trim() || "http://127.0.0.1:8084/v3/models";
-  const model = process.env.MEMORY_V2_RERANKER_MODEL?.trim() || "qwen3-reranker";
+  const url = process.env.MEMORY_XX_RERANKER_UPSTREAM_MODELS_URL?.trim() || "http://127.0.0.1:8084/v3/models";
+  const model = process.env.MEMORY_XX_RERANKER_MODEL?.trim() || "qwen3-reranker";
   const started = Date.now();
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });

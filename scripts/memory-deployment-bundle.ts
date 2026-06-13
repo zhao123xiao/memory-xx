@@ -41,7 +41,7 @@ async function main(): Promise<void> {
     "",
   ].join("\n");
   await writeFile(path.join(output, "README.md"), readme, "utf8");
-  await writeFile(path.join(output, "env.template"), envExample || "MEMORY_V2_API_TOKEN=<set-private-token>\nMEMORY_V2_DATABASE_URL=<set-private-database-url>\n", "utf8");
+  await writeFile(path.join(output, "env.template"), envExample || "MEMORY_XX_API_TOKEN=<set-private-token>\nMEMORY_XX_DATABASE_URL=<set-private-database-url>\n", "utf8");
   await writeFile(path.join(output, "preflight.json"), `${JSON.stringify(preflight, null, 2)}\n`, "utf8");
   await writeFile(path.join(output, "profile.json"), `${JSON.stringify({ profile, generated_at: new Date().toISOString(), includes_live_secrets: false }, null, 2)}\n`, "utf8");
   printJson({ ok: true, profile, output, includes_live_secrets: false, preflight_status: preflight.status });

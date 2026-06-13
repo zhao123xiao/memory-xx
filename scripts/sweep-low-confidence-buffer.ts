@@ -4,7 +4,7 @@ import {
   LifecycleStatus,
   ReviewState,
   ScopeType,
-  loadMemoryV2PostgresConfig,
+  loadMemoryXXPostgresConfig,
   PostgresWriteDatabase
 } from "../app";
 import { IntelligenceService } from "../app/intelligence/service";
@@ -79,7 +79,7 @@ async function retryBufferRow(
 }
 
 async function main(): Promise<void> {
-  const db = new PostgresWriteDatabase({ config: loadMemoryV2PostgresConfig(process.env) });
+  const db = new PostgresWriteDatabase({ config: loadMemoryXXPostgresConfig(process.env) });
   const repo = new LowConfidenceBufferRepository();
   try {
     const now = new Date();

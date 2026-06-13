@@ -1,5 +1,5 @@
 [Unit]
-Description=Memory-v2 reranker adapter
+Description=memory-xx reranker adapter
 After=network-online.target
 Wants=network-online.target
 

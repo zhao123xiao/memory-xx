@@ -31,6 +31,50 @@ export interface ScopeAccessPolicy {
   }): Promise<RecallScopeRef[]> | RecallScopeRef[];
 }
 
+export interface TeamScopeInheritancePolicy {
+  readonly workspace_id?: string;
+  readonly include_global?: boolean;
+}
+
+function envFlagEnabled(env: NodeJS.ProcessEnv, name: string): boolean {
+  return ["1", "true", "yes", "on", "enabled"].includes(
+    (env[name] ?? "").trim().toLowerCase()
+  );
+}
+
+function envFlagDisabled(env: NodeJS.ProcessEnv, name: string): boolean {
+  return ["0", "false", "no", "off", "disabled"].includes(
+    (env[name] ?? "").trim().toLowerCase()
+  );
+}
+
+export function loadTeamScopeInheritancePolicy(
+  env: NodeJS.ProcessEnv = process.env
+): TeamScopeInheritancePolicy | undefined {
+  if (!envFlagEnabled(env, "MEMORY_XX_TEAM_SCOPE_INHERITANCE_ENABLED")) {
+    return undefined;
+  }
+
+  const workspaceId = (
+    env.MEMORY_XX_TEAM_WORKSPACE_SCOPE_ID ??
+    env.MEMORY_XX_DEFAULT_WORKSPACE_SCOPE ??
+    env.MEMORY_XX_DEFAULT_WORKSPACE_SCOPE_ID ??
+    ""
+  ).trim();
+  const includeGlobal = envFlagDisabled(env, "MEMORY_XX_TEAM_SCOPE_INCLUDE_GLOBAL")
+    ? false
+    : envFlagEnabled(env, "MEMORY_XX_TEAM_SCOPE_INCLUDE_GLOBAL");
+
+  if (!workspaceId && !includeGlobal) {
+    return undefined;
+  }
+
+  return {
+    ...(workspaceId ? { workspace_id: workspaceId } : {}),
+    include_global: includeGlobal
+  };
+}
+
 function uniqueScopes(scopes: RecallScopeRef[]): RecallScopeRef[] {
   const seen = new Set<string>();
   return scopes.filter((scope) => {
@@ -62,9 +106,13 @@ function shouldIncludeCanonicalLedgerWorkspace(request: RecallRequest): boolean 
   );
 }
 
-function buildLongTermScopes(request: RecallRequest): RecallScopeRef[] {
+function buildLongTermScopes(
+  request: RecallRequest,
+  inheritance?: TeamScopeInheritancePolicy
+): RecallScopeRef[] {
   const scopes: RecallScopeRef[] = [];
   const scopeContext = request.scope_context;
+  const hasProjectScope = (scopeContext.project_ids?.length ?? 0) > 0;
 
   if (scopeContext.user_id) {
     scopes.push({ type: ScopeType.User, id: scopeContext.user_id });
@@ -76,6 +124,8 @@ function buildLongTermScopes(request: RecallRequest): RecallScopeRef[] {
 
   if (scopeContext.workspace_id) {
     scopes.push({ type: ScopeType.Workspace, id: scopeContext.workspace_id });
+  } else if (hasProjectScope && inheritance?.workspace_id?.trim()) {
+    scopes.push({ type: ScopeType.Workspace, id: inheritance.workspace_id.trim() });
   }
 
   if (shouldIncludeCanonicalLedgerWorkspace(request)) {
@@ -83,6 +133,8 @@ function buildLongTermScopes(request: RecallRequest): RecallScopeRef[] {
   }
 
   if (scopeContext.include_global) {
+    scopes.push({ type: ScopeType.Global, id: "global" });
+  } else if (hasProjectScope && inheritance?.include_global) {
     scopes.push({ type: ScopeType.Global, id: "global" });
   }
 
@@ -100,9 +152,10 @@ export async function resolveAllowedScopeSet(
   dependencies: {
     runtime_scope_adapter?: RuntimeScopeContextAdapter;
     access_policy?: ScopeAccessPolicy;
+    team_scope_inheritance?: TeamScopeInheritancePolicy;
   } = {}
 ): Promise<ResolvedScopeSet> {
-  const longTermScopes = buildLongTermScopes(request);
+  const longTermScopes = buildLongTermScopes(request, dependencies.team_scope_inheritance);
   if (longTermScopes.length === 0) {
     throw new RecallError(
       RecallErrorCode.InvalidScopeContext,

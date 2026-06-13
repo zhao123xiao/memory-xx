@@ -114,6 +114,7 @@ export class StubVectorRetriever implements VectorRetriever {
 
     return this.records
       .filter((record) => matchesScope(record, scopeKeys))
+      .filter((record) => !input.memory_ids || input.memory_ids.length === 0 || input.memory_ids.includes(record.memory_id))
       .filter((record) => input.filter_plan.evaluate(record))
       .filter((record) => matchesMetadataConstraints(record, input.metadata))
       .map((record) => {
@@ -156,6 +157,18 @@ interface PostgresVectorRow {
 export interface PostgresVectorRetrieverOptions extends PostgresRecallOptions {
   readonly query_embedding_provider?: QueryEmbeddingProvider;
   readonly vector_column_name?: string;
+}
+
+function toPostgresVectorLiteral(embedding: readonly number[]): string {
+  for (const value of embedding) {
+    if (!Number.isFinite(value)) {
+      throw new RecallError(
+        RecallErrorCode.BackendUnavailable,
+        "PostgreSQL vector retrieval received a non-finite query embedding value."
+      );
+    }
+  }
+  return `[${embedding.join(",")}]`;
 }
 
 export class PostgresVectorRetriever
@@ -210,7 +223,7 @@ export class PostgresVectorRetriever
       );
     }
 
-    const vectorLiteral = `[${queryEmbedding.join(",")}]`;
+    const vectorLiteral = toPostgresVectorLiteral(queryEmbedding);
 
     try {
       return await this.withClient(async (client) => {

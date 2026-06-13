@@ -112,7 +112,7 @@ async function main() {
 
   // 6. Skills
   try {
-    const resp = await httpGet(apiUrl("/api/memory/v2/skills"), { token: config.wrapperToken });
+    const resp = await httpGet(apiUrl("/api/memory/xx/skills"), { token: config.wrapperToken });
     const body = resp.body as any;
     const skills = body?.skills || [];
     const skillIds = Array.isArray(skills) ? skills.map((s: any) => s.id || s.name) : [];
@@ -126,7 +126,7 @@ async function main() {
   }
 
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/skills/execute"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/skills/execute"), {
       skill_id: "health_check",
       params: { include_records: false, dry_run_repair: true },
     }, { token: config.wrapperToken, timeout: 30000 });
@@ -139,7 +139,7 @@ async function main() {
 
   // 7. Legacy OpenClaw memory-counts compatibility route.
   try {
-    const resp = await httpPost(apiUrl("/api/memory/v2/orchestrator/memory-counts"), {
+    const resp = await httpPost(apiUrl("/api/memory/xx/orchestrator/memory-counts"), {
       scope_type: "project",
       scope_id: "main",
       include_by_scope: true,

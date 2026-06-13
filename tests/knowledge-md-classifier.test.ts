@@ -54,7 +54,7 @@ test("latest test report with currently useful failures is imported as project e
     relative_path: "memory-xx-test-report-2026-06-02.md",
     modified_at: "2026-06-02T00:00:00.000Z",
     content: [
-      "# Memory-v2 完整测试报告",
+      "# memory-xx 完整测试报告",
       "**测试日期:** 2026-06-02",
       "| filter_mode=all | 403 | ❌ FAIL | admin token 也需额外 scope grant |",
       "| MCP 协议 | 17/17 | PASS | HTTP 传输是正确测试方式 |",

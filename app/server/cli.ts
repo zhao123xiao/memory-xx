@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { loadMemoryV2PostgresConfig } from "../db/adapters/postgres-config";
+import { loadMemoryXXPostgresConfig } from "../db/adapters/postgres-config";
 import { loadMemoryRedisConfig } from "../cache";
 import { RedisRecallCache, NoopRecallCache } from "../cache";
 import { createConfiguredRecallRuntime } from "../recall/postgres-runtime";
 import { ResilientQueryEmbeddingProvider } from "../recall/query-embedding-resilience";
-import { loadMemoryV2QdrantConfig } from "../recall/qdrant-config";
-import { ScopeType, FilterMode, LifecycleStatus, ReviewState } from "../shared";
+import { loadMemoryXXQdrantConfig } from "../recall/qdrant-config";
+import { DEFAULT_AGENT_ID, ScopeType, FilterMode, LifecycleStatus, ReviewState } from "../shared";
 import type { PostgresRecallRuntime } from "../recall/postgres-runtime";
 import type { RecallRequest, RecallResponse } from "../recall/types";
 import { CreateMemoryService } from "../write/services/create-memory-service";
@@ -60,7 +60,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
     scopeId: get("--scope-id") ?? "",
     content: get("--content") ?? "",
     title: get("--title"),
-    author: get("--author") ?? "klee",
+    author: get("--author") ?? DEFAULT_AGENT_ID,
     tags: getList("--tags"),
     lifecycleStatus: get("--lifecycle-status"),
     reviewState: get("--review-state"),
@@ -68,7 +68,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
 }
 
 export async function runRecall(args: RecallCliArgs): Promise<void> {
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const redisConfig = loadMemoryRedisConfig();
   const embeddingProvider = new ResilientQueryEmbeddingProvider(
     new QwenEmbeddingProviderWrapper(),
@@ -78,7 +78,7 @@ export async function runRecall(args: RecallCliArgs): Promise<void> {
   if ("connect" in redisCache && typeof (redisCache as RedisRecallCache).connect === "function") {
     await (redisCache as RedisRecallCache).connect();
   }
-  const qdrantConfig = loadMemoryV2QdrantConfig();
+  const qdrantConfig = loadMemoryXXQdrantConfig();
   const runtime: PostgresRecallRuntime = createConfiguredRecallRuntime({
     config, recall_cache: redisCache, query_embedding_provider: embeddingProvider,
     vector_column_name: "content_embedding", qdrant: qdrantConfig
@@ -120,7 +120,7 @@ export async function runWrite(args: WriteCliArgs): Promise<void> {
     content: args.content, title: args.title ?? null, summary: null, metadata: {},
     dedupeKey: null, lifecycleStatus, reviewState, sources: [], relations: [],
   };
-  const config = loadMemoryV2PostgresConfig();
+  const config = loadMemoryXXPostgresConfig();
   const writeDb = new PostgresWriteDatabase({ config });
   const redisConfig = loadMemoryRedisConfig();
   const redisCache = redisConfig.url ? new RedisRecallCache({ config: redisConfig }) : new NoopRecallCache();

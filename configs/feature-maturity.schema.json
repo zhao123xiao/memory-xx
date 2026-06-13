@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Feature Maturity Configuration",
+  "description": "Configuration file for memory-xx feature maturity levels",
+  "type": "object",
+  "required": ["features", "maturity_levels"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this configuration"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this configuration",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "features": {
+      "type": "array",
+      "description": "List of features with maturity levels",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "maturity", "surface", "risk", "evidence"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique feature identifier (script key)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable feature name"
+          },
+          "maturity": {
+            "type": "string",
+            "enum": ["stable", "beta", "experimental", "dangerous"],
+            "description": "Maturity level of the feature"
+          },
+          "surface": {
+            "type": "string",
+            "enum": ["api", "cli", "mcp", "internal"],
+            "description": "Surface/interface type"
+          },
+          "default_mode": {
+            "type": "string",
+            "enum": ["enabled", "disabled"],
+            "description": "Default operational mode"
+          },
+          "requires_apply": {
+            "type": "boolean",
+            "description": "Whether this feature requires --apply flag"
+          },
+          "risk": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Risk level"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence supporting the maturity level"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes"
+          },
+          "public_warning": {
+            "type": "string",
+            "description": "Public warning message for dangerous features"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["available", "unavailable"],
+            "description": "Availability status"
+          }
+        }
+      }
+    },
+    "maturity_levels": {
+      "type": "object",
+      "description": "Definitions of each maturity level",
+      "properties": {
+        "stable": {
+          "type": "object",
+          "required": ["description", "default_state"],
+          "properties": {
+            "description": { "type": "string" },
+            "default_state": { "type": "string", "enum": ["enabled", "disabled"] },
+            "requires_review": { "type": "boolean" }
+          }
+        },
+        "beta": {
+          "type": "object",
+          "required": ["description", "default_state", "warning"],
+          "properties": {
+            "description": { "type": "string" },
+            "default_state": { "type": "string", "enum": ["enabled", "disabled"] },
+            "requires_review": { "type": "boolean" },
+            "warning": { "type": "string" }
+          }
+        },
+        "experimental": {
+          "type": "object",
+          "required": ["description", "default_state", "warning"],
+          "properties": {
+            "description": { "type": "string" },
+            "default_state": { "type": "string", "enum": ["enabled", "disabled"] },
+            "requires_review": { "type": "boolean" },
+            "warning": { "type": "string" }
+          }
+        },
+        "dangerous": {
+          "type": "object",
+          "required": ["description", "default_state", "warning"],
+          "properties": {
+            "description": { "type": "string" },
+            "default_state": { "type": "string", "enum": ["enabled", "disabled"] },
+            "requires_apply": { "type": "boolean" },
+            "requires_review": { "type": "boolean" },
+            "warning": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 export * from "./cluster-key";
 export * from "./contracts";
+export * from "./context-bundle";
 export * from "./errors";
 export * from "./filter-builder";
 export * from "./fusion";

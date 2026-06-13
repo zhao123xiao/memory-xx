@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import type { WriteTransactionRunner } from "../db/tx/write-transaction";
+import { isPostgresTransactionContext, withWriteTransaction } from "../db/tx/write-transaction";
 import { ReviewDecisionService } from "../review/services/review-decision-service";
+import { LifecycleStatus, ReviewState, type JsonObject } from "../shared";
+import { mapMemoryRecordRow } from "../db/adapters/postgres-row-mappers";
+import type { MemoryRecordRow } from "../db/schema/tables";
 import type {
   ListPendingMemoriesRequest,
   ListPendingMemoriesResponse,
@@ -47,14 +51,15 @@ export async function listPendingMemories(
   database: WriteTransactionRunner,
   input: ListPendingMemoriesRequest
 ): Promise<ListPendingMemoriesResponse> {
-  const snapshot = await database.snapshot();
   const limit = Math.min(100, Math.max(1, Math.trunc(input.limit ?? 50)));
   const offset = Math.max(0, Math.trunc(input.offset ?? 0));
 
-  let candidates = snapshot.memoryRecords.filter((r) =>
-    r.lifecycleStatus === "candidate" && r.reviewState === "pending" && r.isCurrent
-  );
+  const postgresResult = await listPendingMemoriesFromPostgres(database, input, limit, offset);
+  if (postgresResult) return postgresResult;
 
+  let candidates = (await database.snapshot()).memoryRecords.filter((r) =>
+    r.lifecycleStatus === LifecycleStatus.Candidate && r.reviewState === ReviewState.Pending && r.isCurrent
+  );
   if (input.scope_type) {
     candidates = candidates.filter((r) => r.scopeType === input.scope_type);
   }
@@ -62,7 +67,8 @@ export async function listPendingMemories(
     candidates = candidates.filter((r) => r.scopeId === input.scope_id);
   }
   if (input.agent_id) {
-    candidates = candidates.filter((r) => r.createdBy === input.agent_id);
+    const agentId = input.agent_id;
+    candidates = candidates.filter((r) => memoryAgentMatches(r, agentId));
   }
   if (input.memory_class) {
     candidates = candidates.filter((r) => memoryPolicyField(r.metadata, "memory_class") === input.memory_class);
@@ -84,6 +90,82 @@ export async function listPendingMemories(
   const total = candidates.length;
   const page = candidates.slice(offset, offset + limit);
 
+  return formatPendingMemories(page, total);
+}
+
+async function listPendingMemoriesFromPostgres(
+  database: WriteTransactionRunner,
+  input: ListPendingMemoriesRequest,
+  limit: number,
+  offset: number
+): Promise<ListPendingMemoriesResponse | null> {
+  return withWriteTransaction(database, async (tx) => {
+    if (!isPostgresTransactionContext(tx)) return null;
+
+    const filters: string[] = [
+      "lifecycle_status = 'candidate'",
+      "review_state = 'pending'",
+      "is_current = true",
+    ];
+    const params: unknown[] = [];
+    const addParam = (value: unknown): string => {
+      params.push(value);
+      return `$${params.length}`;
+    };
+
+    if (input.scope_type) filters.push(`scope_type = ${addParam(input.scope_type)}`);
+    if (input.scope_id) filters.push(`scope_id = ${addParam(input.scope_id)}`);
+    if (input.agent_id) {
+      const placeholder = addParam(input.agent_id);
+      filters.push(`(created_by = ${placeholder} OR agent_id = ${placeholder} OR metadata->>'agent_id' = ${placeholder})`);
+    }
+    if (input.memory_class) filters.push(memoryPolicySqlPredicate("memory_class", addParam(input.memory_class)));
+    if (input.recall_policy) filters.push(memoryPolicySqlPredicate("recall_policy", addParam(input.recall_policy)));
+    if (input.policy_action) filters.push(memoryPolicySqlPredicate("policy_action", addParam(input.policy_action)));
+    if (input.source) filters.push(`metadata->>'source' = ${addParam(input.source)}`);
+
+    const whereSql = filters.join(" AND ");
+    const countRows = await tx.query<{ total: string | number }>(
+      `SELECT count(*) AS total FROM memory_records WHERE ${whereSql}`,
+      params
+    );
+    const total = Number(countRows[0]?.total ?? 0);
+    const rowParams = [...params, limit, offset];
+    const rows = await tx.query(
+      `
+        SELECT *
+        FROM memory_records
+        WHERE ${whereSql}
+        ORDER BY
+          CASE
+            WHEN COALESCE(metadata->>'memory_class', metadata->'auto_approval_policy'->'memory_policy'->>'memory_class') = 'operational_issue' THEN 0
+            WHEN COALESCE(metadata->>'memory_class', metadata->'auto_approval_policy'->'memory_policy'->>'memory_class') = 'unknown_source_quarantine' THEN 1
+            WHEN COALESCE(metadata->>'memory_class', metadata->'auto_approval_policy'->'memory_policy'->>'memory_class') IN ('test_evidence', 'audit_evidence') THEN 2
+            ELSE 3
+          END ASC,
+          created_at ASC
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
+      `,
+      rowParams
+    );
+
+    return formatPendingMemories(rows.map(mapMemoryRecordRow), total);
+  });
+}
+
+function memoryPolicySqlPredicate(key: string, placeholder: string): string {
+  return `COALESCE(metadata->>'${key}', metadata->'auto_approval_policy'->'memory_policy'->>'${key}') = ${placeholder}`;
+}
+
+function memoryAgentMatches(row: MemoryRecordRow, agentId: string): boolean {
+  return row.createdBy === agentId || row.agentId === agentId || row.metadata.agent_id === agentId;
+}
+
+function formatPendingMemories(
+  page: readonly MemoryRecordRow[],
+  total: number
+): ListPendingMemoriesResponse {
   return {
     ok: true,
     memories: page.map((r) => ({
@@ -95,7 +177,7 @@ export async function listPendingMemories(
       actor_id: r.createdBy,
       scope_type: r.scopeType,
       scope_id: r.scopeId,
-      metadata: r.metadata,
+      metadata: r.metadata as JsonObject,
       memory_class: memoryPolicyField(r.metadata, "memory_class"),
       recall_policy: memoryPolicyField(r.metadata, "recall_policy"),
       policy_action: memoryPolicyField(r.metadata, "policy_action"),
@@ -121,7 +203,8 @@ export async function listPendingMemories(
 export async function approveMemoryFromMcp(
   database: WriteTransactionRunner,
   input: McpApproveMemoryRequest,
-  invalidateScopeCache: (scopeType: string, scopeId: string) => Promise<void>
+  invalidateScopeCache: (scopeType: string, scopeId: string) => Promise<void>,
+  service: ReviewDecisionService = new ReviewDecisionService({ database })
 ): Promise<McpReviewMemoryResponse> {
   const snapshot = await database.snapshotForMemoryIds([input.memory_id]);
   const record = snapshot.memoryRecords.find((r) => r.id === input.memory_id);
@@ -134,7 +217,6 @@ export async function approveMemoryFromMcp(
     return { ok: true, memory_id: record.id, lifecycle_status: record.lifecycleStatus, review_state: record.reviewState };
   }
 
-  const service = new ReviewDecisionService({ database });
   const result = await service.approve({
     requestId: randomUUID(),
     actorId: input.reviewer_id,
@@ -154,7 +236,8 @@ export async function approveMemoryFromMcp(
 export async function rejectMemoryFromMcp(
   database: WriteTransactionRunner,
   input: McpRejectMemoryRequest,
-  invalidateScopeCache: (scopeType: string, scopeId: string) => Promise<void>
+  invalidateScopeCache: (scopeType: string, scopeId: string) => Promise<void>,
+  service: ReviewDecisionService = new ReviewDecisionService({ database })
 ): Promise<McpReviewMemoryResponse> {
   const snapshot = await database.snapshotForMemoryIds([input.memory_id]);
   const record = snapshot.memoryRecords.find((r) => r.id === input.memory_id);
@@ -167,7 +250,6 @@ export async function rejectMemoryFromMcp(
     return { ok: true, memory_id: record.id, lifecycle_status: record.lifecycleStatus, review_state: record.reviewState };
   }
 
-  const service = new ReviewDecisionService({ database });
   const result = await service.reject({
     requestId: randomUUID(),
     actorId: input.reviewer_id,

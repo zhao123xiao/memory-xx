@@ -206,8 +206,8 @@ export async function refreshScrapeDomainMetrics(
 ): Promise<void> {
   initializeDomainMetrics(registry);
   const qdrantSnapshot = getQdrantRuntimeSnapshot({
-    queryTimeoutMs: Number.parseInt(process.env.MEMORY_V2_QDRANT_QUERY_TIMEOUT_MS?.trim() || "1200", 10),
-    writeTimeoutMs: Number.parseInt(process.env.MEMORY_V2_QDRANT_WRITE_TIMEOUT_MS?.trim() || "5000", 10),
+    queryTimeoutMs: Number.parseInt(process.env.MEMORY_XX_QDRANT_QUERY_TIMEOUT_MS?.trim() || "1200", 10),
+    writeTimeoutMs: Number.parseInt(process.env.MEMORY_XX_QDRANT_WRITE_TIMEOUT_MS?.trim() || "5000", 10),
   });
   registry.setGauge("memory_qdrant_query_timeouts_total", qdrantSnapshot.query_timeouts);
   registry.setGauge("memory_qdrant_write_timeouts_total", qdrantSnapshot.write_timeouts);

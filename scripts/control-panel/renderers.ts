@@ -54,6 +54,7 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
     <button class="navlink" data-section="cache">缓存</button>
     <button class="navlink" data-section="write">写入</button>
     <button class="navlink" data-section="recall">召回</button>
+    <button class="navlink" data-section="memory-os">Memory OS</button>
     <button class="navlink" data-section="auto-approval">自动审批</button>
     <button class="navlink" data-section="auto-update-lab">自动更新实验室</button>
     <button class="navlink" data-section="approval-capacity">审批容量</button>
@@ -160,6 +161,92 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
     <section class="dashboard-section hidden" data-panel="cache"><section class="services-panel"><div class="panel-head"><h2>缓存</h2><span class="subtle">Redis 缓存过期时间 / 缓存健康</span></div><div id="runtime-cache"></div></section></section>
     <section class="dashboard-section hidden" data-panel="write"><section class="services-panel"><div class="panel-head"><h2>写入</h2><span class="subtle">速率限制 / 队列 / 语义锁</span></div><div id="runtime-write"></div></section></section>
     <section class="dashboard-section hidden" data-panel="recall"><section class="services-panel"><div class="panel-head"><h2>召回</h2><span class="subtle">延迟 / 重排序 / 快速路径</span></div><div id="runtime-recall"></div></section></section>
+    <section class="dashboard-section hidden" data-panel="memory-os">
+      <section class="services-panel">
+        <div class="panel-head"><h2>Memory OS Command Center</h2><span class="subtle">按真实 dry-run 债务排序；所有建议保持 report-only</span></div>
+        <div id="memory-os-command-center"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Debt Burn-down Plan</h2><span class="subtle">批次、验证门槛和退出条件；不执行治理写入</span></div>
+        <div id="memory-os-debt-burndown"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Memory OS 治理债务中心</h2><span class="subtle" id="memory-os-updated">等待 dry-run 报告</span></div>
+        <div id="memory-os-readiness" class="insight-grid"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Readiness Explainer</h2><span class="subtle">每个能力域的主阻断、恢复门槛和审核入口</span></div>
+        <div id="memory-os-readiness-explainer"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Readiness Domains</h2><span class="subtle">按能力域拆分 action candidates 和最低成熟度</span></div>
+        <div id="memory-os-domains"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>治理队列</h2><span class="subtle">只读视图，所有操作保持 report-only</span></div>
+        <div id="memory-os-queues"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Storage Focus</h2><span class="subtle">graph orphan、relation repair、successor discovery 证据</span></div>
+        <div id="memory-os-storage-focus"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Graph Orphan Review</h2><span class="subtle">缺失 episode/entity/relation 和失效 relation target 的只读审核队列</span></div>
+        <div class="toolbar-row"><label>Lane <select id="memory-os-graph-orphan-lane-filter"><option value="">全部</option><option value="graph_enrichment_review">Graph enrichment</option><option value="relation_repair_review">Relation repair</option></select></label></div>
+        <div id="memory-os-graph-orphan-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Relation Repair Review</h2><span class="subtle">关系 retarget、successor discovery 和 archive/restore 前置复核</span></div>
+        <div class="toolbar-row"><label>Lane <select id="memory-os-relation-repair-lane-filter"><option value="">全部</option><option value="ready_to_retarget">Ready to retarget</option><option value="successor_discovery_required">Successor required</option><option value="archive_or_restore_review">Archive / restore</option></select></label></div>
+        <div id="memory-os-relation-repair-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Update Focus</h2><span class="subtle">temporal validity、progress snapshot 和默认召回隔离债务</span></div>
+        <div id="memory-os-update-focus"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Retrieval Focus</h2><span class="subtle">per-scope retrieval calibration、empty recall 和 feedback guardrail</span></div>
+        <div id="memory-os-retrieval-focus"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Calibration Review Queue</h2><span class="subtle">只读候选；按 scope/query type 复核阈值调整证据</span></div>
+        <div class="toolbar-row"><label>Lane <select id="memory-os-calibration-lane-filter"><option value="">全部</option><option value="tighten_threshold_review">Tighten</option><option value="loosen_threshold_review">Loosen</option><option value="collect_more_samples">Collect samples</option><option value="hold">Hold</option></select></label></div>
+        <div id="memory-os-calibration-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Temporal Review Queue</h2><span class="subtle">只读候选；复核时间窗、fact status 和 recall policy 后再处理</span></div>
+        <div class="toolbar-row"><label>Action <select id="memory-os-temporal-action-filter"><option value="">全部</option><option value="isolate_temporal_snapshot">Isolate snapshot</option><option value="review_temporal_metadata">Review metadata</option></select></label></div>
+        <div id="memory-os-temporal-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Successor Review Queue</h2><span class="subtle">只读候选；需要人工确认后才能进入关系修复</span></div>
+        <div class="toolbar-row"><label>Lane <select id="memory-os-successor-filter" data-successor-lane><option value="">全部</option><option value="retarget_review">Retarget review</option><option value="topic_normalization_review">Topic normalization</option><option value="low_confidence_review">Low confidence</option></select></label></div>
+        <div id="memory-os-successor-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Topic Normalization Review</h2><span class="subtle">source topic、canonical topic、影响记忆和复核前置条件</span></div>
+        <div class="toolbar-row"><label>Priority <select id="memory-os-topic-normalization-priority"><option value="">全部</option><option value="high">High</option><option value="normal">Normal</option></select></label></div>
+        <div id="memory-os-topic-normalization-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Pending Review Queue</h2><span class="subtle">需要人工审核的候选，保留证据、召回合约和 apply 前置条件</span></div>
+        <div class="toolbar-row"><label>Lane <select id="memory-os-pending-lane-filter"><option value="">全部</option><option value="approve_candidate">Approve candidate</option><option value="explicit_issue_candidate">Explicit issue</option><option value="keep_pending">Keep pending</option><option value="quarantine_or_reject">Quarantine / reject</option></select></label></div>
+        <div id="memory-os-pending-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Safe-close Review Queue</h2><span class="subtle">可批量安全关闭的 pending 候选；仍需人工批次复核和回滚路径</span></div>
+        <div class="toolbar-row"><label>Operation <select id="memory-os-safe-close-operation-filter"><option value="">全部</option><option value="event_log_only">Event log only</option><option value="reject_or_quarantine">Reject / quarantine</option></select></label></div>
+        <div id="memory-os-safe-close-review"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>Governance Focus</h2><span class="subtle">pending lane、信号类型和 safe-close 阻断原因</span></div>
+        <div id="memory-os-governance-focus"></div>
+      </section>
+      <section class="services-panel">
+        <div class="panel-head"><h2>下一步动作</h2><span class="subtle">建议命令不会在控制面板自动执行</span></div>
+        <div id="memory-os-actions"></div>
+      </section>
+    </section>
     <section class="dashboard-section hidden" data-panel="auto-approval">
     <section class="services-panel">
       <div class="panel-head"><h2>自动审批开关</h2><span class="subtle" id="auto-approval-controls-updated">等待状态</span></div>
@@ -432,6 +519,7 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
       return '<div class="setting-editor"><input class="setting-control" data-key="' + escapeHtml(setting.key) + '" value="' + escapeHtml(setting.value ?? "") + '" type="text" />' + unit + '</div>';
     }
     let latestSettings = { registry: [], env: [], pending_restart: [] };
+    let latestMemoryOsDashboard = null;
     const dirtySettings = new Map();
     function valueFromControl(input) {
       return input.tagName === "SELECT" ? input.value === "true" : input.type === "number" || input.type === "range" ? Number(input.value) : input.value;
@@ -736,6 +824,251 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
     async function loadFeedbackLoop() {
       const response = await fetch("/api/feedback/recent?limit=30", { headers: { "x-panel-token": PANEL_TOKEN } });
       if (response.ok) renderFeedbackLoop(await response.json());
+    }
+    function severityLabel(value) {
+      return ({ ok: "正常", info: "信息", warning: "需处理", critical: "关键" })[value] || value || "未知";
+    }
+    function renderMemoryOsDashboard(model) {
+      latestMemoryOsDashboard = model;
+      const commandCenterNode = document.getElementById("memory-os-command-center");
+      const burndownNode = document.getElementById("memory-os-debt-burndown");
+      const cardsNode = document.getElementById("memory-os-readiness");
+      const readinessExplainerNode = document.getElementById("memory-os-readiness-explainer");
+      const domainsNode = document.getElementById("memory-os-domains");
+      const queuesNode = document.getElementById("memory-os-queues");
+      const storageNode = document.getElementById("memory-os-storage-focus");
+      const orphanReviewNode = document.getElementById("memory-os-graph-orphan-review");
+      const relationRepairReviewNode = document.getElementById("memory-os-relation-repair-review");
+      const updateNode = document.getElementById("memory-os-update-focus");
+      const retrievalNode = document.getElementById("memory-os-retrieval-focus");
+      const calibrationReviewNode = document.getElementById("memory-os-calibration-review");
+      const temporalReviewNode = document.getElementById("memory-os-temporal-review");
+      const successorReviewNode = document.getElementById("memory-os-successor-review");
+      const topicNormalizationNode = document.getElementById("memory-os-topic-normalization-review");
+      const pendingReviewNode = document.getElementById("memory-os-pending-review");
+      const safeCloseReviewNode = document.getElementById("memory-os-safe-close-review");
+      const governanceNode = document.getElementById("memory-os-governance-focus");
+      const actionsNode = document.getElementById("memory-os-actions");
+      const updatedNode = document.getElementById("memory-os-updated");
+      const cards = Array.isArray(model?.cards) ? model.cards : [];
+      const blockers = Array.isArray(model?.readiness?.top_blockers) ? model.readiness.top_blockers : [];
+      const domains = Array.isArray(model?.domain_readiness) ? model.domain_readiness : [];
+      const queues = model?.queues && typeof model.queues === "object" ? Object.values(model.queues) : [];
+      const storage = model?.storage_focus || {};
+      const update = model?.update_focus || {};
+      const retrieval = model?.retrieval_focus || {};
+      const governance = model?.governance_focus || {};
+      const actions = Array.isArray(model?.next_actions) ? model.next_actions : [];
+      const prioritizedWork = Array.isArray(model?.command_center?.prioritized_work) ? model.command_center.prioritized_work : [];
+      const burndown = model?.debt_burndown || {};
+      const burndownPhases = Array.isArray(burndown.phases) ? burndown.phases : [];
+      const readinessExplainerDomains = Array.isArray(model?.readiness_explainer?.domains) ? model.readiness_explainer.domains : [];
+      if (commandCenterNode) {
+        commandCenterNode.innerHTML = prioritizedWork.length
+          ? '<table class="data-table"><thead><tr><th>Rank</th><th>Domain</th><th>Work</th><th>Count</th><th>Why Now</th><th>Next Step</th><th>Target</th></tr></thead><tbody>' +
+            prioritizedWork.map((item) => '<tr><td>' + escapeHtml(item.rank) + '</td><td>' + escapeHtml(item.domain) + '<br><span class="subtle">' + escapeHtml(severityLabel(item.severity)) + ' · ' + escapeHtml(item.mode || "report_only") + '</span></td><td>' + escapeHtml(item.label) + '<br><span class="subtle">' + escapeHtml(item.target_queue) + '</span></td><td>' + escapeHtml(item.count) + '</td><td>' + escapeHtml(item.why_now || "") + '</td><td>' + escapeHtml(item.recommended_next_step || "") + '</td><td><button class="secondary" data-command-target="' + escapeHtml(item.target_anchor || "") + '">Open Queue</button></td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">当前没有需要进入 command center 的治理债务。</div>';
+      }
+      if (burndownNode) {
+        const summary = burndown.summary || {};
+        burndownNode.innerHTML = burndownPhases.length
+          ? '<div class="detail-grid">' +
+            '<article class="insight-card"><h3>Total Candidates</h3><div class="big">' + escapeHtml(summary.total_action_candidates || 0) + '</div><p>mode=' + escapeHtml(summary.mode || "report_only") + ' apply_allowed=' + escapeHtml(summary.apply_allowed === true ? "true" : "false") + '</p></article>' +
+            '<article class="insight-card"><h3>Estimated Batches</h3><div class="big">' + escapeHtml(summary.estimated_batches || 0) + '</div><p>按队列风险分批复核，不从面板执行 apply。</p></article>' +
+            '<article class="insight-card"><h3>Exit Gate</h3><div class="big">review</div><p>每一批都要看验证门槛和退出条件。</p></article>' +
+            '</div>' +
+            '<table class="data-table"><thead><tr><th>Phase</th><th>Queue</th><th>Count</th><th>Batch</th><th>Verification Gate</th><th>Exit Condition</th><th>Guardrail</th><th>Target</th></tr></thead><tbody>' +
+            burndownPhases.map((phase) => '<tr><td>' + escapeHtml(phase.order) + '. ' + escapeHtml(phase.label) + '<br><span class="subtle">' + escapeHtml(phase.domain) + ' · ' + escapeHtml(phase.mode || "report_only") + '</span></td><td>' + escapeHtml(phase.queue) + '</td><td>' + escapeHtml(phase.count) + '</td><td>' + escapeHtml(phase.batch_size) + ' x ' + escapeHtml(phase.estimated_batches) + '</td><td>' + escapeHtml(phase.verification_gate || "") + '</td><td>' + escapeHtml(phase.exit_condition || "") + '</td><td>' + escapeHtml(phase.safety_guardrail || "") + '</td><td><button class="secondary" data-command-target="' + escapeHtml(phase.target_anchor || "") + '">Open Queue</button></td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">当前没有可规划的 burn-down 阶段。</div>';
+      }
+      if (cardsNode) {
+        cardsNode.innerHTML = cards.map((card) =>
+          '<article class="insight-card">' +
+            '<h3>' + escapeHtml(card.label) + '</h3>' +
+            '<div class="big">' + escapeHtml(card.value) + escapeHtml(card.unit === "%" ? "%" : "") + '</div>' +
+            '<p>' + escapeHtml(severityLabel(card.severity)) + ' · ' + escapeHtml(card.detail || "") + '</p>' +
+          '</article>'
+        ).join("") +
+        '<article class="insight-card"><h3>Top Blockers</h3><div class="big">' + escapeHtml(model?.readiness?.lowest_domain || "unknown") + '</div><p>' + escapeHtml(blockers.map((item) => item.domain + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+        '<article class="insight-card"><h3>Safety</h3><div class="big">' + escapeHtml(model?.report_only ? "report-only" : "unknown") + '</div><p>apply_allowed=' + escapeHtml(model?.apply_allowed === true ? "true" : "false") + '，控制面板不执行治理写入。</p></article>';
+      }
+      if (readinessExplainerNode) {
+        readinessExplainerNode.innerHTML = readinessExplainerDomains.length
+          ? '<table class="data-table"><thead><tr><th>Domain</th><th>Risk</th><th>Primary Blocker</th><th>Evidence</th><th>Recovery Gate</th><th>Target</th></tr></thead><tbody>' +
+            readinessExplainerDomains.map((domain) => '<tr><td>' + escapeHtml(domain.domain) + '<br><span class="subtle">' + escapeHtml(domain.readiness_percent) + '% · ' + escapeHtml(domain.status) + '</span></td><td>' + escapeHtml(severityLabel(domain.risk_level)) + '<br><span class="subtle">' + escapeHtml(domain.mode || "report_only") + '</span></td><td>' + escapeHtml(domain.primary_blocker || "none") + '</td><td>' + escapeHtml((domain.evidence_keys || []).join(" / ") || "-") + '</td><td>' + escapeHtml(domain.recovery_gate || "") + '</td><td><button class="secondary" data-command-target="' + escapeHtml(domain.target_anchor || "memory-os-actions") + '">Open Queue</button></td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">暂无 readiness explainer 明细。</div>';
+      }
+      if (domainsNode) {
+        domainsNode.innerHTML = domains.length
+          ? '<table class="data-table"><thead><tr><th>域</th><th>Readiness</th><th>Action Candidates</th><th>状态</th><th>Top Blockers</th><th>下一步</th></tr></thead><tbody>' +
+            domains.map((domain) => '<tr><td>' + escapeHtml(domain.domain) + '</td><td>' + escapeHtml(domain.readiness_percent) + '%</td><td>' + escapeHtml(domain.action_candidates) + '</td><td>' + escapeHtml(domain.status) + '</td><td>' + escapeHtml((domain.top_blockers || []).map((item) => item.source + "." + item.reason + ":" + item.action_candidates).join(" / ") || "无") + '</td><td>' + escapeHtml(domain.recommended_next_step || "") + '</td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">暂无 capability domain 明细。</div>';
+      }
+      if (queuesNode) {
+        queuesNode.innerHTML = queues.length
+          ? '<table class="data-table"><thead><tr><th>队列</th><th>数量</th><th>状态</th><th>Breakdown</th><th>建议下一步</th></tr></thead><tbody>' +
+            queues.map((queue) => '<tr><td>' + escapeHtml(queue.label) + '<br><span class="subtle">' + escapeHtml(queue.id) + '</span></td><td>' + escapeHtml(queue.count) + '</td><td>' + escapeHtml(severityLabel(queue.severity)) + '</td><td>' + escapeHtml((queue.breakdown || []).map((item) => item.label + ":" + item.count).join(" / ") || "-") + '</td><td>' + escapeHtml(queue.recommended_next_step) + '</td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">暂无治理队列。</div>';
+      }
+      if (storageNode) {
+        const orphanReasons = Array.isArray(storage.top_orphan_reasons) ? storage.top_orphan_reasons : [];
+        const repairActions = Array.isArray(storage.repair_actions) ? storage.repair_actions : [];
+        const repairBlockers = Array.isArray(storage.repair_blockers) ? storage.repair_blockers : [];
+        const matchTypes = Array.isArray(storage.successor_match_types) ? storage.successor_match_types : [];
+        const aliases = Array.isArray(storage.successor_alias_suggestions) ? storage.successor_alias_suggestions : [];
+        storageNode.innerHTML =
+          '<div class="detail-grid">' +
+            '<article class="insight-card"><h3>Orphan Reasons</h3><div class="big">' + escapeHtml(orphanReasons.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(orphanReasons.map((item) => item.reason + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Repair Actions</h3><div class="big">' + escapeHtml(repairActions.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(repairActions.map((item) => item.action + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Review Blockers</h3><div class="big">' + escapeHtml(repairBlockers.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(repairBlockers.map((item) => item.blocker + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Successor Matches</h3><div class="big">' + escapeHtml(matchTypes.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(matchTypes.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+          '</div>' +
+          (aliases.length ? '<table class="data-table"><thead><tr><th>Source Topic</th><th>Candidate Topic</th><th>Count</th></tr></thead><tbody>' + aliases.map((item) => '<tr><td>' + escapeHtml(item.source_topic) + '</td><td>' + escapeHtml(item.candidate_topic) + '</td><td>' + escapeHtml(item.count) + '</td></tr>').join("") + '</tbody></table>' : '<div class="empty-state">暂无 successor alias 建议。</div>');
+      }
+      if (orphanReviewNode) {
+        const reviewQueue = Array.isArray(storage.orphan_review_queue) ? storage.orphan_review_queue : [];
+        const laneCounts = Array.isArray(storage.orphan_review_lanes) ? storage.orphan_review_lanes : [];
+        const selectedLane = document.getElementById("memory-os-graph-orphan-lane-filter")?.value || "";
+        const visibleQueue = selectedLane ? reviewQueue.filter((item) => item.review_lane === selectedLane) : reviewQueue;
+        orphanReviewNode.innerHTML = reviewQueue.length
+          ? '<div class="detail-grid">' + laneCounts.map((item) => '<article class="insight-card"><h3>' + escapeHtml(item.label) + '</h3><div class="big">' + escapeHtml(item.count) + '</div><p>Graph orphan review lane</p></article>').join("") + '</div>' +
+            (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Lane</th><th>Memory</th><th>Reason</th><th>Relation Evidence</th><th>Decision</th><th>Blockers</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.review_lane) + '</td><td>' + escapeHtml(item.memory_id) + '<br><span class="subtle">' + escapeHtml(item.scope) + '</span><br><span class="subtle">' + escapeHtml(item.title || item.memory_type || "") + '</span></td><td>' + escapeHtml(item.reason) + '<br><span class="subtle">' + escapeHtml(item.suggested_action) + '</span></td><td>' + escapeHtml(item.relation_id || "-") + '<br><span class="subtle">' + escapeHtml(item.relation_type || "") + ' ' + escapeHtml(item.relation_related_memory_id || "") + '</span></td><td>' + escapeHtml(item.recommended_decision || "human_review") + '</td><td>' + escapeHtml((item.blockers || []).join(" / ") || "report_only") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 lane 没有 graph orphan 候选。</div>')
+          : '<div class="empty-state">暂无 graph orphan review 候选。</div>';
+      }
+      if (relationRepairReviewNode) {
+        const reviewQueue = Array.isArray(storage.relation_repair_review_queue) ? storage.relation_repair_review_queue : [];
+        const laneCounts = Array.isArray(storage.relation_repair_review_lanes) ? storage.relation_repair_review_lanes : [];
+        const selectedLane = document.getElementById("memory-os-relation-repair-lane-filter")?.value || "";
+        const visibleQueue = selectedLane ? reviewQueue.filter((item) => item.review_lane === selectedLane) : reviewQueue;
+        relationRepairReviewNode.innerHTML = reviewQueue.length
+          ? '<div class="detail-grid">' + laneCounts.map((item) => '<article class="insight-card"><h3>' + escapeHtml(item.label) + '</h3><div class="big">' + escapeHtml(item.count) + '</div><p>Relation repair review lane</p></article>').join("") + '</div>' +
+            (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Lane</th><th>Relation</th><th>Current Target</th><th>Suggested Target</th><th>Reason</th><th>Evidence</th><th>Decision</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.review_lane) + '</td><td>' + escapeHtml(item.relation_id) + '<br><span class="subtle">' + escapeHtml(item.relation_type) + '</span></td><td>' + escapeHtml(item.current_related_memory_id) + '<br><span class="subtle">source=' + escapeHtml(item.source_memory_id) + '</span></td><td>' + escapeHtml(item.suggested_related_memory_id || "-") + '</td><td>' + escapeHtml(item.reason) + '<br><span class="subtle">' + escapeHtml(item.suggested_action) + '</span></td><td>blocker=' + escapeHtml(item.review_blocker) + '<br><span class="subtle">successors=' + escapeHtml(item.successor_count) + '</span></td><td>' + escapeHtml(item.recommended_decision || "human_review") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 lane 没有 relation repair 候选。</div>')
+          : '<div class="empty-state">暂无 relation repair review 候选。</div>';
+      }
+      if (updateNode) {
+        const reasons = Array.isArray(update.temporal_reason_counts) ? update.temporal_reason_counts : [];
+        const actions = Array.isArray(update.temporal_action_counts) ? update.temporal_action_counts : [];
+        const temporalQueue = Array.isArray(update.temporal_review_queue) ? update.temporal_review_queue : [];
+        updateNode.innerHTML =
+          '<div class="detail-grid">' +
+            '<article class="insight-card"><h3>Temporal Reasons</h3><div class="big">' + escapeHtml(reasons.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(reasons.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Temporal Actions</h3><div class="big">' + escapeHtml(actions.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(actions.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Review Queue</h3><div class="big">' + escapeHtml(temporalQueue.length) + '</div><p>progress snapshots and current facts needing temporal review</p></article>' +
+          '</div>';
+      }
+      if (retrievalNode) {
+        const actions = Array.isArray(retrieval.calibration_action_counts) ? retrieval.calibration_action_counts : [];
+        const lanes = Array.isArray(retrieval.calibration_review_lanes) ? retrieval.calibration_review_lanes : [];
+        const queue = Array.isArray(retrieval.calibration_review_queue) ? retrieval.calibration_review_queue : [];
+        retrievalNode.innerHTML =
+          '<div class="detail-grid">' +
+            '<article class="insight-card"><h3>Calibration Actions</h3><div class="big">' + escapeHtml(actions.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(actions.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Review Lanes</h3><div class="big">' + escapeHtml(lanes.length) + '</div><p>' + escapeHtml(lanes.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Cohorts</h3><div class="big">' + escapeHtml(queue.length) + '</div><p>per-scope query-type calibration candidates</p></article>' +
+          '</div>';
+      }
+      if (calibrationReviewNode) {
+        const queue = Array.isArray(retrieval.calibration_review_queue) ? retrieval.calibration_review_queue : [];
+        const selectedLane = document.getElementById("memory-os-calibration-lane-filter")?.value || "";
+        const visibleQueue = selectedLane ? queue.filter((item) => item.review_lane === selectedLane) : queue;
+        calibrationReviewNode.innerHTML = queue.length
+          ? (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Lane</th><th>Scope / Query</th><th>Pressure</th><th>Top1 Metrics</th><th>Threshold</th><th>Decision</th><th>Blockers</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.review_lane) + '</td><td>' + escapeHtml(item.scope_key) + '<br><span class="subtle">' + escapeHtml(item.query_type) + '</span></td><td>traces=' + escapeHtml(item.trace_count) + ' empty=' + escapeHtml(Number(item.empty_recall_rate || 0).toFixed(2)) + '<br><span class="subtle">feedback=' + escapeHtml(item.feedback_count) + ' neg=' + escapeHtml(Number(item.negative_feedback_rate || 0).toFixed(2)) + ' fp=' + escapeHtml(item.false_positive_count) + '</span></td><td>distance=' + escapeHtml(item.avg_top1_distance ?? "-") + '<br><span class="subtle">gap=' + escapeHtml(item.avg_top1_top2_gap ?? "-") + ' rerank=' + escapeHtml(item.avg_top1_rerank_score ?? "-") + '</span></td><td>' + escapeHtml(item.suggested_action) + '<br><span class="subtle">delta=' + escapeHtml(item.proposed_threshold_delta) + '</span></td><td>' + escapeHtml(item.recommended_decision || "human_review") + '<br><span class="subtle">' + escapeHtml(item.reason || "") + '</span></td><td>' + escapeHtml((item.blockers || []).join(" / ") || "report_only") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 lane 没有 calibration 候选。</div>')
+          : '<div class="empty-state">暂无 retrieval calibration 候选。</div>';
+      }
+      if (temporalReviewNode) {
+        const temporalQueue = Array.isArray(update.temporal_review_queue) ? update.temporal_review_queue : [];
+        const selectedAction = document.getElementById("memory-os-temporal-action-filter")?.value || "";
+        const visibleQueue = selectedAction ? temporalQueue.filter((item) => item.suggested_action === selectedAction) : temporalQueue;
+        temporalReviewNode.innerHTML = temporalQueue.length
+          ? (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Action</th><th>Memory</th><th>Current State</th><th>Suggested State</th><th>Reasons</th><th>Temporal Evidence</th><th>Decision</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.suggested_action) + '</td><td>' + escapeHtml(item.memory_id) + '<br><span class="subtle">' + escapeHtml(item.scope) + '</span><br><span class="subtle">' + escapeHtml(item.title || item.content_preview || "") + '</span></td><td>' + escapeHtml(item.recall_policy) + ' / ' + escapeHtml(item.fact_status) + '<br><span class="subtle">' + escapeHtml(item.memory_class) + ' / ' + escapeHtml(item.cognitive_type) + '</span></td><td>' + escapeHtml(item.suggested_recall_policy) + ' / ' + escapeHtml(item.suggested_fact_status) + '</td><td>' + escapeHtml((item.reasons || []).join(" / ")) + '</td><td>observed=' + escapeHtml(item.observed_at || "-") + '<br><span class="subtle">review=' + escapeHtml(item.review_at || "-") + ' expires=' + escapeHtml(item.expires_at || "-") + '</span></td><td>' + escapeHtml(item.recommended_decision || "human_review") + '<br><span class="subtle">' + escapeHtml((item.blockers || []).join(" / ") || "report_only") + '</span></td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 action 没有 temporal review 候选。</div>')
+          : '<div class="empty-state">暂无 temporal review 候选。</div>';
+      }
+      if (successorReviewNode) {
+        const reviewQueue = Array.isArray(storage.successor_review_queue) ? storage.successor_review_queue : [];
+        const laneCounts = Array.isArray(storage.successor_review_lanes) ? storage.successor_review_lanes : [];
+        const selectedLane = document.getElementById("memory-os-successor-filter")?.value || "";
+        const visibleQueue = selectedLane ? reviewQueue.filter((item) => item.review_lane === selectedLane) : reviewQueue;
+        successorReviewNode.innerHTML = reviewQueue.length
+          ? '<div class="detail-grid">' + laneCounts.map((item) => '<article class="insight-card"><h3>' + escapeHtml(item.label) + '</h3><div class="big">' + escapeHtml(item.count) + '</div><p>Successor review lane</p></article>').join("") + '</div>' +
+            (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Lane</th><th>Relation</th><th>Old Target</th><th>Candidate Successor</th><th>Match</th><th>Evidence</th><th>Decision</th><th>Blockers</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.review_lane) + '</td><td>' + escapeHtml(item.relation_id) + '<br><span class="subtle">' + escapeHtml(item.relation_type) + '</span></td><td>' + escapeHtml(item.old_target_memory_id) + '</td><td>' + escapeHtml(item.candidate_successor_memory_id) + '<br><span class="subtle">' + escapeHtml(item.suggested_repair_action) + '</span></td><td>' + escapeHtml(item.match_type) + '<br><span class="subtle">confidence=' + escapeHtml(Number(item.confidence || 0).toFixed(2)) + '</span></td><td>' + escapeHtml(item.scope || "") + '<br><span class="subtle">' + escapeHtml((item.shared_terms || []).join(", ") || item.topic || "") + '</span></td><td>' + escapeHtml(item.recommended_decision || "human_review") + '</td><td>' + escapeHtml((item.blockers || []).join(" / ") || "report_only") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前筛选没有 successor review 候选。</div>')
+          : '<div class="empty-state">暂无 successor review 候选；当前主要阻断仍需先补充 successor discovery 证据。</div>';
+      }
+      if (topicNormalizationNode) {
+        const reviewQueue = Array.isArray(storage.topic_normalization_review_queue) ? storage.topic_normalization_review_queue : [];
+        const priorityCounts = Array.isArray(storage.topic_normalization_priority_counts) ? storage.topic_normalization_priority_counts : [];
+        const selectedPriority = document.getElementById("memory-os-topic-normalization-priority")?.value || "";
+        const visibleQueue = selectedPriority ? reviewQueue.filter((item) => item.priority === selectedPriority) : reviewQueue;
+        topicNormalizationNode.innerHTML = reviewQueue.length
+          ? '<div class="detail-grid">' + priorityCounts.map((item) => '<article class="insight-card"><h3>' + escapeHtml(item.label) + '</h3><div class="big">' + escapeHtml(item.count) + '</div><p>Topic normalization priority</p></article>').join("") + '</div>' +
+            (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Priority</th><th>Source Topic</th><th>Canonical Topic</th><th>Evidence</th><th>Affected Memories</th><th>Required Before Apply</th><th>Decision</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.priority) + '</td><td>' + escapeHtml(item.source_topic) + '<br><span class="subtle">' + escapeHtml(item.alias_candidate_id) + '</span></td><td>' + escapeHtml(item.canonical_topic) + '</td><td>support=' + escapeHtml(item.supporting_discoveries) + '<br><span class="subtle">avg=' + escapeHtml(Number(item.avg_confidence || 0).toFixed(2)) + '</span></td><td>' + escapeHtml(item.affected_memory_count) + '<br><span class="subtle">' + escapeHtml((item.affected_memory_ids || []).slice(0, 4).join(" / ")) + '</span></td><td>' + escapeHtml((item.required_before_apply || []).join(" / ")) + '</td><td>' + escapeHtml(item.recommended_decision || item.recommended_action || "human_review") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前优先级没有 topic normalization 审核项。</div>')
+          : '<div class="empty-state">暂无 topic normalization 审核项。</div>';
+      }
+      if (pendingReviewNode) {
+        const pendingQueue = Array.isArray(governance.pending_review_queue) ? governance.pending_review_queue : [];
+        const selectedLane = document.getElementById("memory-os-pending-lane-filter")?.value || "";
+        const visibleQueue = selectedLane ? pendingQueue.filter((item) => item.recommended_lane === selectedLane) : pendingQueue;
+        pendingReviewNode.innerHTML = pendingQueue.length
+          ? (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Lane</th><th>Memory</th><th>Recall Contract</th><th>Signals</th><th>Required Before Apply</th><th>Decision</th><th>Privacy</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.recommended_lane) + '</td><td>' + escapeHtml(item.id) + '<br><span class="subtle">' + escapeHtml(item.memory_class) + ' / ' + escapeHtml(item.cognitive_type) + '</span></td><td>' + escapeHtml(item.storage_target) + '<br><span class="subtle">' + escapeHtml(item.target_recall_policy) + ' default=' + escapeHtml(item.default_recall_allowed === true ? "true" : "false") + '</span></td><td>' + escapeHtml((item.signals || []).join(" / ") || "-") + '<br><span class="subtle">' + escapeHtml(item.evidence_summary || "") + '</span></td><td>' + escapeHtml((item.required_before_apply || []).join(" / ") || "operator_approval") + '</td><td>' + escapeHtml(item.recommended_decision || "human_review") + '</td><td>' + escapeHtml(item.privacy_blocked ? "blocked" : "clear") + '<br><span class="subtle">' + escapeHtml((item.privacy_reasons || []).join(" / ")) + '</span></td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 lane 没有 pending 审核候选。</div>')
+          : '<div class="empty-state">暂无 pending 审核候选明细；请确认 evolve JSON 是否包含 pending_approval_evidence.candidates。</div>';
+      }
+      if (safeCloseReviewNode) {
+        const safeCloseQueue = Array.isArray(governance.safe_close_queue) ? governance.safe_close_queue : [];
+        const humanReviewExclusions = Array.isArray(governance.human_review_exclusions) ? governance.human_review_exclusions : [];
+        const selectedOperation = document.getElementById("memory-os-safe-close-operation-filter")?.value || "";
+        const visibleQueue = selectedOperation ? safeCloseQueue.filter((item) => item.operation === selectedOperation) : safeCloseQueue;
+        safeCloseReviewNode.innerHTML = safeCloseQueue.length
+          ? (visibleQueue.length ? '<table class="data-table"><thead><tr><th>Operation</th><th>Candidate</th><th>Target</th><th>Signals</th><th>Decision</th><th>Rollback</th></tr></thead><tbody>' +
+            visibleQueue.map((item) => '<tr><td>' + escapeHtml(item.operation) + '</td><td>' + escapeHtml(item.id) + '<br><span class="subtle">' + escapeHtml(item.autonomous_action) + '</span></td><td>' + escapeHtml(item.storage_target) + '<br><span class="subtle">' + escapeHtml(item.target_recall_policy) + ' default=' + escapeHtml(item.default_recall_allowed === true ? "true" : "false") + '</span></td><td>' + escapeHtml((item.signals || []).join(" / ") || "-") + '<br><span class="subtle">' + escapeHtml((item.reasons || []).join(" / ")) + '</span></td><td>' + escapeHtml(item.recommended_decision || "batch_review") + '</td><td>' + escapeHtml(item.rollback_action || "restore_candidate_state") + '</td></tr>').join("") +
+            '</tbody></table>' : '<div class="empty-state">当前 operation 没有 safe-close 候选。</div>') +
+            (humanReviewExclusions.length ? '<div class="detail-row"><strong>Excluded for human review</strong>' + escapeHtml(humanReviewExclusions.map((item) => item.id + ":" + item.recommended_lane).join(" / ")) + '</div>' : '')
+          : '<div class="empty-state">暂无 safe-close 候选明细；请确认 evolve JSON 是否包含 pending_safe_close.candidates。</div>';
+      }
+      if (governanceNode) {
+        const lanes = Array.isArray(governance.lanes) ? governance.lanes : [];
+        const signals = Array.isArray(governance.signals) ? governance.signals : [];
+        const safeCloseBlockers = Array.isArray(governance.safe_close_blockers) ? governance.safe_close_blockers : [];
+        governanceNode.innerHTML =
+          '<div class="detail-grid">' +
+            '<article class="insight-card"><h3>Pending Lanes</h3><div class="big">' + escapeHtml(lanes.reduce((sum, item) => sum + Number(item.count || 0), 0)) + '</div><p>' + escapeHtml(lanes.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Signals</h3><div class="big">' + escapeHtml(signals.length) + '</div><p>' + escapeHtml(signals.map((item) => item.label + ":" + item.count).join(" / ") || "无") + '</p></article>' +
+            '<article class="insight-card"><h3>Safe-close Blockers</h3><div class="big">' + escapeHtml(safeCloseBlockers.length) + '</div><p>' + escapeHtml(safeCloseBlockers.join(" / ") || "无") + '</p></article>' +
+          '</div>';
+      }
+      if (actionsNode) {
+        actionsNode.innerHTML = actions.length
+          ? '<table class="data-table"><thead><tr><th>动作</th><th>命令</th><th>模式</th><th>原因</th></tr></thead><tbody>' +
+            actions.map((action) => '<tr><td>' + escapeHtml(action.label) + '<br><span class="subtle">' + escapeHtml(action.id) + '</span></td><td><code>' + escapeHtml(action.command) + '</code></td><td>' + escapeHtml(action.mode || "report_only") + '</td><td>' + escapeHtml(action.reason || "disabled") + '</td></tr>').join("") +
+            '</tbody></table>'
+          : '<div class="empty-state">暂无建议动作。</div>';
+      }
+      if (updatedNode) updatedNode.textContent = model?.generated_at ? "dry-run " + model.generated_at : "暂无 dry-run 报告";
+    }
+    async function loadMemoryOsDashboard() {
+      const response = await fetch("/api/memory-os/evolve", { headers: { "x-panel-token": PANEL_TOKEN } });
+      if (response.ok) renderMemoryOsDashboard(await response.json());
+      else {
+        const node = document.getElementById("memory-os-readiness");
+        if (node) node.innerHTML = '<div class="empty-state">Memory OS 报告加载失败：' + escapeHtml(await response.text()) + '</div>';
+      }
     }
     function renderSecurityAudit(report) {
       const findings = Array.isArray(report?.findings) ? report.findings : [];
@@ -1172,7 +1505,7 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
           const historyNode = document.getElementById("runtime-history");
           if (historyNode) historyNode.innerHTML = '<div class="detail-row"><strong>24 小时快照</strong>' + escapeHtml(history.count || 0) + ' 条 · 最新=' + escapeHtml(history.snapshots?.[0]?.collected_at || "无") + '</div>';
         }
-        await Promise.allSettled([loadApprovalCapacity(), loadOpsAutomation(), loadFeedbackLoop(), renderGraphOpsSummary(), loadSecurityPlatformMigration()]);
+        await Promise.allSettled([loadApprovalCapacity(), loadOpsAutomation(), loadFeedbackLoop(), loadMemoryOsDashboard(), renderGraphOpsSummary(), loadSecurityPlatformMigration()]);
         document.getElementById("status-title").textContent = embeddingIssue ? "运行状态：已阻断" : serviceStatus === "ok" ? "运行状态：就绪" : "运行状态：" + (serviceStatus || "未知");
         document.getElementById("status-detail").textContent = embeddingIssue || (issue ? issue.root_cause : "核心服务、参数和数据库维护指标已加载。");
         document.getElementById("status-refresh").textContent = summary.generated_at || new Date().toISOString();
@@ -1241,10 +1574,43 @@ export function renderControlPanelHtml(input: ControlPanelRenderInput): string {
       setActiveSection(target);
       if (target === "settings") document.getElementById("settings-search")?.focus();
     }));
+    document.addEventListener("click", (event) => {
+      const target = event.target?.closest?.("[data-command-target]");
+      if (!target) return;
+      const anchor = target.getAttribute("data-command-target");
+      if (!anchor) return;
+      setActiveSection("memory-os");
+      document.getElementById(anchor)?.scrollIntoView({ block: "start" });
+      history.replaceState(null, "", "#" + anchor);
+    });
     document.getElementById("refresh").addEventListener("click", refresh);
     document.getElementById("settings-search")?.addEventListener("input", () => renderSettings(latestSettings));
     document.getElementById("settings-category")?.addEventListener("change", () => renderSettings(latestSettings));
     document.getElementById("settings-safety")?.addEventListener("change", () => renderSettings(latestSettings));
+    document.getElementById("memory-os-successor-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-graph-orphan-lane-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-relation-repair-lane-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-topic-normalization-priority")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-temporal-action-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-calibration-lane-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-pending-lane-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
+    document.getElementById("memory-os-safe-close-operation-filter")?.addEventListener("change", () => {
+      if (latestMemoryOsDashboard) renderMemoryOsDashboard(latestMemoryOsDashboard);
+    });
     document.getElementById("settings-apply")?.addEventListener("click", async () => {
       if (dirtySettings.size === 0) return;
       const changes = Object.fromEntries(dirtySettings.entries());
