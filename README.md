@@ -85,9 +85,15 @@ memory-xx 依赖三类 AI 模型。下面给出每种模型的作用、是否必
 | 远程 API | 有 API 预算，不想本地部署模型 | 任何 OpenAI-compatible embedding API 均可，如 OpenAI、硅基流动、阿里百炼等 |
 | 本地部署 | 隐私优先，或没有稳定网络 | 使用 OVMS（OpenVINO Model Server）或 vLLM 等推理框架部署 |
 
-**推荐本地模型**：`Qwen3-Embedding-0.6B`。4096 维输出，纯 CPU 可运行，内存占用约 1.5GB。对于个人 Agent 的日常记忆场景，语义质量完全够用。
+**推荐本地模型**：
 
-如果你有 GPU，可以升级到 `Qwen3-Embedding-4B` 或 `Qwen3-Embedding-8B` 获得更好的语义表示。
+| 模型 | 最大维度 | 内存占用 | 说明 |
+| --- | --- | --- | --- |
+| Qwen3-Embedding-0.6B | 1024 | ~1.5 GB | 纯 CPU 可运行，预算首选 |
+| Qwen3-Embedding-4B | 2048 | ~8 GB | 需要 GPU，语义质量更好 |
+| Qwen3-Embedding-8B | 4096 | ~16 GB | 需要 GPU，最佳语义质量 |
+
+**重要**：memory-xx 的数据库 schema 和 Qdrant projector 默认按 4096 维 embedding 校验。如果使用 Qwen3-Embedding-0.6B（最高 1024 维），必须将 EMBEDDING_DIMS 设为模型实际输出维度（如 1024），并确保数据库和 Qdrant collection 的向量维度与之匹配。建议初次部署直接使用 4096 维模型（Qwen3-Embedding-8B 或远程 API），避免维度不匹配问题。
 
 embedding 模型通过 embedding proxy（端口 5221）接入 memory-xx，proxy 负责限流、重试、去重和响应缓存。配置方式：
 
@@ -98,10 +104,11 @@ EMBEDDING_MODEL=text-embedding-3-small
 EMBEDDING_DIMS=1536
 OPENAI_API_KEY=sk-...
 
-# 本地 OVMS
+# 本地 OVMS（以 Qwen3-Embedding-8B 为例，4096 维）
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-0.6B
+EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
+# 如果使用 Qwen3-Embedding-0.6B，EMBEDDING_DIMS 应设为 1024
 ```
 
 ### Reranker 模型（可选但强烈推荐）
@@ -117,7 +124,7 @@ reranker 通过 reranker adapter（端口 8085）接入，adapter 负责协议�
 ```bash
 MEMORY_XX_RERANKER_ADAPTER_URL=http://127.0.0.1:8085
 MEMORY_XX_RERANKER_DOWNSTREAM_URL=http://127.0.0.1:8084/v3/rerank
-MEMORY_XX_RERANKER_ENABLED=1
+MEMORY_XX_RERANKER_ADAPTER_ENABLED=1
 ```
 
 ### LLM 模型（Mem0 extractor 需要）
@@ -152,7 +159,7 @@ MEMORY_XX_MEM0_MODEL=Qwen3-8B
 
 | 组件 | 推荐模型 | 内存占用 | 必需 |
 | --- | --- | --- | --- |
-| Embedding | Qwen3-Embedding-0.6B | ~1.5 GB | 是 |
+| Embedding | Qwen3-Embedding-0.6B (1024维) 或 Qwen3-Embedding-8B (4096维) | ~1.5 GB / ~16 GB | 是 |
 | Reranker | Qwen3-Reranker-0.6B | ~1.5 GB | 强烈推荐 |
 | LLM (Mem0) | Qwen3-8B (或远程 API) | ~16 GB (本地) | 仅自动提取需要 |
 
@@ -258,8 +265,10 @@ MEMORY_XX_QDRANT_BASE_URL=http://127.0.0.1:6333
 MEMORY_XX_QDRANT_COLLECTION=memory_xx
 
 # Embedding 模型（必需）
+# 注意：Qwen3-Embedding-0.6B 最高支持 1024 维，如果使用该模型请将 EMBEDDING_DIMS 改为 1024
+# 使用 4096 维模型（如 Qwen3-Embedding-8B 或远程 API）则无需修改
 EMBEDDING_API_BASE=http://127.0.0.1:5221/v1
-EMBEDDING_MODEL=Qwen3-Embedding-0.6B
+EMBEDDING_MODEL=Qwen3-Embedding-8B
 EMBEDDING_DIMS=4096
 
 # API 鉴权
